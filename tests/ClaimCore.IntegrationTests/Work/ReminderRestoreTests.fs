@@ -18,7 +18,6 @@ let private parsed =
     | Ok value -> value
     | Error issue -> failtestf "Expected isolated owner operation: %A" issue
 
-let private target = CaseSelector.Reference "synthetic-a"
 let private parent fixture = CaseFixtures.caseId (id fixture 10)
 
 let private identicalOther fixture actor =
@@ -49,7 +48,7 @@ let private identicalOther fixture actor =
                 "work.update"
                 (id fixture 821)
                 (ClaimCore.Application.Contracts.OperationBinding.Work(
-                    (CaseSelector.Reference "synthetic-b"),
+                    (caseTarget fixture "synthetic-b"),
                     (0L)
                 ))
                 (ClaimCore.TestSupport.Submissions.work (
@@ -100,7 +99,7 @@ let private identicalOther fixture actor =
                     (Submissions.createRaw
                         taskName
                         (id fixture operation)
-                        (OperationBinding.Reminder(CaseSelector.Reference "synthetic-b", selected))
+                        (OperationBinding.Reminder(caseTarget fixture "synthetic-b", selected))
                         values)
                     token
 
@@ -132,7 +131,7 @@ let private assertOther database expected =
             Service.get
                 (core database.Fixture database.Fixture.Owner)
                 {
-                    Target = CaseSelector.Reference "synthetic-b"
+                    Target = caseTarget database.Fixture "synthetic-b"
                 }
                 token
 
@@ -158,7 +157,7 @@ let private assertOther database expected =
             Service.reminder
                 (core database.Fixture database.Fixture.Owner)
                 {
-                    Target = CaseSelector.Reference "synthetic-b"
+                    Target = caseTarget database.Fixture "synthetic-b"
                     ReminderId = id database.Fixture 828
                 }
                 token
@@ -177,6 +176,7 @@ let private assertOther database expected =
 let private seeded database =
     task {
         let! actor = populated database
+        let target = caseTarget database.Fixture "synthetic-a"
 
         let patch =
             (RegistrationUpdateInput.replace

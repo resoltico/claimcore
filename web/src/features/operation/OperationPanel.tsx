@@ -20,7 +20,6 @@ import { Dialog } from "../../ui/Dialog";
 import { OperationForm, OperationFormActions, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../operation/useOperation";
-import { openingReferenceInput, operationTask } from "../../protocol/taskCatalog";
 type PendingEntry = {
   label: string;
   value: string;
@@ -41,15 +40,6 @@ const pendingMetadata = (
   ];
   if (!model.disclosureCurrent) {
     return entries;
-  }
-  const opening = openingReferenceInput(operationTask(command.task));
-  if (opening !== undefined) {
-    const requested: unknown = Object.entries(command.inputs).find(
-      ([key]) => key === opening.id,
-    )?.[1];
-    if (typeof requested === "string") {
-      entries.push({ label: p.fieldLabel("caseReference"), value: requested, identifier: true });
-    }
   }
   if (command.binding.kind === "CASE" && "target" in command.binding) {
     const { target, expectedRevision } = command.binding;
@@ -85,38 +75,39 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
     }
   }, [model.busy]);
   const metadata = pendingMetadata(model, p);
+  const reason = model.recoveryOnly ? "receiptUnavailable" : "outcomeUnknown";
   const notice =
-    model.notice?.kind === "local" && model.notice.reason === "outcomeUnknown"
-      ? null
-      : model.notice;
+    model.notice?.kind === "local" && model.notice.reason === reason ? null : model.notice;
   return (
     <section role="alert" aria-live="off" aria-busy={model.busy}>
       <h2 ref={heading} tabIndex={-1}>
         <NoticeView
           value={{
             kind: "local",
-            reason: "outcomeUnknown",
+            reason,
           }}
         />
       </h2>
       <TechnicalDetails>
         <PendingMetadata metadata={metadata} />
       </TechnicalDetails>
-      <p>{p.text("ui.retryExactDescription")}</p>
+      {model.recoveryOnly ? null : <p>{p.text("ui.retryExactDescription")}</p>}
       {notice === null ? null : (
         <p>
           <NoticeView value={notice} />
         </p>
       )}
-      <button
-        type="button"
-        disabled={model.busy}
-        onClick={() => {
-          void model.execute();
-        }}
-      >
-        {p.text("ui.retryExact")}
-      </button>
+      {model.recoveryOnly ? null : (
+        <button
+          type="button"
+          disabled={model.busy}
+          onClick={() => {
+            void model.execute();
+          }}
+        >
+          {p.text("ui.retryExact")}
+        </button>
+      )}
       <button
         className="primary"
         type="button"

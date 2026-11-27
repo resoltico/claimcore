@@ -41,7 +41,7 @@ test("a mismatched operation echo retains the draft and cannot enable confirmati
     "ClaimCore sent an unexpected response (HTTP 200).",
   );
   await expect(
-    page.getByLabel("Case reference", {
+    page.getByLabel("Incident description", {
       exact: true,
     }),
   ).toHaveValue(reference);

@@ -199,7 +199,6 @@ let private initialize
     directory
     (postgres: PostgreSqlContainer)
     (identity: IdentityServer.Identity)
-    referencePolicy
     admin
     (environment: Dictionary<string, string>)
     =
@@ -217,8 +216,6 @@ let private initialize
             [
                 "initialize"
                 "Etc/UTC"
-                "--case-reference-policy"
-                CaseReferencePolicy.token referencePolicy
                 "--owner-issuer"
                 identity.Issuer
                 "--owner-subject"
@@ -256,7 +253,7 @@ let private initialize
                 (PostgresFixture.runtimeConnection postgres)
     }
 
-type Fixture(?referencePolicy: CaseReferencePolicy) =
+type Fixture() =
     let postgresImage, initdbArguments = PostgresBaseline.configuration ()
     let ownedDirectory = FixtureCleanup.OwnedDirectory()
     let directory = ownedDirectory.Path
@@ -552,6 +549,25 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
 
         adminEnvironment["CLAIMCORE_RESTORE_TRANSITION"] <- transition.ToString("D")
 
+    member _.RecordRestoreGap(installation: Guid, transition: Guid) =
+        use connection =
+            new NpgsqlConnection(
+                File.ReadAllText adminEnvironment["CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE"]
+            )
+
+        connection.Open()
+
+        use command =
+            new NpgsqlCommand(
+                "SELECT claimcore_witness.record_gap($1,$2,'WAL_UNAVAILABLE')",
+                connection
+            )
+
+        command.Parameters.Add(NpgsqlParameter(Value = installation)) |> ignore
+        command.Parameters.Add(NpgsqlParameter(Value = transition)) |> ignore
+
+        Expect.equal (command.ExecuteScalar()) (box true) "The logical backup lacks WAL proof"
+
     member _.Complete() = completed <- true
 
     member _.RetainServiceFailureEvidence destination =
@@ -567,14 +583,7 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
 
             let! witnessSettings = initializeWitness root directory witness adminEnvironment
 
-            let! runtime =
-                initialize
-                    directory
-                    postgres
-                    identity
-                    (defaultArg referencePolicy CaseReferencePolicy.CustomAllowed)
-                    admin
-                    adminEnvironment
+            let! runtime = initialize directory postgres identity admin adminEnvironment
 
             let settings = NpgsqlConnectionStringBuilder(File.ReadAllText runtime)
             let relay = new CommitReplyProxy.Proxy(settings.Host |> nonNull, settings.Port)

@@ -9,10 +9,8 @@ type Violation =
     | ControlCharacters
     | FormattingCharacter
     | ReferenceFormat
-    | CustomReferenceNotAllowed
     | CountryFormat
     | PrincipalFormat
-    | CaseReferencePolicyFormat
     | CaseIdRequired
     | CaseSelectionInvalid
     | ActorIdRequired

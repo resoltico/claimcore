@@ -78,10 +78,9 @@ module internal Fold =
         |> Option.map Person.access
         |> AccessView.ofActor
 
-    let familyEnvironment policy state principal maintenance caseId =
+    let familyEnvironment state principal maintenance caseId =
         {
-            FamilyEnvironment.CaseReferencePolicy = policy
-            Requester = requester state principal
+            FamilyEnvironment.Requester = requester state principal
             RequesterPrincipal = principal
             Maintenance = maintenance
             ReferenceOwner =
@@ -172,14 +171,14 @@ module internal Fold =
             state.NaturalKeys
         |> Option.bind ActorId.create
 
-    let snapshot policy state principal maintenance selected binding inputs =
+    let snapshot state principal maintenance selected binding inputs =
         match selected with
         | Task.Family task ->
             let before = Binding.caseTarget binding |> Option.bind (resolveFamily state)
 
             DecisionSnapshot.family
                 task
-                (familyEnvironment policy state principal maintenance (before |> Option.map _.Id))
+                (familyEnvironment state principal maintenance (before |> Option.map _.Id))
                 (before |> Option.map DecisionFacts.fromReplay)
                 (before
                  |> Option.bind (fun family ->
@@ -422,7 +421,7 @@ module internal Fold =
         | _ -> expected
 
     /// Validates every accepted root, including executor and structural rules after private erasure.
-    let append installation policy state (record: RetainedOperation) =
+    let append installation state (record: RetainedOperation) =
         let header = record.Root.Header
 
         if
@@ -485,8 +484,7 @@ module internal Fold =
                                     Map.tryFind id state.Families
                                     |> Option.map DecisionFacts.fromReplay
 
-                                let environment =
-                                    familyEnvironment policy state principal false (Some id)
+                                let environment = familyEnvironment state principal false (Some id)
 
                                 opening.Replay
                                     context
@@ -499,7 +497,6 @@ module internal Fold =
                             | _ ->
                                 let current =
                                     snapshot
-                                        policy
                                         state
                                         principal
                                         false
@@ -571,7 +568,9 @@ module internal Fold =
                                                             ))
                                                         map
 
-                                                if
+                                                if compartment.RelationshipCleared then
+                                                    missing, present
+                                                elif
                                                     Compartment.content compartment
                                                     |> Option.isSome
                                                 then

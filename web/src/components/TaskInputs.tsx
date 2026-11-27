@@ -15,7 +15,7 @@ import { inputChoiceRestriction } from "../operation/inputChoices";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
-import { openingReferenceInput, taskInput, taskScalar } from "../protocol/taskCatalog";
+import { taskInput, taskScalar } from "../protocol/taskCatalog";
 import {
   isFormCollection,
   formValueText,
@@ -163,12 +163,7 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
     error,
     sharedErrorId,
     onChange: (next: string) => {
-      if (
-        props.task.creates &&
-        input.mode === "OPTIONAL" &&
-        input.id !== openingReferenceInput(props.task)?.id &&
-        next === ""
-      ) {
+      if (props.task.creates && input.mode === "OPTIONAL" && next === "") {
         props.onFieldsChange({}, [input.id]);
       } else {
         props.onChange(input.id, next);
@@ -328,11 +323,9 @@ const SelectedValue = ({ input, peer, ...props }: InputProps & { input: Input; p
               );
             }}
           />
-          {input.id === openingReferenceInput(props.task)?.id
-            ? p.text("label.useCustomCaseReference")
-            : p.text(input.mode === "OPTIONAL" ? "ui.recordOptionalFact" : "ui.changeFact", {
-                field: title,
-              })}
+          {p.text(input.mode === "OPTIONAL" ? "ui.recordOptionalFact" : "ui.changeFact", {
+            field: title,
+          })}
         </label>
       </legend>
       {selected && clear ? (
@@ -363,9 +356,7 @@ const permitted = (input: Input, props: Props): boolean => {
     input.id !== "field:caseReference" ||
     props.task.subject !== "PEOPLE" ||
     grantScope(props.values) === "CASE";
-  const retainedDraft =
-    input.id === openingReferenceInput(props.task)?.id && Object.hasOwn(props.values, input.id);
-  return authored && (editable === undefined || editable.has(input.id) || retainedDraft) && scoped;
+  return authored && (editable === undefined || editable.has(input.id)) && scoped;
 };
 const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean => {
   // The grant scope already controls omission; a visible case reference is required.
@@ -379,8 +370,7 @@ const selectsValue = (input: Input, subject: Props["task"]["subject"]): boolean 
   );
 };
 const selectsField = (input: Input, task: Props["task"]) =>
-  input.id === openingReferenceInput(task)?.id ||
-  (!task.creates && selectsValue(input, task.subject));
+  !task.creates && selectsValue(input, task.subject);
 
 const maySelectGrantTarget = (editable: ReadonlyArray<string> | undefined) =>
   editable === undefined ||
@@ -640,8 +630,6 @@ const CollectionRows = ({
   );
 };
 export const TaskInputs = (props: Props) => {
-  const p = usePresentation();
-  const reference = openingReferenceInput(props.task);
   const inputProps = { ...props, defaults: props.task.defaults };
   const visible = props.task.inputs.filter((input) => permitted(input, props));
   const groups = visible.filter((input) => taskInput(input.id).kind === "GROUP");
@@ -651,9 +639,6 @@ export const TaskInputs = (props: Props) => {
   );
   return (
     <>
-      {reference !== undefined && !Object.hasOwn(props.values, reference.id) ? (
-        <p role="status">{p.text("label.caseReferencePending")}</p>
-      ) : null}
       <Fields inputs={ordinary} showSections {...inputProps} />
       {groups.map((group) => {
         const metadata = taskInput(group.id);

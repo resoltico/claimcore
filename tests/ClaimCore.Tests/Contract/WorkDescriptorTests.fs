@@ -182,7 +182,7 @@ let tests =
                             "Zero and producer order are retained"
                     | _ -> failtest "Expected a result table")
             testCase "full case facts retain non-listed fields and pair money once" (fun () ->
-                let reference = DomainInputs.reference "CARD-1"
+                let reference = DomainInputs.reference "CC-J4K6-DM18-AA8G-2QMK-28"
 
                 let facts: CaseFields =
                     {
@@ -231,7 +231,6 @@ let tests =
 
                 let reply: CaseReadModel =
                     {
-                        MatchedReference = None
                         Parties = []
                         PartyOffers = []
                         RelatedCases = RelatedCaseLinks.empty
@@ -242,7 +241,7 @@ let tests =
                                     CaseFixtures.caseId (
                                         Guid.Parse "80000000-0000-7000-8000-000000000002"
                                     )
-                                Reference = DomainInputs.reference "ERASED-1"
+                                Reference = DomainInputs.reference "CC-KJF5-1B4Z-8Y0G-05TZ-09"
                                 Revision = CaseFixtures.revision 2L
                                 State = state
                             }
@@ -315,7 +314,7 @@ let tests =
                 let reply: ReminderReadModel =
                     {
                         Reminder = reminder
-                        Reference = DomainInputs.reference "REM-1"
+                        Reference = DomainInputs.reference "CC-HQE7-CXQE-A77N-GE45-60"
                         Claimants =
                             [
                                 (PartyName.parse "Synthetic claimant"

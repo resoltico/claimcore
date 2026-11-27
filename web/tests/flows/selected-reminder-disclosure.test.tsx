@@ -14,7 +14,7 @@ it.each([
 ])(
   "bounds $kind exact-reminder refusal through the real parent loading/remount lifecycle",
   async ({ reminderId }) => {
-    navigate(`/cases/reference/CASE-1/reminders/${reminderId}`, true);
+    navigate(`/cases/reference/CC-55KW-SSJ4-8HMS-G1BH-73/reminders/${reminderId}`, true);
     let observations = 0;
     const get = mockEndpoint("case.get").mockImplementation(async () => {
       await new Promise((resolve) => {
@@ -56,7 +56,7 @@ it.each([
     });
     render(
       <CaseDetail
-        target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+        target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }}
         reloadSignal={0}
         definition={definition.catalog}
         onBack={vi.fn()}

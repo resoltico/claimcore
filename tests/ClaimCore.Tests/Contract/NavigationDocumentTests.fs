@@ -36,7 +36,7 @@ let private reminder =
 let case: CaseSummary =
     {
         CaseId = parent
-        Reference = DomainInputs.reference "CASE-NAV"
+        Reference = DomainInputs.reference "CC-72W5-3CKM-0DYE-SGWN-44"
         Revision = Revision.first
         WorkRevision = Revision.zero
         CanAssign = false
@@ -122,53 +122,27 @@ let tests =
     testList
         "human list navigation"
         [
-            testCase
-                "the exact case document links to the recorded earlier selector only when supplied"
-                (fun () ->
-                    for matched, target in
-                        [
-                            None, CaseSelector.Id parent
-                            Some(DomainInputs.reference "Case-Old"),
-                            CaseSelector.Reference "Case-Old"
-                        ] do
-                        let value =
-                            CaseListScreen.document
-                                {
-                                    Basis = DomainInputs.workBasis
-                                    Items = []
-                                    Offers = []
-                                    NextCursor = None
-                                    AuthorizedScopeEmpty = false
-                                    ExactReference =
-                                        Some
-                                            {
-                                                CaseId = parent
-                                                CaseReference = case.Reference
-                                                MatchedReference = matched
-                                            }
-                                }
+            testCase "exact reference results open the durable Case ID" (fun () ->
+                let page =
+                    CaseListScreen.document
+                        {
+                            Basis = DomainInputs.workBasis
+                            Items = []
+                            Offers = []
+                            NextCursor = None
+                            AuthorizedScopeEmpty = false
+                            ExactReference =
+                                Some
+                                    {
+                                        CaseId = parent
+                                        CaseReference = case.Reference
+                                    }
+                        }
 
-                        Expect.equal
-                            (value.Links |> List.map (fun named -> named.Relation, named.Link))
-                            [ LinkRelation.OpenCase, Link.CaseGet { Target = target } ]
-                            "Core publishes the admitted exact target"
-
-                        let facts =
-                            value.Screen.Regions
-                            |> List.choose (fun region ->
-                                match region.Role, region.Content with
-                                | RegionRole.Facts, RegionContent.Entries entries -> Some entries
-                                | _ -> None)
-                            |> List.exactlyOne
-
-                        Expect.equal
-                            (facts |> List.map (fun item -> item.Key, item.Value))
-                            ([ "exactReference", PresentedValue.Reference case.Reference ]
-                             @ (matched
-                                |> Option.map (fun reference ->
-                                    "matchedReference", PresentedValue.Reference reference)
-                                |> Option.toList))
-                            "The exact presentation shows the current and supplied historical references")
+                Expect.equal
+                    (page.Links |> List.map (fun named -> named.Relation, named.Link))
+                    [ LinkRelation.OpenCase, Link.caseById parent ]
+                    "Entry through the generated reference yields stable navigation")
             testCase "typed row destinations travel with their captions and cursor" (fun () ->
                 let values = documents ()
 

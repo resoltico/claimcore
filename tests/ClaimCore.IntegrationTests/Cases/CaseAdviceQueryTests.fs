@@ -107,7 +107,7 @@ let tests =
                     Service.get
                         (core principal)
                         {
-                            Target = CaseSelector.Reference "ADVICE-1"
+                            Target = StoreFixtures.caseTarget database.Fixture "ADVICE-1"
                         }
                         token
 
@@ -145,7 +145,6 @@ let tests =
                         [
                             "case.open"
                             "case.amendRegistration"
-                            "case.changeReference"
                             "case.correct"
                             "case.decide"
                             "case.withdrawDecision"

@@ -12,12 +12,24 @@ module DisclosureTrailScreen =
     let private exportField render value (item: RecordedDisclosure) =
         item.Event.Export |> Option.map value |> optional render
 
-    let private selection (value: Map<string, string>) =
-        value
-        |> Map.toList
-        |> List.map (fun (key, parameter) -> key + "=" + parameter)
+    let private selection (value: DisclosureExportSelection) =
+        [
+            $"filtered={string value.Filtered |> fun flag -> flag.ToLowerInvariant()}"
+            $"paged={string value.Paged |> fun flag -> flag.ToLowerInvariant()}"
+            yield! value.Order |> Option.map (CaseListOrder.token >> (+) "order=") |> Option.toList
+            yield!
+                value.Grouping
+                |> Option.map (Vocabulary.token CaseGrouping.vocabulary >> (+) "grouping=")
+                |> Option.toList
+        ]
         |> String.concat "\n"
         |> PresentedValue.Narrative
+
+    let private pageField render get (item: RecordedDisclosure) =
+        item.Event.Page |> Option.map get |> optional render
+
+    let private subjects format values =
+        values |> List.map format |> String.concat "\n" |> PresentedValue.Narrative
 
     let private columns =
         [
@@ -38,11 +50,29 @@ module DisclosureTrailScreen =
             column "outcome" "label.disclosureOutcome" Prominence.Secondary false (fun item ->
                 code DisclosureOutcome.vocabulary item.Event.Outcome)
             column
+                "rowCount"
+                "label.disclosureRowCount"
+                Prominence.Secondary
+                false
+                (pageField (int64 >> PresentedValue.Count) _.RowCount)
+            column
+                "cases"
+                "label.disclosedCases"
+                Prominence.Secondary
+                false
+                (pageField (subjects CaseId.format) _.Cases)
+            column
+                "people"
+                "label.disclosedPeople"
+                Prominence.Secondary
+                false
+                (pageField (subjects ActorId.format) _.People)
+            column
                 "exportQuery"
                 "label.disclosureExportQuery"
                 Prominence.Secondary
                 false
-                (exportField PresentedValue.Identifier _.Query)
+                (exportField (DisclosureExportQuery.token >> PresentedValue.Identifier) _.Query)
             column
                 "exportSelection"
                 "label.disclosureExportSelection"

@@ -27,8 +27,6 @@ let private page (outcome: Outcome<CaseSummaryPage>) =
     | Outcome.Succeeded value -> value
     | _ -> failtest "Expected authorized page"
 
-let private reference (summary: CaseSummary) = CaseReference.format summary.Reference
-
 let private setup (database: PostgresFixture.Database) =
     task {
         let! admin = caseWorker database.Fixture
@@ -145,7 +143,7 @@ type internal PausedPageStore
                             operation.Work tx
                 }
 
-let private freshAdvice (actor: ServiceContext) cursor current =
+let private freshAdvice (actor: ServiceContext) cursor current expected =
     task {
         Expect.isTrue
             ((page current).Offers
@@ -182,8 +180,8 @@ let private freshAdvice (actor: ServiceContext) cursor current =
                 token
 
         Expect.equal
-            ((page next).Items |> List.map reference)
-            [ "CASE-AFTER"; "CASE-B"; "CASE-C" ]
+            ((page fresh).Items @ (page next).Items |> List.map _.CaseId |> List.sort)
+            expected
             "The restarted traversal includes the newly accepted case"
 
         Expect.isFalse
@@ -278,11 +276,20 @@ let private snapshot (database: PostgresFixture.Database) =
         let! current = reading
 
         Expect.equal
-            ((page current).Items |> List.map reference)
-            [ "CASE-B"; "CASE-C" ]
+            ((page first).Items @ (page current).Items |> List.map _.CaseId |> List.sort)
+            ([ 10; 11; 12 ]
+             |> List.map (id database.Fixture >> CaseFixtures.caseId)
+             |> List.sort)
             "Authorization and data share the earlier read snapshot"
 
-        do! freshAdvice actor cursor current
+        do!
+            freshAdvice
+                actor
+                cursor
+                current
+                ([ 10; 11; 12; 13 ]
+                 |> List.map (id database.Fixture >> CaseFixtures.caseId)
+                 |> List.sort)
     }
 
 [<Tests>]

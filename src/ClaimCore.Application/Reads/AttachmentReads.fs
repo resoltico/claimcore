@@ -26,10 +26,10 @@ module internal AttachmentReads =
                 |> DatabaseSession.admitted Sequence.create
         }
 
-    let private withReadable (services: ServiceContext) target token capture read =
+    let private withReadable (services: ServiceContext) finalize reject target token capture read =
         task {
             match CaseRecords.validateSelector target with
-            | Error refusal -> return! RequestRefusals.read services token refusal
+            | Error refusal -> return! reject services token refusal
             | Ok() ->
                 let! result =
                     services.Store.Read
@@ -58,67 +58,108 @@ module internal AttachmentReads =
                                     }
                         }
 
-                return! DisclosureReads.complete services token result
+                return! finalize services token result
         }
 
+    let private observe (services: ServiceContext) kind attachment (view: CaseReadFacts) outcome =
+        DisclosureReads.observe
+            services.Principal
+            view.Actor
+            kind
+            (view.Case |> Option.map _.CaseId)
+            attachment
+            outcome
+
     let page (services: ServiceContext) target token =
-        withReadable services target token (fun _ outcome -> outcome, None) (fun tx view parent ->
-            task {
-                let! changes = AttachmentStorage.list tx parent.CaseId
-                let! basis = disclosure tx parent.CaseId
+        withReadable
+            services
+            DisclosureReads.complete
+            RequestRefusals.protectedRead
+            target
+            token
+            (fun view outcome ->
+                observe services DisclosureKind.AttachmentList None view outcome
+                |> DisclosureReads.withPage (fun (page: AttachmentPage) ->
+                    DisclosureReads.rows page.Items))
+            (fun tx view parent ->
+                task {
+                    let! changes = AttachmentStorage.list tx parent.CaseId
+                    let! basis = disclosure tx parent.CaseId
 
-                let! authors =
-                    changes
-                    |> List.map (_.Stamp.Authority >> ProjectionRows.familyActor)
-                    |> List.distinct
-                    |> PeopleReads.actorRefs tx
+                    let! authors =
+                        changes
+                        |> List.map (_.Stamp.Authority >> ProjectionRows.familyActor)
+                        |> List.distinct
+                        |> PeopleReads.actorRefs tx
 
-                let canEdit =
-                    CaseWorkPolicy.canEdit
-                        services.Principal
-                        view.Actor
-                        view.Maintenance.Active
-                        parent.Snapshot
+                    let canEdit =
+                        CaseWorkPolicy.canEdit
+                            services.Principal
+                            view.Actor
+                            view.Maintenance.Active
+                            parent.Snapshot
 
-                let rows =
-                    changes
-                    |> List.map (fun change ->
-                        let author = change.Stamp.Authority |> ProjectionRows.familyActor
+                    let rows =
+                        changes
+                        |> List.map (fun change ->
+                            let author = change.Stamp.Authority |> ProjectionRows.familyActor
 
-                        match
-                            change.Value,
-                            AttachmentId.create change.PartId,
-                            Map.tryFind author authors
-                        with
-                        | PartValue.Attachment(AttachmentEffect.Added(_, Some descriptor)),
-                          Some attachment,
-                          Some author ->
-                            Ok
-                                {
-                                    AttachmentRow.AttachmentId = attachment
-                                    Name = AttachmentIntent.name descriptor.Intent
-                                    Length = AttachmentIntent.length descriptor.Intent
-                                    RecordedAt = change.Stamp.RecordedAt
-                                    RecordedBy = author
-                                    CanWithdraw = canEdit
-                                    CanPreview = descriptor.Preview.IsSome
-                                }
-                        | _ -> Error CoreFault.StoreIntegrityError)
-                    |> QueryResults.collect
+                            match
+                                change.Value,
+                                AttachmentId.create change.PartId,
+                                Map.tryFind author authors
+                            with
+                            | PartValue.Attachment(AttachmentEffect.Added(_, Some descriptor)),
+                              Some attachment,
+                              Some author ->
+                                Ok
+                                    {
+                                        AttachmentRow.AttachmentId = attachment
+                                        Name = AttachmentIntent.name descriptor.Intent
+                                        Length = AttachmentIntent.length descriptor.Intent
+                                        RecordedAt = change.Stamp.RecordedAt
+                                        RecordedBy = author
+                                        CanWithdraw = canEdit
+                                        CanPreview = descriptor.Preview.IsSome
+                                    }
+                            | _ -> Error CoreFault.StoreIntegrityError)
+                        |> QueryResults.collect
 
-                return
-                    rows
-                    |> Result.map (fun rows ->
-                        {
-                            AttachmentPage.Basis = ServiceContext.basis services tx.ObservedAt
-                            CaseId = parent.CaseId
-                            Reference = parent.Snapshot.Reference
-                            Disclosure = basis
-                            Items = rows
-                            CanAdd = canEdit
-                        })
-                    |> Outcome.ofResult
-            })
+                    return
+                        rows
+                        |> Result.map (fun rows ->
+                            {
+                                AttachmentPage.Basis = ServiceContext.basis services tx.ObservedAt
+                                CaseId = parent.CaseId
+                                Reference = parent.Snapshot.Reference
+                                Disclosure = basis
+                                Items = rows
+                                CanAdd = canEdit
+                            })
+                        |> Outcome.ofResult
+                })
+
+    let private descriptor
+        (services: ServiceContext)
+        (tx: ReadTx)
+        (view: CaseReadFacts)
+        (parent: StoredCase)
+        attachmentId
+        =
+        task {
+            let! current = AttachmentStorage.current tx parent.CaseId attachmentId
+
+            return
+                AttachmentAccess.current
+                    services.Principal
+                    view.Actor
+                    parent.Snapshot
+                    (current
+                     |> Option.bind (fun change ->
+                         match change.Value with
+                         | PartValue.Attachment value -> Some value
+                         | _ -> None))
+        }
 
     let content preview (services: ServiceContext) (request: AttachmentReadRequest) token =
         let kind =
@@ -127,50 +168,73 @@ module internal AttachmentReads =
             else
                 DisclosureKind.AttachmentDownload
 
-        let capture (view: CaseReadFacts) outcome =
-            let caseId =
-                DisclosureReads.target request.Target (view.Case |> Option.map _.CaseId)
+        let capture view outcome =
+            observe services kind (Some request.AttachmentId) view outcome
 
-            DisclosureReads.observe
-                services.Principal
-                view.Actor
-                kind
-                caseId
-                (Some request.AttachmentId)
-                outcome
+        task {
+            // Preparing verified bytes does not authorize their release.
+            let! prepared =
+                withReadable
+                    services
+                    DisclosureReads.completePreparation
+                    RequestRefusals.read
+                    request.Target
+                    token
+                    (fun view outcome ->
+                        match outcome with
+                        | Outcome.Succeeded _ -> outcome, None
+                        | _ -> capture view outcome)
+                    (fun tx view parent ->
+                        task {
+                            match! descriptor services tx view parent request.AttachmentId with
+                            | Error refusal -> return Outcome.Rejected refusal
+                            | Ok descriptor when preview && descriptor.Preview.IsNone ->
+                                return Outcome.Rejected Refusal.AttachmentPreviewUnavailable
+                            | Ok descriptor ->
+                                let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
 
-        withReadable services request.Target token capture (fun tx view parent ->
-            task {
-                let! current = AttachmentStorage.current tx parent.CaseId request.AttachmentId
+                                let medium = if preview then descriptor.Preview else None
 
-                match
-                    AttachmentAccess.current
-                        services.Principal
-                        view.Actor
-                        parent.Snapshot
-                        (current
-                         |> Option.bind (fun change ->
-                             match change.Value with
-                             | PartValue.Attachment value -> Some value
-                             | _ -> None))
-                with
-                | Error refusal -> return Outcome.Rejected refusal
-                | Ok descriptor when not preview ->
-                    let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
-                    return Outcome.Succeeded { Bytes = bytes; Preview = None }
-                | Ok descriptor ->
-                    match descriptor.Preview with
-                    | None -> return Outcome.Rejected Refusal.AttachmentPreviewUnavailable
-                    | Some kind ->
-                        let! bytes = AttachmentStorage.read tx parent.CaseId descriptor
+                                if
+                                    preview
+                                    && AttachmentPreviewProfile.forName
+                                        (AttachmentIntent.name descriptor.Intent)
+                                        (VerifiedAttachment.bytes bytes)
+                                       <> medium
+                                then
+                                    return Outcome.Failed CoreFault.StoreIntegrityError
+                                else
+                                    return
+                                        Outcome.Succeeded(
+                                            parent.CaseId,
+                                            view.Actor.Actor |> Option.map _.ActorId,
+                                            descriptor,
+                                            { Bytes = bytes; Preview = medium }
+                                        )
+                        })
 
-                        let actual =
-                            AttachmentPreviewProfile.forName
-                                (AttachmentIntent.name descriptor.Intent)
-                                (VerifiedAttachment.bytes bytes)
-
-                        if actual = descriptor.Preview then
-                            return Outcome.Succeeded { Bytes = bytes; Preview = Some kind }
-                        else
-                            return Outcome.Failed CoreFault.StoreIntegrityError
-            })
+            match prepared with
+            | Outcome.Failed fault -> return DisclosureReads.safeOutcome (Outcome.Failed fault)
+            | Outcome.Rejected refusal ->
+                return DisclosureReads.safeOutcome (Outcome.Rejected refusal)
+            | Outcome.Succeeded(caseId, requester, expected, content) ->
+                return!
+                    withReadable
+                        services
+                        DisclosureReads.complete
+                        RequestRefusals.protectedRead
+                        (CaseSelector.Id caseId)
+                        token
+                        capture
+                        (fun tx view parent ->
+                            task {
+                                match! descriptor services tx view parent request.AttachmentId with
+                                | Ok current when
+                                    current = expected
+                                    && requester.IsSome
+                                    && requester = (view.Actor.Actor |> Option.map _.ActorId)
+                                    ->
+                                    return Outcome.Succeeded content
+                                | _ -> return QueryResults.unavailable
+                            })
+        }

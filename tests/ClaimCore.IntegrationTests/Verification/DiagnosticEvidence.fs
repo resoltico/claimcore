@@ -81,7 +81,7 @@ let internal scalarEvidence () =
             let! outcome = Service.executeSubmission actor request ct
             results.Add(refused outcome)
 
-        let target = CaseSelector.Reference "REACH-WORK"
+        let target = caseTarget fixture "REACH-WORK"
 
         let work operation responsible summary =
             (ClaimCore.TestSupport.Submissions.createRaw)
@@ -209,7 +209,6 @@ let internal scalarEvidence () =
         return List.ofSeq results
     }
 
-let private stateReference = "REACH-1"
 
 let internal stateScenarios () =
     let decided = "case.decide", Submissions.fields (DecisionInput.values decision)
@@ -249,7 +248,6 @@ let internal stateScenarios () =
         Submissions.updates (DecisionUpdateInput.values (DomainInputs.decisionUpdate value))
 
     [
-        [], ("case.open", Submissions.fields (RegistrationInput.values StoreFixtures.registration))
         [], ("case.reopen", CaseTransitionInputs.reopened)
         [ closed ], closed
         [ closed ], decided
@@ -265,12 +263,6 @@ let internal stateScenarios () =
                  SubmissionValue.Text "20000000-0000-7000-8000-000000000003"
              ])
         [], ("case.withdrawDecision", Map.empty)
-        [],
-        ("case.changeReference",
-         Map.ofList
-             [
-                 Submissions.input InputTarget.NewCaseReference, SubmissionValue.Text stateReference
-             ])
         [ voided ], closed
         [ voided ], voided
         [],
@@ -307,7 +299,6 @@ let internal stateEvidence () =
 
         acceptedPeople granted
         let evidence = ResizeArray<_>()
-        let newReference = Submissions.input InputTarget.NewCaseReference
 
         // Each scenario changes one case. Separate case references and operation numbers keep
         // those histories independent; the actor and installed database are common inputs.
@@ -331,12 +322,6 @@ let internal stateEvidence () =
 
                 accepted outcome |> ignore
 
-            let values =
-                match Map.tryFind newReference values with
-                | Some(SubmissionValue.Text value) when value = stateReference ->
-                    Map.add newReference (SubmissionValue.Text reference) values
-                | _ -> values
-
             let! outcome =
                 execute
                     actor
@@ -344,10 +329,7 @@ let internal stateEvidence () =
                         fixture
                         (firstOperation + setup.Length + 1)
                         reference
-                        (if taskName = "case.open" then
-                             0L
-                         else
-                             int64 (setup.Length + 1))
+                        (int64 (setup.Length + 1))
                         taskName
                         values)
 
@@ -379,7 +361,7 @@ let internal queryEvidence fixture actor =
         let traversal: CaseListRequest =
             {
                 Page = { AfterCursor = None; Limit = 1 }
-                Filter = CaseListFilter.create [] [] [] (Some "TRAVERSAL") CaseListOrder.Reference
+                Filter = CaseListFilter.create [] [] [] (Some "CC-") CaseListOrder.Reference
             }
 
         let! first = Service.list actor traversal ct
@@ -412,7 +394,7 @@ let internal queryEvidence fixture actor =
             (Service.get
                 actor
                 ({
-                    Target = CaseSelector.Reference("MISSING")
+                    Target = caseTarget fixture "MISSING"
                 })
                 (ct))
 
@@ -626,7 +608,7 @@ let internal identityEvidence fixture actor =
                     "note.add"
                     (id fixture 900105)
                     (ClaimCore.Application.Contracts.OperationBinding.Note(
-                        (CaseSelector.Reference "REACH-1"),
+                        (caseTarget fixture "REACH-1"),
                         None
                     ))
                     (Map.ofList
@@ -647,7 +629,7 @@ let internal identityEvidence fixture actor =
                 (Submissions.createRaw
                     "case.erase"
                     (id fixture 900106)
-                    (OperationBinding.Case(CaseSelector.Reference "REACH-1", 1L, None, Some 0L))
+                    (OperationBinding.Case(caseTarget fixture "REACH-1", 1L, None, Some 0L))
                     Map.empty)
 
         return

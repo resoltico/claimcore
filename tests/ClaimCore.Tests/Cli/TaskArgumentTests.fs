@@ -92,7 +92,7 @@ let tests =
                         [
                             "case"
                             "record-payment"
-                            "TASK"
+                            "CC-WC4H-91H4-FRDA-133J-05"
                             "--expected-revision"
                             "7"
                             "--payment-date"
@@ -108,7 +108,10 @@ let tests =
 
                 Expect.equal
                     command.Binding
-                    (Binding.Case(CaseSelector.Reference "TASK", Revision.create 7L |> Option.get))
+                    (Binding.Case(
+                        CaseSelector.Reference "CC-WC4H-91H4-FRDA-133J-05",
+                        Revision.create 7L |> Option.get
+                    ))
                     "Authored selector and version"
 
                 Expect.equal
@@ -132,7 +135,7 @@ let tests =
                             [
                                 "case"
                                 "correct"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--expected-revision"
                                 "7"
                                 "--registration"
@@ -229,7 +232,7 @@ let tests =
                                 "close"
                                 "--outcome"
                                 "other"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--expected-revision"
                                 "-1"
                             ]
@@ -238,14 +241,14 @@ let tests =
                                 "close"
                                 "--outcome"
                                 "other"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--expected-revision"
                                 "9007199254740992"
                             ]
                             [
                                 "case"
                                 "correct"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--expected-revision"
                                 "1"
                                 "--decision"
@@ -256,7 +259,7 @@ let tests =
                             [
                                 "case"
                                 "amend-registration"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--expected-revision"
                                 "1"
                                 "--claimed-amount"
@@ -265,7 +268,7 @@ let tests =
                             [
                                 "reminder"
                                 "complete"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--reminder-id"
                                 "00000000-0000-4000-8000-000000000001"
                                 "--expected-reminder-revision"
@@ -274,7 +277,7 @@ let tests =
                             [
                                 "case"
                                 "amend-registration"
-                                "TASK"
+                                "CC-WC4H-91H4-FRDA-133J-05"
                                 "--expected-revision"
                                 "1"
                                 "--clear-claimed-amount"
@@ -308,7 +311,14 @@ let creationBasis =
         match
             Grammar.prepare
                 (fun () -> operation)
-                [ "case"; "open"; "--case-reference"; "TASK"; "--expected-revision"; "7" ]
+                [
+                    "case"
+                    "open"
+                    "--case-reference"
+                    "CC-WC4H-91H4-FRDA-133J-05"
+                    "--expected-revision"
+                    "7"
+                ]
         with
         | Error issues ->
             Expect.isTrue

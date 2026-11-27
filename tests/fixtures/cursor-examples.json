@@ -2,9 +2,9 @@
   "accepted": [
     {
       "endpoint": "case.list",
-      "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"assignment\":null,\"due\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"responsibleActor\":null,\"status\":[],\"text\":null,\"view\":null},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASES\",\"v\":7}",
-      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJyZXNwb25zaWJsZUFjdG9yIjpudWxsLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo3fQ",
-      "tokenLength": 350
+      "canonicalJson": "{\"after\":{\"reference\":\"CC-TGZB-ASN3-7WQW-9Y2R-10\"},\"filters\":{\"assignment\":null,\"due\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"responsibleActor\":null,\"status\":[],\"text\":null,\"view\":null},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASES\",\"v\":7}",
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJDQy1UR1pCLUFTTjMtN1dRVy05WTJSLTEwIn0sImZpbHRlcnMiOnsiYXNzaWdubWVudCI6bnVsbCwiZHVlIjpudWxsLCJsaWZlY3ljbGUiOltdLCJvcmRlciI6IlJFRkVSRU5DRSIsInByb2dyZXNzIjpbXSwicmVzcG9uc2libGVBY3RvciI6bnVsbCwic3RhdHVzIjpbXSwidGV4dCI6bnVsbCwidmlldyI6bnVsbH0sImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkNBU0VTIiwidiI6N30",
+      "tokenLength": 371
     },
     {
       "endpoint": "case.timeline",

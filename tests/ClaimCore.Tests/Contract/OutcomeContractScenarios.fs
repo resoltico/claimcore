@@ -109,7 +109,6 @@ let internal queryCodecs () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
-                        MatchedReference = None
                         Parties = []
                         PartyOffers = []
                         RelatedCases = RelatedCaseLinks.empty
@@ -166,7 +165,7 @@ let internal queryCodecs () =
                     Disclosure = HistoryDisclosure.Full
                     AttachmentDisclosure = Sequence.zero
                     CaseId = CaseFixtures.caseId id
-                    Reference = CaseFixtures.reference "WIRE"
+                    Reference = CaseFixtures.reference "CC-216H-P98S-25MQ-ABXK-91"
                     Basis = DomainInputs.workBasis
                     Items = []
                     NextCursor = None
@@ -260,7 +259,7 @@ let internal disclosures () =
                                 CaseFixtures.caseId (
                                     System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                                 )
-                            Reference = CaseFixtures.reference "UNIT-001"
+                            Reference = CaseFixtures.reference "CC-ZQ16-FT6R-54T8-E39K-67"
                             Revision = CaseFixtures.revision 1L
                             Act = (TaskId.ofLiteral "case.open")
                             Snapshot = snapshot

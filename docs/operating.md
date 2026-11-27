@@ -191,17 +191,9 @@ Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-sub
 Supply `--owner-contact TEXT` and repeat `--owner-role ROLE` as needed. The canonical IANA business zone is fixed for the installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
-During fresh setup, omitting `--case-reference-policy` selects `SYSTEM_ASSIGNED_ONLY`. Authorized
-people and service accounts receive generated references. Set `--case-reference-policy CUSTOM_ALLOWED`
-to let those callers supply a custom reference or request generation by omitting it. The database owner
-chooses the policy at initialization. It is fixed for the life of the installation. Owner recovery
-leaves the policy in place.
-
-Initialization and status report the effective policy. On an existing supported installation,
-`--skip-existing` returns `INITIALIZATION_SKIPPED` with its installation ID and recorded policy.
-An explicitly supplied policy must match. Invalid configurations, including discrepancies with the
-first accepted owner operation, refuse without changing the installation. The evaluation Compose
-initializer omits the option, so a fresh evaluation installation uses generated references.
+ClaimCore issues permanent case references when cases are opened. Setup has no reference-policy
+configuration. On an existing supported installation, `--skip-existing` returns
+`INITIALIZATION_SKIPPED` with its installation ID after checking the first accepted owner operation.
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Initialization records the
 human owner, authored profile and optional CASE_HANDLER, PAYMENT_RECORDER, DATA_STEWARD or AUDITOR roles
@@ -211,7 +203,7 @@ uncertain result. Remote database connections require verified TLS.
 
 | Owner command | Task |
 | --- | --- |
-| `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone, case-reference policy and first owner atomically. |
+| `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
 | `head` | Emit a reusable checkpoint with installation, operation prefix/hash and expiry frontier. |
 | `status` | Read identity, formats, zone, policy, head, maintenance, recovery publication generation and counts. |
 | `maintenance acquire GENERATION PAUSE_ID` | Serialize with earlier writes and pause register writes. |
@@ -454,15 +446,19 @@ An Auditor with an installation-wide grant can open **Access and export log** in
 the continuation to review further pages. Open a row’s details or use `--details` in the CLI
 to see complete identifiers. Each authorized page read adds a trail-read event.
 
-The trail records case detail, timeline and receipt reads, attachment downloads and previews,
-exports, and refused case or attachment access. It uses actor, case and attachment identifiers.
-Exports record their query, data row count, and selections such as IDs, dates and fixed choices.
-Free-text searches and case-reference selectors are recorded by their presence. Lists and
-searches do not add events.
+The trail covers case details and work, lists and searches, people reads, operation receipts,
+attachments, exports, and attributable refusals. Refused selectors leave no case or attachment
+identifier. Export events record the query, safe selection information, and the returned data
+row count. Searches and case-reference selectors record presence without their submitted text.
+The first trail page fixes an upper bound for the traversal, so its own read events appear in
+a fresh traversal.
 
-A read that requires an event can release its content only after recording succeeds. A failed
-trail write returns a store fault. Housekeeping prunes records older than 24 calendar months
-in bounded batches using UTC. Whole-case erasure leaves trail records until that cutoff.
+An event records the application's authorization decision or release attempt. Delivery may stop
+after the event commits. Protected content is released after the committed event is acknowledged
+by the independent witness. A failed audit or acknowledgement withholds the private response.
+An operation may already have committed when its receipt is unavailable. Use the original
+operation ID for a fresh lookup. Housekeeping prunes records older than 24 calendar months in
+bounded batches using UTC. Whole-case erasure leaves trail records until that cutoff.
 
 ## Daily reminder digest
 
@@ -548,8 +544,8 @@ claimcore-server head > /PRIVATE/checkpoint.json
 ```
 
 The checkpoint binds the installation, an accepted operation prefix and its hash, and `expiredBefore`.
-For rebuild or restore admission, the prefix must include operation one, which retains the
-case-reference policy. A sequence-zero checkpoint predates that evidence and is refused before changes
+For rebuild or restore admission, the prefix must include the first owner operation. A sequence-zero
+checkpoint predates that evidence and is refused before changes
 to projections, sessions or the expiry frontier. An older trusted prefix is valid in newer matching history when the current frontier is at least the trusted
 frontier. Capture evidence while traffic is isolated or account for activity after capture.
 Observations newer than every independently retained trusted checkpoint cannot be recovered from
@@ -701,11 +697,9 @@ without forcibly disposing an active provider. `RUNTIME_DRAIN_BOUND_EXPIRED` and
 Late drain remains awaitable, and a failed close never reports successful drain.
 
 Every runtime read, write, Context, session and housekeeping transaction checks its admitted
-installation ID, canonical business zone and case-reference policy before accessing installation data.
-Changes to that tuple after startup cause the process to refuse transactions. Startup checks that the
-recorded policy matches the hashed first owner operation without decrypting the profile. Compare
-a separately retained checkpoint to detect changes to its trusted prefix, including a coherent
-rewrite of the policy and bootstrap operation. Checkpoints, traffic isolation and restore admission
+installation ID, business zone and exact baseline before accessing installation data. Startup checks
+the authenticated first owner operation without decrypting the profile. Compare a separately retained
+checkpoint to detect changes to its trusted prefix. Checkpoints, traffic isolation and restore admission
 remain required.
 
 Readiness checks supported installation/schema access; liveness is separate. Neither proves all work is
@@ -733,12 +727,9 @@ sensitive when preparing support reports.
 
 ## Erasure limits
 
-ERASE atomically removes related case, payment, work, reminder, note, party and source-link payloads/nonces, snapshots, narratives, search,
-responsibility, derived follow-up and projected financial values. It retains CaseId, reference, versions,
-change time, attribution and ledger metadata. All earlier custom references stay permanently reserved
-to their case. In `CUSTOM_ALLOWED`, use identifiers free of personal data. The input grammar alone
-cannot prevent personal data from being entered. Authorized registrars can infer whether a custom
-value is reserved from a generic write refusal. Opening review reveals no reservation status.
+ERASE atomically clears private case, payment, work, reminder, note, party and relationship values
+from the live register. Erasing either endpoint closes its links and clears their private contents.
+Case ID, generated reference, versions, change time, attribution and ledger metadata remain.
 Payment projections retain accepting IDs, parent IDs and effect positions. Erasure clears payment
 dates, amounts, directions, currencies, references and payees. Removal markers remain and
 rebuild restores them from retained payment effects. Closure outcomes and operation attribution
@@ -751,8 +742,7 @@ when the accepting record is intact and you have independently retained bytes. U
 for damage to the accepting record or its references. Withdrawn files remain in the database and
 its backups until the applicable erasure and backup retention policies take effect.
 Verification compares available payment facts with accepted history and checks the cleared shape
-after erasure. It uses the retained opening effect and any retained custom input to check policy,
-assignment format, exact spelling, Case ID and uniqueness. The ledger does not preserve the entropy
+after erasure. It checks the retained opening effect for its issued reference, Case ID and uniqueness. The ledger does not preserve the entropy
 used to generate an accepted reference or the contents of erased private facts. Authority identity and
 grants remain.
 

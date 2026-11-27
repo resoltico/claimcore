@@ -171,6 +171,29 @@ let tests =
                     Expect.isFalse
                         (rendered.Contains "FORM_CONTEXT_CANARY")
                         "Form context is not a second current-fact display")
+            testCase
+                "the actor router rejects a protected query bound to an unchecked handler"
+                (fun () ->
+                    let unchecked =
+                        ClaimCore.Server.Route.representedRead
+                            Api.caseGet
+                            HumanCaseDocument.ofCore
+                            (fun _ _ _ ->
+                                Task.FromResult(Outcome.Succeeded ResponseExamples.caseRead))
+
+                    let endpoint = ActorEndpoint.Query QueryTaskId.CaseGet
+
+                    Expect.throws
+                        (fun () ->
+                            ClaimCore.Server.ApiRoutes.requireClassification endpoint unchecked
+                            |> ignore)
+                        "A handler that can render a raw outcome cannot serve the protected route"
+
+                    let protectedRoute = ClaimCore.Server.ApiRoutes.route endpoint
+
+                    Expect.isTrue
+                        protectedRoute.Protected
+                        "The production route requires an application release")
             testCaseAsync
                 "a selected representation projects one use-case result without a second invocation"
                 (async {
@@ -187,7 +210,7 @@ let tests =
                     let input =
                         Api.caseGet.Input.Write
                             {
-                                Target = CaseSelector.Reference "CASE-1"
+                                Target = CaseSelector.Reference "CC-55KW-SSJ4-8HMS-G1BH-73"
                             }
 
                     let prepared = route.Prepare input |> required
@@ -422,7 +445,10 @@ let tests =
                         Submissions.create
                             "case.close"
                             (OperationId.value ResponseExamples.receipt.OperationId)
-                            (Binding.Case(CaseSelector.Reference "CASE-1", Revision.first))
+                            (Binding.Case(
+                                CaseSelector.Reference "CC-55KW-SSJ4-8HMS-G1BH-73",
+                                Revision.first
+                            ))
                             (Submissions.fields [ BusinessField.Outcome, "OTHER" ])
 
                     let original = Frames.create Api.operationExecute input |> required
@@ -449,7 +475,7 @@ let tests =
                         Frames.create
                             Api.caseGet
                             {
-                                Target = CaseSelector.Reference "CASE-1"
+                                Target = CaseSelector.Reference "CC-55KW-SSJ4-8HMS-G1BH-73"
                             }
                         |> required
                         |> Frames.withRepresentation Representation.Human

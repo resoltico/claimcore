@@ -30,7 +30,7 @@ let private opening overrides =
 
     let input = InputMap.create values Map.empty |> Option.get
 
-    ClaimCore.Tests.TaskBuilders.openCustom
+    ClaimCore.Tests.TaskBuilders.openCase
         (ClaimCore.Tests.TaskBuilders.context 1)
         ClaimCore.Tests.TaskBuilders.environment
         None

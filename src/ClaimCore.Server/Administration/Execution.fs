@@ -23,8 +23,8 @@ module Execution =
 
         task {
             match command with
-            | Initialize(zone, owner, policy, true) ->
-                let! result = administration.InitializeIfMissing(zone, owner, policy, token)
+            | Initialize(zone, owner, true) ->
+                let! result = administration.InitializeIfMissing(zone, owner, token)
 
                 let installation, reply =
                     match result with
@@ -35,8 +35,8 @@ module Execution =
                 match! enroll installation with
                 | Ok() -> return reply
                 | Error fault -> return Replies.operatorFault fault
-            | Initialize(zone, owner, policy, false) ->
-                let! installation = administration.Initialize(zone, owner, policy, token)
+            | Initialize(zone, owner, false) ->
+                let! installation = administration.Initialize(zone, owner, token)
 
                 match! enroll installation with
                 | Ok() -> return Replies.initialized installation

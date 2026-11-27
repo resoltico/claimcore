@@ -192,7 +192,7 @@ let private erasedState () =
 
 let private projectionFields: CaseFields =
     {
-        CaseReference = CaseFixtures.reference "synthetic-layout"
+        CaseReference = CaseFixtures.reference "CC-55KW-SSJ4-8HMS-G1BH-73"
         Handling =
             Handling.Closed
                 {
@@ -264,15 +264,16 @@ let private projectionBindings () =
         Map.ofList
             [
                 "case_id", box (CaseId.value expected.CaseId)
-                "reserved_reference", box "synthetic-layout"
-                "case_reference", box "synthetic-layout"
+                "reserved_reference", box "CC-55KW-SSJ4-8HMS-G1BH-73"
+                "case_reference", box "CC-55KW-SSJ4-8HMS-G1BH-73"
                 "revision", box 4L
                 "state", box "VOIDED"
                 "snapshot", box expected.SnapshotBytes
                 "status", box "CLOSED"
                 "progress", box "PAID"
                 "changed_at", box "1970-01-01T00:00:00.000000Z AD"
-                "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
+                "search_text",
+                box "synthetic claimant\u001fsynthetic insurer\u001fcc-55kw-ssj4-8hms-g1bh-73"
                 "work_search_text", box DBNull.Value
                 "received_on", box "2026-08-03 AD"
                 "responsible_actor", box DBNull.Value
@@ -499,258 +500,6 @@ let private roundTrips database =
             do! check state (revision + 1L)
     }
 
-let private referenceOwnership database =
-    task {
-        let! actor = VerificationSupport.populated database
-
-        let run number reference revision taskName inputs =
-            Service.executeSubmission
-                actor
-                (StoreFixtures.request database.Fixture number reference revision taskName inputs)
-                VerificationSupport.token
-
-        let get reference =
-            task {
-                let! result =
-                    Service.get
-                        actor
-                        {
-                            Target = CaseSelector.Reference reference
-                        }
-                        VerificationSupport.token
-
-                match result with
-                | Outcome.Succeeded value -> return value
-                | other ->
-                    return failtestf "Expected a case found by its reserved reference: %A" other
-            }
-
-        let change number binding revision reference =
-            run
-                number
-                binding
-                revision
-                "case.changeReference"
-                (Map.ofList
-                    [
-                        Submissions.input InputTarget.NewCaseReference,
-                        SubmissionValue.Text reference
-                    ])
-
-        let search requester text =
-            task {
-                let! result =
-                    Service.list
-                        requester
-                        {
-                            Page = { AfterCursor = None; Limit = 1 }
-                            Filter =
-                                CaseListFilter.create
-                                    []
-                                    [ CaseStatus.Closed ]
-                                    []
-                                    (Some text)
-                                    CaseListOrder.Reference
-                        }
-                        VerificationSupport.token
-
-                match result with
-                | Outcome.Succeeded page ->
-                    Expect.isEmpty page.Items "The selected filter excludes the exact result"
-                    return page.ExactReference
-                | other -> return failtestf "Expected an authorized search: %A" other
-            }
-
-        let exact caseId requester selector current matched =
-            task {
-                let! result = search requester selector
-
-                Expect.equal
-                    (result
-                     |> Option.map (fun item ->
-                         item.CaseId,
-                         CaseReference.format item.CaseReference,
-                         Option.map CaseReference.format item.MatchedReference))
-                    (Some(caseId, current, matched))
-                    "Exact search carries the retained selector and current reference independently"
-            }
-
-        let! introduced = change 50 "synthetic-a" 1L "REF-ALIAS"
-        StoreFixtures.accepted introduced |> ignore
-        let! current = get "REF-ALIAS"
-        let! matched = get "synthetic-a"
-
-        Expect.equal
-            matched.Snapshot
-            current.Snapshot
-            "Earlier reference resolves to the same current case"
-
-        Expect.equal
-            (CaseReference.format matched.Snapshot.Reference)
-            "REF-ALIAS"
-            "Reads use the current reference"
-
-        Expect.equal
-            (matched.MatchedReference |> Option.map CaseReference.format)
-            (Some "synthetic-a")
-            "Reads report the earlier matched reference"
-
-        let caseId = current.Snapshot.CaseId
-        do! exact caseId actor "synthetic-a" "REF-ALIAS" (Some "synthetic-a")
-        do! exact caseId actor "REF-ALIAS" "REF-ALIAS" None
-
-        let scopedPrincipal =
-            PrincipalKey.human "https://issuer.example/" "reference-discovery-reader"
-            |> Result.defaultWith (string >> failtest)
-
-        let! registration =
-            StoreFixtures.personSubmission
-                actor.Store
-                (StoreFixtures.id database.Fixture 920001)
-                scopedPrincipal
-                None
-                "people.register"
-                (Submissions.profile DomainInputs.actorProfile)
-
-        let! registered =
-            Service.executeSubmission actor registration VerificationSupport.token
-
-        StoreFixtures.acceptedPeople registered
-
-        let! decoy = run 920002 "REF-DECOY" 0L "case.open" Map.empty
-        let decoyId = (StoreFixtures.accepted decoy |> StoreFixtures.caseReceipt).CaseId
-
-        let grant number id active =
-            StoreFixtures.grant
-                actor
-                (StoreFixtures.id database.Fixture number)
-                scopedPrincipal
-                {
-                    Role = Role.CaseReader
-                    Scope = GrantTarget.CaseId id
-                }
-                active
-
-        let! decoyGrant = grant 920003 decoyId true
-        StoreFixtures.acceptedPeople decoyGrant
-        let! recordedGrant = grant 920004 caseId true
-        StoreFixtures.acceptedPeople recordedGrant
-        let scoped = StoreFixtures.core database.Fixture scopedPrincipal
-        do! exact caseId scoped "synthetic-a" "REF-ALIAS" (Some "synthetic-a")
-
-        let! revoked = grant 920005 caseId false
-        StoreFixtures.acceptedPeople revoked
-        let! hidden = search scoped "synthetic-a"
-        Expect.isNone hidden "Revocation hides both current and historical identity in search"
-
-        let! unavailable =
-            Service.get
-                scoped
-                {
-                    Target = CaseSelector.Reference "synthetic-a"
-                }
-                VerificationSupport.token
-
-        match unavailable with
-        | Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable) -> ()
-        | result -> failtestf "Opening the earlier selector rechecks access: %A" result
-
-        for index, reference in [ 51, "synthetic-a"; 52, "SYNTHETIC-A" ] do
-            let! duplicate =
-                run
-                    index
-                    reference
-                    0L
-                    "case.open"
-                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
-
-            Expect.equal
-                duplicate.Outcome
-                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
-                "Inherited references stay reserved"
-
-        let! returned = change 53 "REF-ALIAS" 2L "synthetic-a"
-        StoreFixtures.accepted returned |> ignore
-        let! alias = get "REF-ALIAS"
-
-        Expect.equal
-            (CaseReference.format alias.Snapshot.Reference)
-            "synthetic-a"
-            "A later return leaves the intervening reference reserved"
-
-        let! respelled = change 54 "REF-ALIAS" 3L "SYNTHETIC-A"
-        StoreFixtures.accepted respelled |> ignore
-        let! matched = get "synthetic-a"
-
-        Expect.equal
-            (matched.MatchedReference |> Option.map CaseReference.format)
-            (Some "synthetic-a")
-            "Exact earlier casing is a recorded spelling"
-
-        Expect.equal
-            (CaseReference.format matched.Snapshot.Reference)
-            "SYNTHETIC-A"
-            "Current casing is preserved"
-
-        do! exact caseId actor "synthetic-a" "SYNTHETIC-A" (Some "synthetic-a")
-        do! exact caseId actor "Synthetic-A" "SYNTHETIC-A" None
-
-        let! steward =
-            StoreFixtures.grant
-                actor
-                (StoreFixtures.id database.Fixture 920000)
-                database.Fixture.Owner
-                {
-                    Role = Role.DataSteward
-                    Scope = GrantTarget.Installation
-                }
-                true
-
-        StoreFixtures.acceptedPeople steward
-
-        let! voided =
-            run
-                55
-                "REF-ALIAS"
-                4L
-                "case.void"
-                (Map.ofList
-                    [
-                        Submissions.input InputTarget.Reason,
-                        SubmissionValue.Text "Entered in error"
-                    ])
-
-        StoreFixtures.accepted voided |> ignore
-        let! erased = run 56 "REF-ALIAS" 5L "case.erase" Map.empty
-        StoreFixtures.accepted erased |> ignore
-
-        do! exact caseId actor "REF-ALIAS" "SYNTHETIC-A" (Some "REF-ALIAS")
-
-        for index, reference in [ 57, "REF-ALIAS"; 58, "synthetic-a" ] do
-            let! read = get reference
-
-            Expect.equal
-                read.Snapshot.State
-                CaseState.Erased
-                "Either reserved key resolves the erased case"
-
-            let! duplicate =
-                run
-                    index
-                    reference
-                    0L
-                    "case.open"
-                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
-
-            Expect.equal
-                duplicate.Outcome
-                (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
-                "Erasure does not release a reserved key"
-
-        let! _ = VerificationSupport.verified database
-        return ()
-    }
-
 [<Tests>]
 let tests =
     testList
@@ -765,9 +514,6 @@ let tests =
             testCaseAsync
                 "insert update void and erase round-trip exact snapshot bytes"
                 (VerificationSupport.run roundTrips)
-            testCaseAsync
-                "reference changes preserve alias ownership through erasure"
-                (VerificationSupport.run referenceOwnership)
             testCase "requires complete unique case membership" collection
             testCase "preserves live identity revision state and snapshot checks" liveState
             testCase "preserves erased identity revision and state checks" erasedState

@@ -57,7 +57,6 @@ let environment =
         FamilyEnvironment.Requester = access
         RequesterPrincipal = principal
         Maintenance = false
-        CaseReferencePolicy = CaseReferencePolicy.CustomAllowed
         RelatedCase = fun _ -> None
         ReferenceOwner = fun _ -> None
         AssigneeEligible = fun _ -> true
@@ -88,7 +87,8 @@ let context number =
             }
     }
 
-let reference = CaseReference.parse "TASK-1" |> accepted
+let reference =
+    ClaimCore.TestSupport.DomainInputs.reference "CC-0Q8W-MJRG-GFYZ-KMDQ-22"
 
 let registration =
     RegistrationInput.create
@@ -110,7 +110,7 @@ let initialChange =
         Aggregate = AggregateReference.Family(CaseId.ofOperationId (operation 1))
         PartId = OperationId.value (operation 1)
         Revision = Revision.first
-        NaturalKey = Some "TASK-1"
+        NaturalKey = Some(CaseReference.format reference)
         Value =
             PartValue.Case
                 {
@@ -252,11 +252,7 @@ let profileInputs =
 let peopleInputs principal =
     inputs (principalInputs principal @ profileInputs)
 
-let bootstrapInputs principal =
-    inputs (
-        text InputTarget.CaseReferencePolicy "CUSTOM_ALLOWED"
-        :: (principalInputs principal @ profileInputs)
-    )
+let bootstrapInputs principal = peopleInputs principal
 
 let personApply state changes =
     changes
@@ -309,16 +305,15 @@ let owner () =
 let openingInputs =
     RegistrationInput.values (Registration.authored registration)
     |> List.map (fun (field, value) -> text (InputTarget.Field field) value)
-    |> fun values ->
-        inputs (text (InputTarget.Field BusinessField.CaseReference) "TASK-1" :: values)
+    |> inputs
 
-let openCustom context environment state binding inputs =
+let openCase context environment state binding inputs =
     ClaimCore.Domain.Tasks.Case.Open.admit context environment state binding inputs
-    |> Result.bind (fun opening ->
-        match opening.Intent with
-        | OpeningIntent.Custom reference ->
-            ClaimCore.Domain.Tasks.Case.Open.accept reference None opening
-        | OpeningIntent.Automatic -> failtest "This fixture requires a custom reference.")
+    |> Result.bind (
+        ClaimCore.Domain.Tasks.Case.Open.accept
+            (ClaimCore.TestSupport.DomainInputs.reference "CC-0Q8W-MJRG-GFYZ-KMDQ-22")
+            None
+    )
 
 let caseBinding (state: CaseFamily) =
     Binding.Case(target state, state.Case.Revision)

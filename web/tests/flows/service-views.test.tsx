@@ -86,7 +86,7 @@ const queueListPages = () => {
                       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
                     },
                   },
-                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                  values: [{ kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" }],
                 },
               ],
             },
@@ -130,7 +130,7 @@ const queueListPages = () => {
                       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000002" },
                     },
                   },
-                  values: [{ kind: "REFERENCE", value: "CASE-2" }],
+                  values: [{ kind: "REFERENCE", value: "CC-6XBX-RTDQ-XE13-CG4W-91" }],
                 },
               ],
             },
@@ -191,7 +191,7 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
     await screen.findByRole(
       "link",
       {
-        name: "CASE-1",
+        name: "CC-55KW-SSJ4-8HMS-G1BH-73",
       },
       {
         timeout: 5000,
@@ -203,7 +203,7 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
     caseId: "20000000-0000-4000-8000-000000000001",
   });
   await user.click(getButton("Load more"));
-  expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
+  expect(await screen.findByRole("link", { name: "CC-6XBX-RTDQ-XE13-CG4W-91" })).toBeVisible();
   await user.click(getButton("Refresh"));
   expect(select).toHaveBeenCalledTimes(1);
 });
@@ -224,14 +224,14 @@ it("shows current fields, server act labels, full expandable history and retryab
   const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
-      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={back}
       onAct={act}
     />,
   );
-  expect(await screen.findByRole("heading", { name: "CASE-1" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "CC-55KW-SSJ4-8HMS-G1BH-73" })).toBeVisible();
   await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(
     expect.objectContaining(current),
@@ -390,7 +390,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
                       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
                     },
                   },
-                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                  values: [{ kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" }],
                 },
               ],
             },
@@ -434,7 +434,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
                       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
                     },
                   },
-                  values: [{ kind: "REFERENCE", value: "CASE-1" }],
+                  values: [{ kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" }],
                 },
               ],
             },
@@ -460,7 +460,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     }),
   ).toBeVisible();
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
-  await user.click(screen.getByRole("link", { name: "CASE-1" }));
+  await user.click(screen.getByRole("link", { name: "CC-55KW-SSJ4-8HMS-G1BH-73" }));
   expect(
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",

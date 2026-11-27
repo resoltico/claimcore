@@ -12,7 +12,7 @@ describe("core act metadata", () => {
     const values = initialOperationValues(
       operationAffordance("case.amendRegistration", {
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         expectedRevision: 0,
       }),
     );
@@ -20,7 +20,7 @@ describe("core act metadata", () => {
     const close = initialOperationValues(
       operationAffordance("case.close", {
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         expectedRevision: 0,
       }),
     );

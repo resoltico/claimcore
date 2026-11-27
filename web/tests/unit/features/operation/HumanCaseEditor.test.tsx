@@ -81,7 +81,7 @@ const review: HumanReview = {
       kind: "REVIEW",
       confirmation: {
         kind: "CASE_REFERENCE",
-        reference: "ORIGINAL-CASE",
+        reference: "CC-GMMF-PDH9-CG80-8AAY-21",
       },
       consequence: "ROUTINE",
     },
@@ -186,7 +186,7 @@ it("previews the typed selected payment and preserves selector spelling through 
         kind: "CASE",
         target: {
           kind: "REFERENCE",
-          caseReference: "ORIGINAL-CASE",
+          caseReference: "CC-GMMF-PDH9-CG80-8AAY-21",
         },
         expectedRevision: 7,
         paymentId,
@@ -216,7 +216,7 @@ it("previews the typed selected payment and preserves selector spelling through 
       kind: "CASE",
       target: {
         kind: "REFERENCE",
-        caseReference: "ORIGINAL-CASE",
+        caseReference: "CC-GMMF-PDH9-CG80-8AAY-21",
       },
       expectedRevision: 7,
       paymentId,

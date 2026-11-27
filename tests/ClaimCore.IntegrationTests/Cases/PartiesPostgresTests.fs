@@ -45,7 +45,7 @@ let private integration (database: PostgresFixture.Database) =
 
             acceptedPeople grant
 
-        let target = CaseSelector.Reference "PARTY-READ"
+        let target = CaseSelector.Id(CaseFixtures.caseId (id fixture 671))
 
         let opening =
             Submissions.createRaw
@@ -54,8 +54,6 @@ let private integration (database: PostgresFixture.Database) =
                 (OperationBinding.CaseNew 0L)
                 (Map.ofList
                     [
-                        Submissions.field BusinessField.CaseReference,
-                        SubmissionValue.Text "PARTY-READ"
                         TaskCollectionId.input TaskCollectionId.Parties,
                         SubmissionValue.Rows
                             [
@@ -205,7 +203,7 @@ let private integration (database: PostgresFixture.Database) =
 
         Expect.equal
             (page.Items |> List.map (fun entry -> CaseReference.format entry.Reference))
-            [ "PARTY-READ" ]
+            [ CaseReference.format subject.Snapshot.Reference ]
             "Search finds a contact detail"
 
         let csv =
@@ -240,15 +238,13 @@ let private integration (database: PostgresFixture.Database) =
                 (Submissions.createRaw task (id fixture operation) selection inputs)
                 token
 
-        let other = CaseSelector.Reference "PARTY-OTHER"
-
         let! otherOpened =
             Service.executeSubmission
                 owner
                 (request fixture 679 "PARTY-OTHER" 0L "case.open" Map.empty)
                 token
 
-        accepted otherOpened |> ignore
+        let other = CaseSelector.Id((accepted otherOpened |> caseReceipt).CaseId)
 
         let! foreignPayee =
             changePayment

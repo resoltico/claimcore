@@ -100,10 +100,7 @@ let private bounded (database: PostgresFixture.Database) =
                 10
                 "case.open"
                 (Binding.CaseNew Revision.zero)
-                (Submissions.fields (RegistrationInput.values DomainInputs.registration)
-                 |> Map.add
-                     (Submissions.field BusinessField.CaseReference)
-                     (SubmissionValue.Text "LIVE-FACTS"))
+                (Submissions.fields (RegistrationInput.values DomainInputs.registration))
 
         let! initial = current database caseId
 

@@ -215,6 +215,20 @@ module OpenApi =
                                     "x-claimcore-csv-success-only", JsonValue.Boolean true
                                     "schema", object [ "const", text "identity" ]
                                 ]
+                            ExportTransport.nextHeader,
+                            object
+                                [
+                                    "x-claimcore-csv-success-only", JsonValue.Boolean true
+                                    "schema",
+                                    object
+                                        [
+                                            "type", text "string"
+                                            "maxLength",
+                                            JsonValue.Integer(
+                                                int64 ExportTransport.maximumContinuationCharacters
+                                            )
+                                        ]
+                                ]
                             "Content-Disposition",
                             object
                                 [
@@ -242,6 +256,15 @@ module OpenApi =
                         header "ClaimCore-Contract" true ResponseScalars.digest.Schema
                         header "ClaimCore-Installation" true Codec.uuid.Schema
                         header "X-ClaimCore-Antiforgery" false ResponseScalars.nonempty.Schema
+                        header
+                            ExportTransport.pageSizeHeader
+                            false
+                            (Codec.integer 1L (int64 Paging.MaximumPageSize)).Schema
+                        header
+                            ExportTransport.afterHeader
+                            false
+                            (Codec.boundedText 1 ExportTransport.maximumContinuationCharacters)
+                                .Schema
                     ]
                 "security", security ExportTransport.token
                 "requestBody",

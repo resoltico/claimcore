@@ -52,13 +52,13 @@ let tests =
 
                 Expect.equal
                     initial.RecordedAt
-                    observed.ObservedAt
+                    observed.AcceptedAt
                     "The event retains its accepting transaction instant"
 
                 Expect.equal
                     initial.Basis.ObservedAt
                     observed.ObservedAt
-                    "Initial basis belongs to the accepting snapshot"
+                    "Initial basis belongs to the fresh receipt snapshot"
 
                 let check receipt =
                     expectReceipt receipt initial "Historical acceptance metadata stays unchanged"

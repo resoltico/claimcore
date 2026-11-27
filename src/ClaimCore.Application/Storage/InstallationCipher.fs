@@ -92,6 +92,7 @@ type internal InstallationCipher
     // Equality keys deliberately survive an encryption rotation; the comparison data remains erasable.
     let attachmentKey = derive "attachment-digest" Array.empty
     let saltKey = derive "compartment-salt-fingerprint" Array.empty
+    let exportCursorKey = derive "export-cursor" (active.ToByteArray(true))
 
     let mutable remaining = allowance
 
@@ -229,6 +230,9 @@ type internal InstallationCipher
             (compartment "compartment-salt" sequence ordinal ownerKind ownerId)
             payload
 
+    member _.ExportCursorCommitment(payload: byte array) =
+        HMACSHA256.HashData(exportCursorKey, payload)
+
     member _.SaltFingerprint(salt: byte array) = HMACSHA256.HashData(saltKey, salt)
 
     interface IDisposable with
@@ -236,6 +240,7 @@ type internal InstallationCipher
             CryptographicOperations.ZeroMemory key
             CryptographicOperations.ZeroMemory attachmentKey
             CryptographicOperations.ZeroMemory saltKey
+            CryptographicOperations.ZeroMemory exportCursorKey
 
 module internal InstallationCipher =
     // Two values per retained compartment and at most one attachment per operation.

@@ -77,26 +77,48 @@ let internal reviewedFamilySequence store target =
             | None -> return 1L // Syntactically valid wrong-target negative controls still reach disclosure policy.
         })
 
-let internal request fixture n reference revision task values =
+let internal caseTarget (fixture: Fixture) name =
+    match fixture.OperationIds.Case name with
+    | Some operation -> CaseSelector.Id(CaseId.create operation |> Option.get)
+    | None -> CaseSelector.Reference(CaseReference.format (DomainInputs.reference name))
+
+let internal caseAlias (fixture: Fixture) caseId =
+    fixture.OperationIds.CaseName(CaseId.value caseId)
+    |> Option.defaultWith (fun () -> failtest "The case has no fixture label.")
+
+let internal issuedCaseReference (fixture: Fixture) name =
+    readFixture fixture.Store (fun tx ->
+        match caseTarget fixture name with
+        | CaseSelector.Id id -> FamilyReads.findCase tx id
+        | CaseSelector.Reference reference -> FamilyReads.findCaseByReference tx reference)
+    |> Option.map (_.Snapshot.Reference >> CaseReference.format)
+    |> Option.defaultWith (fun () -> failtest "The case fixture has no issued reference.")
+
+let internal caseGrant fixture name =
+    match caseTarget fixture name with
+    | CaseSelector.Id id -> GrantTarget.CaseId id
+    | CaseSelector.Reference reference -> GrantTarget.CaseReference reference
+
+let internal requestAs
+    fixture
+    operation
+    reference
+    revision
+    task
+    (values: Map<TaskInputId, SubmissionValue>)
+    =
     let declaration =
         ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral task)
         |> Option.get
 
-    let target = CaseSelector.Reference reference
+    let target = caseTarget fixture reference
     let paymentInput = Submissions.input InputTarget.PaymentId
 
     let binding, values =
         match TaskDeclaration.bindingShape declaration with
         | BindingShape.CaseNew ->
-            let referenceInput = Submissions.field BusinessField.CaseReference
-
-            let authored =
-                if Map.containsKey referenceInput values then
-                    values
-                else
-                    Map.add referenceInput (SubmissionValue.Text reference) values
-
-            OperationBinding.CaseNew revision, authored
+            fixture.OperationIds.DescribeCase(reference, operation)
+            OperationBinding.CaseNew revision, values
         | BindingShape.CaseErase ->
             OperationBinding.Case(
                 target,
@@ -117,7 +139,9 @@ let internal request fixture n reference revision task values =
         | BindingShape.Case -> OperationBinding.Case(target, revision, None, None), values
         | _ -> invalidArg (nameof task) "Supply an explicit row or person binding."
 
-    Submissions.createRaw task (id fixture n) binding values
+    Submissions.createRaw task operation binding values
+
+let internal request fixture n = requestAs fixture (id fixture n)
 
 /// Fixture setup reads a ready actor identity; explicit stale revisions remain caller-supplied.
 let internal personSubmission (store: IStore) operation target expected taskName values =
@@ -253,7 +277,6 @@ let internal bootstrap fixture =
                 (id fixture 1)
                 DomainInputs.ownerProfile
                 []
-                CaseReferencePolicy.CustomAllowed
                 CancellationToken.None
 
         match result with
@@ -287,10 +310,8 @@ let internal grant (actor: ServiceContext) operationId target (grant: GrantInput
         return! Service.executeSubmission actor input CancellationToken.None
     }
 
-let internal caseWorker fixture =
+let internal grantCaseWork fixture owner =
     task {
-        let! owner = bootstrap fixture
-
         for operationId, role in
             [ id fixture 2, Role.CaseHandler; id fixture 900000, Role.PaymentRecorder ] do
             let! outcome =
@@ -306,5 +327,11 @@ let internal caseWorker fixture =
 
             acceptedPeople outcome
 
+    }
+
+let internal caseWorker fixture =
+    task {
+        let! owner = bootstrap fixture
+        do! grantCaseWork fixture owner
         return owner
     }

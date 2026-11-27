@@ -51,7 +51,7 @@ let bearerRequest (local: HttpClient) token =
         return int response.StatusCode
     }
 
-let private caseRequest (local: HttpClient) token browserCookies reference =
+let private caseRequest (local: HttpClient) token browserCookies caseId =
     task {
         use request = new HttpRequestMessage(HttpMethod.Post, "/api/case.get")
 
@@ -61,8 +61,8 @@ let private caseRequest (local: HttpClient) token browserCookies reference =
                     {|
                         target =
                             {|
-                                kind = "REFERENCE"
-                                caseReference = reference
+                                kind = "ID"
+                                caseId = CaseId.format caseId
                             |}
                     |},
                 Encoding.UTF8,
@@ -124,6 +124,7 @@ type private ServicePeopleScenario =
         Credentials: JsonElement
         Token: string
         First: JsonElement option
+        CaseId: CaseId
     }
 
 let private servicePeople (scenario: ServicePeopleScenario) =
@@ -151,8 +152,10 @@ let private servicePeople (scenario: ServicePeopleScenario) =
                 (value credentials "serviceClientSecret")
 
         let! authenticated = bearerRequest local second
-        let! status, denied = caseRequest local second None "SYNTHETIC-001"
-        let! _, absent = caseRequest local token None "SYNTHETIC-MISSING"
+        let! status, denied = caseRequest local second None scenario.CaseId
+
+        let! _, absent =
+            caseRequest local token None (CaseId.create (Guid.NewGuid()) |> Option.get)
 
         Expect.equal
             (authenticated, status, tag denied)
@@ -173,6 +176,7 @@ let qualifyBearers
     (local: HttpClient)
     (credentials: JsonElement)
     browserCookies
+    caseId
     =
     task {
         let! token =
@@ -191,8 +195,8 @@ let qualifyBearers
                 raise (InvalidBearerAdmission(-1, denied))
 
         let! allowed = bearerRequest local token
-        let! caseAllowed, first = caseRequest local token None "SYNTHETIC-001"
-        let! mixed, _ = caseRequest local token (Some browserCookies) "SYNTHETIC-001"
+        let! caseAllowed, first = caseRequest local token None caseId
+        let! mixed, _ = caseRequest local token (Some browserCookies) caseId
 
         if allowed <> 204 || caseAllowed <> 200 || mixed <> 401 then
             raise (CredentialDispatchMismatch(allowed, caseAllowed, mixed))
@@ -206,6 +210,7 @@ let qualifyBearers
                     Credentials = credentials
                     Token = token
                     First = first
+                    CaseId = caseId
                 }
 
         let! unscoped =

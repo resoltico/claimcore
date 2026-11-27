@@ -71,8 +71,8 @@ let kindGoldens =
                     PresentedValue.State(CaseHeadline.Erased, None),
                     [ [ "Erased" ]; [ "Dzēsta" ]; [ "تم المحو" ] ]
                     PresentedValue.Count 42L, List.replicate 3 [ "42" ]
-                    PresentedValue.Reference(DomainInputs.reference "R-1"),
-                    List.replicate 3 [ "R-1" ]
+                    PresentedValue.Reference(DomainInputs.reference "CC-NVJN-9VCD-PZVY-CKAX-07"),
+                    List.replicate 3 [ "CC-NVJN-9VCD-PZVY-CKAX-07" ]
                     PresentedValue.Identifier "ID-1", List.replicate 3 [ "ID-1" ]
                     PresentedValue.Absent "label.notRecorded",
                     [ [ "Not recorded" ]; [ "Nav ierakstīts" ]; [ "غير مسجّل" ] ]

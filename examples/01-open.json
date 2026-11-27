@@ -7,7 +7,7 @@
       "expectedRevision": 0
     },
     "inputs": {
-      "field:caseReference": "DEMO-0001",
+      "field:policyNumber": "DEMO-0001",
       "field:incidentDate": "2026-08-01",
       "field:receivedDate": "2026-08-03",
       "field:incidentCountry": "LT",

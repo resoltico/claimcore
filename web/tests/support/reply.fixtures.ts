@@ -85,7 +85,7 @@ const caseReview: HumanReview = {
       kind: "REVIEW",
       confirmation: {
         kind: "CASE_REFERENCE",
-        reference: "CASE-1",
+        reference: "CC-55KW-SSJ4-8HMS-G1BH-73",
       },
       consequence: "ROUTINE",
     },

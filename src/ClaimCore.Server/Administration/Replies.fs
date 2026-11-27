@@ -14,8 +14,8 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]
 type DatabaseSuccess =
-    | Initialized of Guid * CaseReferencePolicy
-    | InitializationSkipped of Guid * CaseReferencePolicy
+    | Initialized of Guid
+    | InitializationSkipped of Guid
     | OwnerRecovery of OwnerRecoveryResult
     | MasterKeyRotated of installationId: Guid
     | EncryptionGenerationRotated of generation: Guid
@@ -140,13 +140,7 @@ module Replies =
 
     let private countCodec = integer 0L SafeInteger.Maximum
 
-    let private caseReferencePolicy =
-        enumeration (Vocabulary.entries CaseReferencePolicy.vocabulary)
-
-    let private initializationFields =
-        record (fun installation policy -> installation, policy)
-        |> field "installationId" fst uuid
-        |> field "caseReferencePolicy" snd caseReferencePolicy
+    let private initializationFields = record id |> field "installationId" id uuid
 
     let private statusFields: Fields<InstallationStatus, _> =
         record
@@ -155,7 +149,6 @@ module Replies =
                 baseline
                 digest
                 zone
-                policy
                 instant
                 position
                 maintenance
@@ -173,7 +166,6 @@ module Replies =
                     Baseline = baseline
                     BaselineSha256 = digest
                     BusinessTimeZone = zone
-                    CaseReferencePolicy = policy
                     ObservedAt = instant
                     Position = position
                     Maintenance = maintenance
@@ -191,7 +183,6 @@ module Replies =
         |> field "baseline" _.Baseline (boundedText 1 64)
         |> field "baselineSha256" _.BaselineSha256 ResponseScalars.digest
         |> field "businessTimeZone" _.BusinessTimeZone (boundedText 1 128)
-        |> field "caseReferencePolicy" _.CaseReferencePolicy caseReferencePolicy
         |> field "observedAt" _.ObservedAt instant
         |> field "position" _.Position administrativePosition
         |> field "maintenance" _.Maintenance ResponseCodecs.registerMaintenance
@@ -289,18 +280,16 @@ module Replies =
                      (integer 0L SafeInteger.Maximum))
             variant
                 "INITIALIZED"
-                ((fun (id, policy) -> DatabaseSuccess.Initialized(id, policy)) >> Reply.Succeeded)
+                (DatabaseSuccess.Initialized >> Reply.Succeeded)
                 (function
-                | Reply.Succeeded(DatabaseSuccess.Initialized(id, policy)) -> Some(id, policy)
+                | Reply.Succeeded(DatabaseSuccess.Initialized id) -> Some id
                 | _ -> None)
                 initializationFields
             variant
                 "INITIALIZATION_SKIPPED"
-                ((fun (id, policy) -> DatabaseSuccess.InitializationSkipped(id, policy))
-                 >> Reply.Succeeded)
+                (DatabaseSuccess.InitializationSkipped >> Reply.Succeeded)
                 (function
-                | Reply.Succeeded(DatabaseSuccess.InitializationSkipped(id, policy)) ->
-                    Some(id, policy)
+                | Reply.Succeeded(DatabaseSuccess.InitializationSkipped id) -> Some id
                 | _ -> None)
                 initializationFields
             variant
@@ -431,21 +420,11 @@ module Replies =
         Reply.Succeeded(DatabaseSuccess.MasterKeyRotated installation) |> encode
 
     let initialized (installation: Installation) =
-        Reply.Succeeded(
-            DatabaseSuccess.Initialized(
-                installation.InstallationId,
-                installation.CaseReferencePolicy
-            )
-        )
+        Reply.Succeeded(DatabaseSuccess.Initialized installation.InstallationId)
         |> encode
 
     let initializationSkipped (installation: Installation) =
-        Reply.Succeeded(
-            DatabaseSuccess.InitializationSkipped(
-                installation.InstallationId,
-                installation.CaseReferencePolicy
-            )
-        )
+        Reply.Succeeded(DatabaseSuccess.InitializationSkipped installation.InstallationId)
         |> encode
 
     let ownerRecovery result =

@@ -164,6 +164,7 @@ module HumanReplies =
                     HumanExecuteResult.AlreadyAccepted(HumanReceiptDocument.ofCore receipt)
                 | ExecuteResult.Rejected value -> HumanExecuteResult.Rejected(rejection value)
                 | ExecuteResult.Failed value -> HumanExecuteResult.Failed value
+                | ExecuteResult.ReceiptUnavailable -> HumanExecuteResult.ReceiptUnavailable
                 | ExecuteResult.OutcomeUnknown -> HumanExecuteResult.OutcomeUnknown
         }
 

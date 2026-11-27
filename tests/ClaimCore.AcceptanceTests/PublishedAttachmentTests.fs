@@ -14,24 +14,27 @@ let private qualify () =
         do! fixture.Start()
         setup fixture
         let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
-        let reference = "ATTACH-CLI-" + (id ()).Substring(24)
         let add = id ()
         let caseId = id ()
         let withdrawal = id ()
 
-        frame
-            "operation.execute"
-            (caseSubmission
-                caseId
-                reference
-                0L
-                "case.open"
-                (ClaimCore.TestSupport.Submissions.fields (
-                    RegistrationInput.values ClaimCore.TestSupport.DomainInputs.registration
-                )))
-        |> fun source -> run fixture fixture.Environment source 0
-        |> require "ACCEPTED"
-        |> ignore
+        let opened =
+            frame
+                "operation.execute"
+                (caseSubmission
+                    caseId
+                    ""
+                    0L
+                    "case.open"
+                    (ClaimCore.TestSupport.Submissions.fields (
+                        RegistrationInput.values ClaimCore.TestSupport.DomainInputs.registration
+                    )))
+            |> fun source -> run fixture fixture.Environment source 0
+            |> require "ACCEPTED"
+
+        let reference =
+            opened.GetProperty("subject").GetProperty("caseReference").GetString()
+            |> nonNull
 
         let sourcePath = Path.Combine(fixture.Directory, "source evidence.txt")
         let destination = Path.Combine(fixture.Directory, "downloaded evidence.txt")

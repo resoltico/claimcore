@@ -93,7 +93,7 @@ let private qualify fixture =
                         "reminder.create"
                         (id fixture.Database.Fixture operation)
                         (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                            (CaseSelector.Reference reference),
+                            ((caseTarget fixture.Database.Fixture reference)),
                             None
                         ))
                         (ClaimCore.TestSupport.Submissions.reminderPlan
@@ -109,7 +109,7 @@ let private qualify fixture =
                     "work.update"
                     (id fixture.Database.Fixture 5504)
                     (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "work-01"),
+                        ((caseTarget fixture.Database.Fixture "work-01")),
                         (0L)
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
@@ -156,7 +156,7 @@ let private qualify fixture =
                     "work.update"
                     (id fixture.Database.Fixture 5520)
                     (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "mix-04"),
+                        ((caseTarget fixture.Database.Fixture "mix-04")),
                         (0L)
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
@@ -173,7 +173,7 @@ let private qualify fixture =
                     "reminder.complete"
                     (id fixture.Database.Fixture 5505)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "mix-04"),
+                        ((caseTarget fixture.Database.Fixture "mix-04")),
                         Some((id fixture.Database.Fixture 5502), (1L))
                     ))
                     (Map.empty))
@@ -196,7 +196,7 @@ let private qualify fixture =
                     "reminder.cancel"
                     (id fixture.Database.Fixture 5507)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "Work-11"),
+                        ((caseTarget fixture.Database.Fixture "Work-11")),
                         Some((id fixture.Database.Fixture 5503), (1L))
                     ))
                     (Map.empty))
@@ -252,7 +252,7 @@ let private qualify fixture =
             Service.get
                 fixture.Service
                 {
-                    Target = CaseSelector.Reference "work-01"
+                    Target = (caseTarget fixture.Database.Fixture "work-01")
                 }
                 token
 
@@ -367,7 +367,10 @@ let private translatorNegative fixture =
                     (Submissions.createRaw
                         "reminder.create"
                         (id fixture.Database.Fixture operation)
-                        (OperationBinding.Reminder(CaseSelector.Reference reference, None))
+                        (OperationBinding.Reminder(
+                            (caseTarget fixture.Database.Fixture reference),
+                            None
+                        ))
                         (Submissions.reminderPlan
                             "Check supplied evidence"
                             (context.Runtime.Basis.BusinessDate.AddDays(offset)
@@ -404,11 +407,16 @@ let private translatorNegative fixture =
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        ($"SELECT c.case_reference FROM claimcore.cases c WHERE {where} ORDER BY c.case_reference COLLATE \"C\"")
+                        ($"SELECT c.case_id FROM claimcore.cases c WHERE {where} ORDER BY c.case_reference COLLATE \"C\"")
                         (CaseSelectionSql.parameters selection)
                         token
 
-                return rows |> List.map (fun row -> unbox<string> row[0])
+                return
+                    rows
+                    |> List.map (fun row ->
+                        caseAlias
+                            fixture.Database.Fixture
+                            (CaseFixtures.caseId (unbox<System.Guid> row[0])))
             }
 
         let! actual = query predicate

@@ -1424,10 +1424,6 @@
     "text": "存取和匯出日誌讀取",
     "source": "42bd45e7fe95"
   },
-  "disclosureKind.ACCESS_REFUSED.label": {
-    "text": "存取遭拒",
-    "source": "07edbc210200"
-  },
   "disclosureOutcome.SUCCEEDED.label": {
     "text": "成功",
     "source": "6d9a6f97a5fd"
@@ -3418,39 +3414,6 @@
     "text": "請從清單中選擇結案結果。",
     "source": "ed45fada7999"
   },
-  "task.case.changeReference.label": {
-    "text": "變更案件編號",
-    "source": "c48c7e896bb5"
-  },
-  "task.case.changeReference.meaning": {
-    "text": "替換目前的案件編號。先前的編號仍可用來找到同一案件。",
-    "source": "1065858202dd"
-  },
-  "task.case.changeReference.done": {
-    "text": "案件編號已變更。",
-    "source": "58241a331134"
-  },
-  "task.case.changeReference.consequence": {
-    "text": "為此案件選擇一個新編號。",
-    "source": "73700635d1ab"
-  },
-  "field.newReference.label": {
-    "text": "新編號",
-    "source": "42906b7cf062"
-  },
-  "field.newReference.rule": {
-    "text": "請使用案件編號格式。",
-    "source": "b905bbf44b8b"
-  },
-  "field.newReference.hint": {
-    "text": "仍可使用舊識別碼查找此案件。請勿在新識別碼中包含個人資料。",
-    "source": "2712ad08d240",
-    "machineMade": true
-  },
-  "label.referenceChangedFrom": {
-    "text": "變更前的編號",
-    "source": "0f0590159e51"
-  },
   "field.reopenReason.hint": {
     "text": "恢復處理的原因。",
     "source": "52db5e07d84d"
@@ -4628,54 +4591,9 @@
     "text": "請輸入金額和幣別。",
     "source": "11da00ab5ba1"
   },
-  "diagnostic.REFERENCE_UNAVAILABLE": {
-    "text": "案件識別碼無法使用。",
-    "source": "233033263ef9",
-    "machineMade": true
-  },
-  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
-    "text": "此登記冊會自動分配所有案件識別碼。請移除自訂識別碼以繼續。",
-    "source": "072632d9c59c",
-    "machineMade": true
-  },
   "label.caseReferencePending": {
     "text": "開立案件時分配。",
     "source": "9fcad855f05a",
-    "machineMade": true
-  },
-  "label.useCustomCaseReference": {
-    "text": "使用自訂案件識別碼",
-    "source": "3796d7f0af59",
-    "machineMade": true
-  },
-  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
-    "source": "22c0bf147040",
-    "text": "僅由系統分配",
-    "machineMade": true
-  },
-  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
-    "source": "2126c4e1b515",
-    "text": "允許自訂案件編號",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.label": {
-    "source": "00276badc096",
-    "text": "案件編號政策",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.rule": {
-    "source": "d15f3878c38a",
-    "text": "初始設定時選取的編號分配政策。",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.hint": {
-    "source": "8e971dfd9ae8",
-    "text": "請選擇是否允許輸入自訂案件編號。",
-    "machineMade": true
-  },
-  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
-    "source": "a743fa65aff6",
-    "text": "請選擇支援的案件編號政策。",
     "machineMade": true
   },
   "diagnostic.TRAVERSAL_CHANGED": {

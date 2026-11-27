@@ -51,12 +51,13 @@ let private initialChanges () =
                 }
         }
 
-    ClaimCore.Tests.TaskBuilders.openCustom
+    ClaimCore.Domain.Tasks.Case.Open.admit
         context
         ClaimCore.Tests.TaskBuilders.environment
         None
         (Binding.CaseNew Revision.zero)
         Oracle.opening.Inputs
+    |> Result.bind (ClaimCore.Domain.Tasks.Case.Open.accept Oracle.reference None)
     |> required
 
 let private initial () =
@@ -93,24 +94,7 @@ let private decide number sequence (current: CaseFamily) model stale (witness: O
     match selected witness with
     | Task.Opening task ->
         task.Admit context environment None binding witness.Inputs
-        |> Result.bind (fun opening ->
-            match opening.Intent with
-            | OpeningIntent.Custom reference ->
-                let owner =
-                    if
-                        String.Equals(
-                            CaseReference.format reference,
-                            CaseReference.format current.Reference,
-                            StringComparison.OrdinalIgnoreCase
-                        )
-                    then
-                        Some current.Id
-                    else
-                        None
-
-                task.Accept reference owner opening
-            | OpeningIntent.Automatic ->
-                failtest "The competing fixture supplies a custom reference.")
+        |> Result.bind (task.Accept current.Reference (Some current.Id))
     | Task.Family task ->
         task.Decide
             context

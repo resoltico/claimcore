@@ -59,7 +59,7 @@ const review = (): HumanReview => ({
   document: {
     subject: {
       kind: "REVIEW",
-      confirmation: { kind: "CASE_REFERENCE", reference: "ROW-CORRECTION" },
+      confirmation: { kind: "CASE_REFERENCE", reference: "CC-GDYV-P6QS-C8KA-H2Z3-20" },
       consequence: "ROUTINE",
     },
     screen: { regions: [] },

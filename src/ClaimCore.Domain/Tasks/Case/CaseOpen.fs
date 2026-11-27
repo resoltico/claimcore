@@ -8,9 +8,6 @@ open ClaimCore.Domain.Tasks
 open ClaimCore.Domain.Tasks.Declarations
 open ClaimCore.Domain.Tasks.Party
 
-let private referenceTarget = InputTarget.Field BusinessField.CaseReference
-let private referenceInput = target referenceTarget
-
 let declaration =
     create
         "case.open"
@@ -20,44 +17,22 @@ let declaration =
         ActFamily.Business
         Consequence.Routine
         [ Capability.Register ]
-        (operation
-         :: (optional referenceInput |> retained)
-         :: revision
-         :: group TaskInputMode.Optional RecordGroup.Registration)
+        (operation :: revision :: group TaskInputMode.Optional RecordGroup.Registration)
         [ PartyTasks.collection ]
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-let private intent policy (inputs: InputMap) =
-    match Map.tryFind referenceInput inputs.Values with
-    | None -> Ok OpeningIntent.Automatic
-    | Some(InputValue.Text value) ->
-        CaseReference.parseCustom value
-        |> Parsing.at referenceTarget
-        |> Result.bind (fun reference ->
-            if CaseReferencePolicy.allowsCustom policy then
-                Ok(OpeningIntent.Custom reference)
-            else
-                Error(Parsing.issue referenceTarget Violation.CustomReferenceNotAllowed))
-    | Some _ -> Error(Parsing.issue referenceTarget Violation.TextRequired)
-
-let private facts policy admit inputs =
-    Admission.map2
-        (fun reference registration -> reference, registration)
-        (intent policy inputs)
-        (CaseParsing.registration admit (CaseParsing.values inputs))
+let private facts admit inputs =
+    CaseParsing.registration admit (CaseParsing.values inputs)
 
 let check inputs =
-    let syntax =
-        Parsing.check (facts CaseReferencePolicy.CustomAllowed (fun _ -> Ok)) inputs
+    let syntax = Parsing.check (facts (fun _ -> Ok)) inputs
 
     match PartyTasks.parseRows true inputs with
     | Error(Rejection.Input issues) -> syntax @ TaskInputIssues.toList issues
     | _ -> syntax
 
-let editableInputs policy =
-    TaskDeclaration.editableInputs declaration
-    |> List.filter (fun input -> input <> referenceInput || CaseReferencePolicy.allowsCustom policy)
+let editableInputs = TaskDeclaration.editableInputs declaration
 
 let availability (environment: FamilyEnvironment) (state: DecisionFacts option) binding =
     let permission = FamilyRules.permission environment Scope.Installation capability
@@ -78,7 +53,6 @@ let availability (environment: FamilyEnvironment) (state: DecisionFacts option) 
 
     { available with
         Applicable = available.Applicable && state.IsNone
-        Editable = editableInputs environment.CaseReferencePolicy
     }
 
 let private gates
@@ -111,17 +85,16 @@ let private gates
         else
             Ok())
 
-let private opening context reference registration parties =
+let private opening context registration parties =
     {
         Context = context
-        ReferenceIntent = reference
         Registration = registration
         Parties = parties
     }
 
 let private combine facts rows =
     match facts, rows with
-    | Ok(reference, registration), Ok parties -> Ok(reference, registration, parties)
+    | Ok registration, Ok parties -> Ok(registration, parties)
     | Error(Rejection.Input first), Error(Rejection.Input last) ->
         let issues = TaskInputIssues.toList first @ TaskInputIssues.toList last
         Error(Rejection.Input(TaskInputIssues.ofList issues |> Option.get))
@@ -134,23 +107,17 @@ let admit (context: TaskContext) (environment: FamilyEnvironment) state binding 
         gates context environment state expected (List.isEmpty (check inputs))
         |> Result.bind (fun () ->
             combine
-                (facts
-                    environment.CaseReferencePolicy
-                    (CaseAdmission.fieldAdmission today None)
-                    inputs
-                 |> Parsing.reject)
+                (facts (CaseAdmission.fieldAdmission today None) inputs |> Parsing.reject)
                 (PartyTasks.parseRows
                     (context.Decision.Lifetime = DecisionLifetime.Recorded)
                     inputs))
-        |> Result.map (fun (reference, registration, parties) ->
-            opening context reference registration parties)
+        |> Result.map (fun (registration, parties) -> opening context registration parties)
     | _, None -> Error(Rejection.InvalidState RecordViolation.InvalidSubjectState)
     | _ -> Error(Rejection.Refused FamilyRules.unavailable)
 
 let preview (opening: AdmittedOpening) =
     {
-        OpeningReview.Case =
-            CaseDescription.opening (OpeningIntent.requested opening.Intent) opening.Registration
+        OpeningReview.Case = CaseDescription.opening opening.Registration
         Parties = opening.Parties |> List.map (snd >> PartDescriptions.openingParty)
     }
 
@@ -191,23 +158,14 @@ let private changes (context: TaskContext) reference registration parties =
     ]
     |> TaskContext.changes context
 
-let private issuance intent reference owner =
-    let matches =
-        match intent with
-        | OpeningIntent.Automatic ->
-            CaseReference.isGenerated reference
-            && reference = CaseReference.canonical reference
-        | OpeningIntent.Custom requested -> requested = reference
-
-    if not matches then
+let private issuance reference owner =
+    if reference <> CaseReference.canonical reference || Option.isSome owner then
         Error(Rejection.InvalidState RecordViolation.ReferenceMismatch)
-    elif Option.isSome owner then
-        Error(Rejection.Refused(Refusal.Case CaseRefusal.ReferenceUnavailable))
     else
         Ok()
 
 let accept candidate owner (opening: AdmittedOpening) =
-    issuance opening.Intent candidate owner
+    issuance candidate owner
     |> Result.map (fun () ->
         changes
             opening.Context
@@ -240,11 +198,9 @@ let replay context (environment: FamilyEnvironment) state binding inputs retaine
         | Binding.CaseNew expected ->
             gates context environment state expected true
             |> Result.bind (fun () ->
-                intent environment.CaseReferencePolicy inputs |> Parsing.reject)
-            |> Result.bind (fun intent ->
                 referenceEvidence context accepted
                 |> Result.bind (fun candidate ->
-                    issuance intent candidate (environment.ReferenceOwner candidate)
+                    issuance candidate (environment.ReferenceOwner candidate)
                     |> Result.map (fun () ->
                         changes
                             context

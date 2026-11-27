@@ -292,7 +292,7 @@ it("closed-case summary succeeds without reauthoring its unavailable assignee", 
         screen: { regions: [] },
         subject: {
           kind: "REVIEW",
-          confirmation: { kind: "CASE_REFERENCE", reference: "CLOSED-SUMMARY" },
+          confirmation: { kind: "CASE_REFERENCE", reference: "CC-VM34-E7HP-NXSN-15B1-79" },
           consequence: "ROUTINE",
         },
         actions: [],

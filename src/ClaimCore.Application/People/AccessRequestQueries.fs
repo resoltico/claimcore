@@ -17,7 +17,11 @@ module internal AccessRequestQueries =
     let page (services: ServiceContext) (request: PageRequest) token =
         task {
             let! result =
-                services.Store.Read
+                DisclosureReads.pageRead
+                    services
+                    DisclosureKind.AccessRequests
+                    (fun _ -> None)
+                    (fun (page: AccessRequestPage) -> DisclosureReads.rows page.Items)
                     {
                         CancellationToken = token
                         Work =
@@ -112,7 +116,7 @@ module internal AccessRequestQueries =
                                 }
                     }
 
-            return readResult result
+            return result
         }
 
     let submit (services: ServiceContext) () token =

@@ -27,7 +27,6 @@ let private owner fixture =
             (id fixture 1)
             DomainInputs.ownerProfile
             ClaimCore.Domain.Tasks.Registry.initialOwnerRoles
-            CaseReferencePolicy.CustomAllowed
             token
         |> sync
     with
@@ -49,17 +48,14 @@ let private lookup service identity cancellation =
     Expect.equal reply.OperationId identity "Lookup keeps exact operation correlation"
     reply.Outcome
 
-let private openCase identity reference =
+let private openCase identity _reference =
     (ClaimCore.TestSupport.Submissions.createRaw
         "case.open"
         (identity)
         (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
         (ClaimCore.TestSupport.Submissions.fields (
             RegistrationInput.values (DomainInputs.registration)
-         )
-         |> Map.add
-             (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-             (ClaimCore.Application.Contracts.SubmissionValue.Text(reference))))
+        )))
 
 let private confirmed () =
     let database = PostgresFixture.create () |> sync
@@ -82,13 +78,13 @@ let private confirmed () =
                     "case.erase"
                     (Guid.CreateVersion7())
                     (ClaimCore.Application.Contracts.OperationBinding.Case(
-                        CaseSelector.Reference("EXPIRY-ERASED"),
+                        CaseSelector.Id((caseReceipt erased).CaseId),
                         (1L),
                         None,
                         (Some(
                             reviewedFamilySequence
                                 fixture.Store
-                                (CaseSelector.Reference "EXPIRY-ERASED")
+                                (CaseSelector.Id((caseReceipt erased).CaseId))
                         ))
                     ))
                     (Map.empty)))
@@ -168,7 +164,7 @@ let private confirmed () =
             (OperationLifetime.admits observed (CaseFixtures.operationId current))
             "Negative control: ordinary wall-window admission would allow this ID"
 
-        let target = CaseSelector.Reference "EXPIRY-AVAILABLE"
+        let target = CaseSelector.Id((caseReceipt acceptedReceipt).CaseId)
 
         let inputs =
             [

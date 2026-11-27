@@ -172,7 +172,7 @@
       "value": {
         "target": {
           "kind": "REFERENCE",
-          "caseReference": "Demo-001"
+          "caseReference": "CC-SHSE-18HF-PX9X-RCYC-68"
         }
       }
     },
@@ -202,7 +202,7 @@
       "value": {
         "target": {
           "kind": "REFERENCE",
-          "caseReference": "CASE-001"
+          "caseReference": "CC-XE9K-MAK4-MB6P-FXMR-33"
         },
         "limit": 50
       }
@@ -227,7 +227,6 @@
           "expectedRevision": 0
         },
         "inputs": {
-          "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
           "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
@@ -243,6 +242,23 @@
               "input:partyName": "x"
             }
           ]
+        }
+      }
+    },
+    {
+      "id": "opening-refuses-authored-permanent-reference",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "task": "case.open",
+        "binding": {
+          "kind": "CASE",
+          "expectedRevision": 0
+        },
+        "inputs": {
+          "field:caseReference": "CC-0000-0000-0000-0000-98"
         }
       }
     },
@@ -268,7 +284,6 @@
           "expectedRevision": 0
         },
         "inputs": {
-          "field:caseReference": "x",
           "field:incidentDate": "2026-01-01",
           "field:receivedDate": "2026-01-01",
           "field:incidentCountry": "LV",
@@ -361,7 +376,7 @@
           "kind": "WORK",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "TARGETED"
+            "caseReference": "CC-7YVR-059B-5TJB-8VJG-03"
           },
           "expectedRevision": 1
         },
@@ -382,7 +397,7 @@
           "kind": "REMINDER",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "TARGETED"
+            "caseReference": "CC-7YVR-059B-5TJB-8VJG-03"
           }
         },
         "inputs": {
@@ -403,7 +418,7 @@
           "kind": "CASE",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "x"
+            "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30"
           },
           "expectedRevision": 1
         },
@@ -527,7 +542,7 @@
           "kind": "CASE",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "x"
+            "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30"
           },
           "expectedRevision": 1
         },
@@ -557,7 +572,7 @@
       "value": {
         "target": {
           "kind": "REFERENCE",
-          "caseReference": "CASE-1"
+          "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73"
         }
       }
     },
@@ -569,7 +584,7 @@
       "value": {
         "target": {
           "kind": "REFERENCE",
-          "caseReference": "CASE-1"
+          "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73"
         },
         "limit": 20
       }
@@ -582,7 +597,7 @@
       "value": {
         "target": {
           "kind": "REFERENCE",
-          "caseReference": "CASE-1"
+          "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73"
         },
         "limit": 21
       }
@@ -599,7 +614,7 @@
           "kind": "NOTE",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "CASE-1"
+            "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73"
           }
         },
         "inputs": {
@@ -619,7 +634,7 @@
           "kind": "NOTE",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "CASE-1"
+            "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73"
           },
           "noteId": "10000000-0000-7000-8000-000000000002"
         },
@@ -638,7 +653,7 @@
           "kind": "NOTE",
           "target": {
             "kind": "REFERENCE",
-            "caseReference": "CASE-1"
+            "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73"
           },
           "expectedRevision": 1
         },
@@ -655,7 +670,7 @@
       "value": {
         "target": {
           "kind": "REFERENCE",
-          "caseReference": "PAYMENTS-1"
+          "caseReference": "CC-2M7N-HG9H-CRT3-APZT-07"
         },
         "limit": 20
       }

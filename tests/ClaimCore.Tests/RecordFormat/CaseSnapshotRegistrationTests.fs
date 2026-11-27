@@ -10,7 +10,8 @@ open ClaimCore.TestSupport
 [<Tests>]
 let tests =
     testCase "registration decoding preserves independently authored dates" (fun () ->
-        let reference = CaseReference.parse "CHRONOLOGY" |> Result.toOption |> Option.get
+        let reference =
+            ClaimCore.TestSupport.DomainInputs.reference "CC-1466-7QJR-WW86-MP91-73"
 
         let id =
             OperationId.create (Guid.Parse "10000000-0000-7000-8000-000000000001")

@@ -20,12 +20,13 @@ let private privateText directory name (text: string) =
     File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
     path
 
-let private serviceReply service installationId (token: AccessToken) stage cancelled =
+let private serviceReply service installationId caseId (token: AccessToken) stage cancelled =
     task {
         let invocation =
             Frames.admit (
                 System.Text.Encoding.UTF8.GetBytes(
-                    """{"endpoint":"case.get","input":{"target":{"kind":"REFERENCE","caseReference":"SYNTHETIC-001"}}}"""
+                    ("""{"endpoint":"case.get","input":{"target":{"kind":"ID","caseId":"<case-id>"}}}"""
+                        .Replace("<case-id>", CaseId.format caseId))
                 )
             )
             |> Result.defaultWith (fun _ -> failtest "Frame refused.")
@@ -84,6 +85,7 @@ let qualify
     (server: IdentityServer.Identity)
     (service: HttpClient)
     installationId
+    caseId
     stage
     (cancelled: CancellationToken)
     =
@@ -130,7 +132,7 @@ let qualify
                 acquired
                 |> Result.defaultWith (fun _ -> failtest "Live client credentials refused.")
 
-            do! serviceReply service installationId token stage cancelled
+            do! serviceReply service installationId caseId token stage cancelled
             File.WriteAllText(secretPath, "invalid-synthetic-secret")
 
             stage "CLI wrong-secret refusal"

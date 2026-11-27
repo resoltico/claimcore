@@ -50,7 +50,10 @@ it("locks navigation and logout while a reviewed mutation is dispatched", async 
     expect(location.pathname).toBe("/cases/new");
   });
   await screen.findByRole("button", { name: "Review changes" });
-  fillRegistrationInputs({ caseReference: "LOCK-001", incidentDate: "2026-09-09" });
+  fillRegistrationInputs({
+    caseReference: "CC-ZP97-3S50-SWQR-7D0E-16",
+    incidentDate: "2026-09-09",
+  });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(document.querySelector('.workspace-sidebar a[href="/cases"]')).toHaveAttribute(

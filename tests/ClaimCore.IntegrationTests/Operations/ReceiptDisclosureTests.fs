@@ -48,10 +48,7 @@ let tests =
                         "RECEIPT-DISCLOSURE"
                         0L
                         "case.open"
-                        (Submissions.fields (RegistrationInput.values registration)
-                         |> Map.add
-                             (Submissions.field BusinessField.CaseReference)
-                             (SubmissionValue.Text "RECEIPT-DISCLOSURE"))
+                        (Submissions.fields (RegistrationInput.values registration))
 
                 let! first = Service.executeSubmission worker opening token |> Async.AwaitTask
                 let receipt = accepted first
@@ -259,10 +256,7 @@ let foreignScope =
                         reference
                         0L
                         "case.open"
-                        (Submissions.fields (RegistrationInput.values registration)
-                         |> Map.add
-                             (Submissions.field BusinessField.CaseReference)
-                             (SubmissionValue.Text reference))
+                        (Submissions.fields (RegistrationInput.values registration))
 
                 let originalA = opening 10 "SCOPE-A"
                 let originalB = opening 11 "SCOPE-B"

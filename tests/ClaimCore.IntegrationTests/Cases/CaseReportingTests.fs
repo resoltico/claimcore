@@ -50,6 +50,7 @@ let private read owner filter group =
 let private openCaseInCurrency fixture owner number received currency claimed =
     let values =
         [
+            Submissions.field BusinessField.PolicyNumber, SubmissionValue.Text $"REPORT-{number}"
             match received with
             | Some received ->
                 Submissions.field BusinessField.ReceivedDate, SubmissionValue.Text received
@@ -213,7 +214,9 @@ let private monthReporting (database: PostgresFixture.Database) =
                 token
 
         Expect.equal
-            ((success datedList).Items |> List.map (_.Reference >> CaseReference.format))
+            ((success datedList).Items
+             |> List.map (fun row -> caseAlias fixture row.CaseId)
+             |> List.sort)
             [
                 "REPORT-10"
                 "REPORT-11"
@@ -506,7 +509,9 @@ let private traversal (database: PostgresFixture.Database) =
             "The ungrouped empty scope retains exactly one blank-currency row"
 
         let! exported =
-            ClaimCore.Server.CsvExport.traversal owner (ExportSelection.CaseSummary selection)
+            ClaimCore.Server.CsvExport.traversal
+                (Service.exportSource owner)
+                (ExportSelection.CaseSummary selection)
             |> ClaimCore.Server.CsvExport.materialize 65536 token
 
         let document = exported |> Result.defaultWith (sprintf "%A" >> failtest)
@@ -609,7 +614,7 @@ let private currencyBoundary (database: PostgresFixture.Database) =
                     (Submissions.createRaw
                         "work.update"
                         (id fixture (number + 70))
-                        (OperationBinding.Work(CaseSelector.Reference($"REPORT-{number}"), 0L))
+                        (OperationBinding.Work(caseTarget fixture ($"REPORT-{number}"), 0L))
                         (Submissions.work
                             {
                                 Responsible = WorkValue.Set(ActorId.format who)

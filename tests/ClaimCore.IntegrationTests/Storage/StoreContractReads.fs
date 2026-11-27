@@ -44,7 +44,11 @@ let internal caseTimeline fixture reference before limit =
             ReadOperation.Work =
                 (fun tx ->
                     task {
-                        let! current = FamilyReads.findCaseByReference tx reference
+                        let! current =
+                            match caseTarget fixture reference with
+                            | CaseSelector.Id id -> FamilyReads.findCase tx id
+                            | CaseSelector.Reference reference ->
+                                FamilyReads.findCaseByReference tx reference
 
                         let id =
                             current
@@ -111,7 +115,12 @@ let internal existingCaseId fixture reference =
         let! result =
             fixture.Store.Read
                 {
-                    Work = fun tx -> FamilyReads.findCaseByReference tx reference
+                    Work =
+                        fun tx ->
+                            match caseTarget fixture reference with
+                            | CaseSelector.Id id -> FamilyReads.findCase tx id
+                            | CaseSelector.Reference reference ->
+                                FamilyReads.findCaseByReference tx reference
                     CancellationToken = CancellationToken.None
                 }
 
@@ -153,7 +162,7 @@ let internal assignedReader fixture (actor: ServiceContext) =
                 principal
                 {
                     Role = Role.CaseReader
-                    Scope = (GrantTarget.CaseReference "C")
+                    Scope = ((caseGrant fixture "C"))
                 }
                 true
 

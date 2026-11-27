@@ -58,7 +58,7 @@ let tests =
                             ]
                         )
                     with
-                    | Ok(Initialize(zone, owner, None, false)) ->
+                    | Ok(Initialize(zone, owner, false)) ->
                         Expect.equal zone "Etc/UTC" "Explicit business zone"
 
                         Expect.equal
@@ -81,30 +81,11 @@ let tests =
                             [ Role.CaseHandler; Role.PaymentRecorder ]
                             "Only additional roles are authored"
                     | other -> failtestf "Expected initialization: %A" other)
-            testCase "policy flags preserve omission and accept exact tokens" (fun () ->
-                for token, expected in
-                    [
-                        "SYSTEM_ASSIGNED_ONLY", CaseReferencePolicy.SystemAssignedOnly
-                        "CUSTOM_ALLOWED", CaseReferencePolicy.CustomAllowed
-                    ] do
-                    match
-                        Inputs.command (
-                            flags @ [ "--case-reference-policy"; token; "--skip-existing" ]
-                        )
-                    with
-                    | Ok(Initialize(_, _, Some policy, true)) ->
-                        Expect.equal policy expected "Explicit choice is retained for skip"
-                    | other -> failtestf "Expected policy selection: %A" other
-
+            testCase "the obsolete reference policy flag is refused" (fun () ->
                 Expect.equal
-                    (fault (flags @ [ "--case-reference-policy"; "custom_allowed" ]))
-                    OperatorFault.CaseReferencePolicyInvalid
-                    "Malformed choices use a bounded policy failure"
-
-                Expect.equal
-                    (issue (flags @ [ "--case-reference-policy" ]))
-                    (UsageError.MissingValue "--case-reference-policy")
-                    "An explicit missing value differs from omission")
+                    (fault (flags @ [ "--case-reference-policy"; "CUSTOM_ALLOWED" ]))
+                    OperatorFault.InvocationInvalid
+                    "Setup issues references without a policy selection")
             testCase
                 "owner flags are required without an operation identity or private principal file"
                 (fun () ->

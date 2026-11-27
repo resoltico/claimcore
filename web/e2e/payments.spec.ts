@@ -15,8 +15,7 @@ test("records instalments and removes the selected entry through one reviewed co
   // Individual request and assertion deadlines remain unchanged.
   test.setTimeout(60_000);
   await openAuthenticated(page);
-  const reference = `PAY-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `PAY-${randomUUID().slice(0, 8)}`);
   await completeAct(page, "case.decide", {
     "Payment decision date": "2026-09-03",
     "Payable amount": "100",
@@ -197,8 +196,7 @@ test("expands more than fifty genuine payments, removes an older entry and reflo
     width: 1440,
     height: 1000,
   });
-  const reference = "CLM-PAYMENTS-55";
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, "CLM-PAYMENTS-55");
   await completeAct(page, "case.decide", {
     "Payment decision date": "2026-09-03",
     "Payable amount": "100",

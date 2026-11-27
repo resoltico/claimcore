@@ -14,7 +14,7 @@ it("fetch never follows redirects and dispatched delivery loss remains uncertain
       task: "case.close",
       binding: {
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         expectedRevision: 1,
       },
       inputs: { "field:outcome": "OTHER" },

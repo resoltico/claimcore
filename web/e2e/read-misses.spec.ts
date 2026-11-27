@@ -60,7 +60,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
 
 test("keeps absent cases private and unknown operation outcomes pending", async ({ page }) => {
   await openAuthenticated(page);
-  await (await showExactLookup(page)).fill(`ABSENT-${randomUUID().slice(0, 8)}`);
+  await (await showExactLookup(page)).fill("CC-7K3M-Q8T2-PW6D-X9HR-49");
   await (await showExactLookup(page)).press("Enter");
   const find = page.getByRole("dialog", { name: "Find a case" });
   await expect(find.getByRole("alert")).toBeVisible();
@@ -93,8 +93,10 @@ const caseReadAt = async (page: Page, path: string) => {
 
 test("recovers from a malformed reference through the existing Find dialog", async ({ page }) => {
   await openAuthenticated(page);
-  const reference = `FIND-ROUTE-${randomUUID().slice(0, 8).toUpperCase()}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `FIND-ROUTE-${randomUUID().slice(0, 8).toUpperCase()}`,
+  );
   const casePath = new URL(page.url()).pathname;
   const malformed = "CC-0000-0000-0000-0000-01";
   const malformedPath = `/cases/reference/${malformed}`;

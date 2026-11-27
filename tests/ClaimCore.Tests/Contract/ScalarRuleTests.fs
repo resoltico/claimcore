@@ -95,7 +95,7 @@ let private textAndDateRuleTests =
                 | ScalarRule.Text constraints ->
                     Expect.equal
                         constraints.MaximumCharacters
-                        (Some 32)
+                        (Some 25)
                         "Exact reference length bound"
 
                     Expect.isSome constraints.Format.Grammar "Public lexical grammar is present"
@@ -200,14 +200,6 @@ let grammarDiagnostics =
 
         for scenario in
             [
-                {
-                    Field = BusinessField.CaseReference
-                    Parse = reference
-                    WrongParser = country
-                    Invalid = "has space"
-                    Valid = "UNIT-1"
-                    Expected = Violation.ReferenceFormat
-                }
                 {
                     Field = BusinessField.IncidentCountry
                     Parse = country

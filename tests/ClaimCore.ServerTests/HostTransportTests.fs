@@ -330,8 +330,6 @@ let private businessFormatRefusals () =
         for before, after, field in
             [
                 "\"LV\"", "\"Latvia\"", "incidentCountry"
-                "\"WEB-001\"", "\"a b\"", "caseReference"
-                "\"WEB-001\"", "\"é\"", "caseReference"
                 "2026-08-01", "not-a-date", "incidentDate"
                 "\"1.00\"", "\"one\"", "claimedAmount"
                 "\"EUR\"", "\"euros\"", "claimedCurrency"

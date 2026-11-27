@@ -170,7 +170,7 @@ it.each(inactive)(
 );
 
 it.each(inactive)(
-  "keeps caller-owned $subject.state guidance visible when Check access cannot reach the service",
+  "masks the previous $subject.state observation when Check access cannot reach the service",
   async (requester) => {
     mockEndpoint("context")
       .mockResolvedValueOnce({
@@ -196,12 +196,8 @@ it.each(inactive)(
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "ClaimCore could not be reached. Check your connection.",
     );
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      requester.subject.state === "DISABLED"
-        ? "This account is disabled"
-        : "You don’t have access yet",
-    );
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
+    expect(screen.queryByText("This account is disabled")).toBeNull();
+    expect(screen.queryByText("You don’t have access yet")).toBeNull();
     expect(screen.queryByText("IdP hint")).toBeNull();
     expect(screen.queryByText("Registered name")).toBeNull();
     expect(screen.queryByText("Disabled name")).toBeNull();

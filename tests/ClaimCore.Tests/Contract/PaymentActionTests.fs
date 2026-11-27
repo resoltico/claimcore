@@ -58,7 +58,7 @@ let tests =
                             {
                                 CasePaymentPage.Basis = DomainInputs.workBasis
                                 CaseId = parent
-                                Reference = DomainInputs.reference "ACTION-ROW"
+                                Reference = DomainInputs.reference "CC-H652-1AAT-SZCY-BSHN-04"
                                 Revision = revision
                                 WorkRevision = Revision.zero
                                 State =

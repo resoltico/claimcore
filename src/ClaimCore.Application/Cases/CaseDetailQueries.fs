@@ -89,12 +89,7 @@ module internal CaseDetailQueries =
             | _ -> return Error CoreFault.StoreIntegrityError
         }
 
-    let private getInSnapshot
-        (services: ServiceContext)
-        selector
-        (tx: ReadTx)
-        (view: CaseReadFacts)
-        =
+    let private getInSnapshot (services: ServiceContext) (tx: ReadTx) (view: CaseReadFacts) =
         task {
             match view.Case with
             | Some record when
@@ -142,13 +137,6 @@ module internal CaseDetailQueries =
                     | Ok items, Ok notes ->
                         let! relatedCases = CaseLinkReads.read services tx view record
 
-                        let! matchedReference =
-                            CaseIdentityReads.matchedEarlier
-                                tx
-                                record.CaseId
-                                record.Snapshot.Reference
-                                selector
-
                         let! currentResult =
                             caseResult services tx view work stages changedAt recordedBy payments
 
@@ -158,7 +146,6 @@ module internal CaseDetailQueries =
                                 (fun current ->
                                     Outcome.Succeeded
                                         { current with
-                                            MatchedReference = matchedReference
                                             RelatedCases = relatedCases
                                             Disposition = disposition
                                             NextActions = items
@@ -171,10 +158,14 @@ module internal CaseDetailQueries =
             | _ -> return unavailable
         }
 
-    let get (services: ServiceContext) selector token =
+    let get
+        (services: ServiceContext)
+        selector
+        token
+        : System.Threading.Tasks.Task<Released<Outcome<CaseReadModel>>> =
         task {
             match CaseRecords.validateSelector selector with
-            | Error refusal -> return! RequestRefusals.read services token refusal
+            | Error refusal -> return! RequestRefusals.protectedRead services token refusal
             | Ok _ ->
                 let! result =
                     services.Store.Read
@@ -183,7 +174,7 @@ module internal CaseDetailQueries =
                                 fun tx ->
                                     task {
                                         let! view = CaseReadContext.load services tx selector
-                                        let! outcome = getInSnapshot services selector tx view
+                                        let! outcome = getInSnapshot services tx view
 
                                         let caseId =
                                             DisclosureReads.target

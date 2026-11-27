@@ -12,10 +12,14 @@ module internal DigestDispatch =
         installation
         basis
         (send:
-            EmailAddress
-                -> Map<DigestCountKind, int64>
+            Released<EmailAddress * Map<DigestCountKind, int64>>
                 -> CancellationToken
                 -> Task<DigestRelayResult>)
+        (authorizeRelease:
+            ActorId
+                -> CancellationToken
+                -> EmailAddress * Map<DigestCountKind, int64>
+                -> Task<Released<EmailAddress * Map<DigestCountKind, int64>> option>)
         (record: ActorId -> DigestOutcome -> unit)
         (token: CancellationToken)
         =
@@ -54,17 +58,39 @@ module internal DigestDispatch =
                                     CancellationTokenSource.CreateLinkedTokenSource token
 
                                 sendDeadline.CancelAfter remaining
-                                mayHaveSubmitted <- true
-                                let! relay = send recipient counts sendDeadline.Token
 
-                                let outcome =
-                                    match relay with
-                                    | DigestRelayResult.Accepted -> DigestOutcome.RelayAccepted
-                                    | DigestRelayResult.Refused ->
-                                        DigestOutcome.FailedBeforeAcceptance
-                                    | DigestRelayResult.Uncertain -> DigestOutcome.Unknown
+                                let! current =
+                                    DigestStorage.prepare
+                                        source
+                                        installation
+                                        basis
+                                        actor
+                                        sendDeadline.Token
 
-                                do! finish actor claim outcome
+                                if current <> prepared then
+                                    do! finish actor claim DigestOutcome.FailedBeforeAcceptance
+                                else
+                                    match!
+                                        authorizeRelease
+                                            actor
+                                            sendDeadline.Token
+                                            (recipient, counts)
+                                    with
+                                    | Some released when not sendDeadline.IsCancellationRequested ->
+                                        mayHaveSubmitted <- true
+                                        let! relay = send released sendDeadline.Token
+
+                                        let outcome =
+                                            match relay with
+                                            | DigestRelayResult.Accepted ->
+                                                DigestOutcome.RelayAccepted
+                                            | DigestRelayResult.Refused ->
+                                                DigestOutcome.FailedBeforeAcceptance
+                                            | DigestRelayResult.Uncertain -> DigestOutcome.Unknown
+
+                                        do! finish actor claim outcome
+                                    | _ ->
+                                        do! finish actor claim DigestOutcome.FailedBeforeAcceptance
                     | _ -> do! finish actor claim DigestOutcome.SkippedEmpty
                 with _ ->
                     let outcome =

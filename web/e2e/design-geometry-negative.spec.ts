@@ -126,16 +126,16 @@ test("G5 measures only the standard fixture rows when a case scope is supplied",
     const link = document.createElement("a");
     const reference = document.createElement("span");
     reference.className = "identifier-value";
-    reference.textContent = "earlier-fixture-row";
+    reference.textContent = "CC-55KW-SSJ4-8HMS-G1BH-73";
     link.append(reference);
     cell.replaceChildren(link);
   });
   await page.addStyleTag({ content: ".data-table tr { block-size: 120px }" });
-  expect(await geometryFailures(page, false, "current-fixture")).not.toContain("G5");
+  expect(await geometryFailures(page, false, ["CC-3PBY-1JRP-Z70W-2VXH-71"])).not.toContain("G5");
   await result.locator(".identifier-value").evaluate((reference) => {
-    reference.textContent = "~current-fixture";
+    reference.textContent = "CC-3PBY-1JRP-Z70W-2VXH-71";
   });
-  expect(await geometryFailures(page, false, "current-fixture")).toContain("G5");
+  expect(await geometryFailures(page, false, ["CC-3PBY-1JRP-Z70W-2VXH-71"])).toContain("G5");
 });
 
 test("G10 rejects two primary actions", async ({ page }) => {

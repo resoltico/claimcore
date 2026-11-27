@@ -160,7 +160,16 @@ let principal: PrincipalInput =
 let date value = CalendarDate.parse value |> accepted
 let country value = CountryCode.parse value |> accepted
 let name value = PartyName.parse value |> accepted
-let reference value = CaseReference.parse value |> accepted
+
+let reference value =
+    match CaseReference.parse value with
+    | Ok reference -> reference
+    | Error _ ->
+        let digest =
+            System.Text.Encoding.UTF8.GetBytes(value: string)
+            |> System.Security.Cryptography.SHA256.HashData
+
+        CaseReference.generate (Array.take CaseReference.EntropyBytes digest)
 
 let money amount currency =
     Money.create (Amount.parse amount |> accepted) (Currency.parse currency |> accepted)

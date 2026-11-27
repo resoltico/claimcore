@@ -59,3 +59,22 @@ actions remain reachable. The [design matrix](../web/e2e/design-matrix.spec.ts) 
 gutters, focus outlines, wheel and keyboard access, and transitions through selection and review.
 The [deployment qualification](../web/e2e/deployment-qualification.mjs) checks the framed mark in
 Web and Keycloak using the served SVG and rendered pixels.
+
+## Lifetime of private views
+
+Private endpoint views start masked when the document is hidden or the browser reports it is
+offline. Focus, visibility changes, restored history and renewed connectivity trigger fresh
+authorization. A document suspended for history restoration stays masked until it receives a
+page-show event.
+An authorized display generation has a 15-second foreground lifetime measured by the browser's
+monotonic clock. The app masks its endpoint views when that generation ends and waits for fresh
+authorization. Foreground animation frames check the same deadline before paint, even if the
+refresh timer is late. If the browser suspends script execution, masking runs when it can process
+the next lifecycle event or frame. An earlier reply cannot restore a masked view. Attachment
+previews and CSV downloads under app control use the same display generation. Screenshots, copied
+text, and files already saved are outside this control.
+
+The [read timing probe](../tests/ClaimCore.IntegrationTests/Storage/ReadTimingProbe.fs) measures
+the requester context, work counts and a case page with their audit writes over repeated
+foreground refreshes. The display deadline leaves room for those reads to complete while
+bounding how long an idle visible view keeps its current authorization.

@@ -21,7 +21,13 @@ import {
 } from "./attachment-workflow";
 import { noHorizontalOverflow } from "./layout-support";
 import { selectLanguage } from "./localization-support";
-import { browserRequest, expectAccessible, openAuthenticated } from "./session-helpers";
+import {
+  browserRequest,
+  expectAccessible,
+  login,
+  openAuthenticated,
+  seedSignedOut,
+} from "./session-helpers";
 import { recoveryRecords } from "./recovery-storage";
 import { workRequest, type observedAccess } from "./work-workflow";
 
@@ -534,6 +540,31 @@ for (const moveFocusOutside of [false, true]) {
     await expect(status).toHaveText("Page 1 of 2");
     await page.keyboard.press(pagerTab(browserName));
     await expect(row.getByRole("button", { name: "Next page", exact: true })).toBeFocused();
+    await page.evaluate(() => {
+      const schedule = window.setTimeout;
+      const cancel = window.clearTimeout;
+      const scheduleDeadline = (handler: TimerHandler, delay?: number, ...args: unknown[]) => {
+        const timer = schedule(handler, delay, ...args);
+        if (delay === 20_000 && typeof handler === "function") {
+          window.setTimeout = schedule;
+          // Deliver the pager deadline independently of the shorter private display lifetime.
+          const fire = () => {
+            window.clearTimeout(timer);
+            Reflect.apply(handler, window, args);
+          };
+          document.addEventListener("qualification-pdf-deadline", fire, { once: true });
+          window.clearTimeout = (id) => {
+            if (id === timer) {
+              document.removeEventListener("qualification-pdf-deadline", fire);
+              window.clearTimeout = cancel;
+            }
+            cancel(id);
+          };
+        }
+        return timer;
+      };
+      Object.defineProperty(window, "setTimeout", { value: scheduleDeadline });
+    });
     await page.keyboard.press("Enter");
     await expect(row.getByRole("button", { name: "Previous page", exact: true })).toBeFocused();
     await expect(viewerFrame(page).locator("html")).toHaveAttribute(
@@ -545,9 +576,10 @@ for (const moveFocusOutside of [false, true]) {
     if (moveFocusOutside) {
       await downloadButton.focus();
     }
-    await expect(row.getByRole("alert")).toHaveText("This attachment cannot be previewed.", {
-      timeout: 22_000,
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event("qualification-pdf-deadline"));
     });
+    await expect(row.getByRole("alert")).toHaveText("This attachment cannot be previewed.");
     await expect(iframe).toHaveCount(0);
     await expect(moveFocusOutside ? downloadButton : close).toBeFocused();
     await download(page, row, pdfName, bytes);
@@ -1081,8 +1113,7 @@ test("reviews private files, displays native previews and withdraws disclosure @
 }) => {
   test.setTimeout(90_000);
   await openAuthenticated(page);
-  const reference = `ATTACH-WEB-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  await openCase(page, `ATTACH-WEB-${randomUUID().slice(0, 8)}`);
   const attachments = page.getByRole("region", { name: "Attachments", exact: true });
   await expect(page.getByRole("link", { name: "Attachments", exact: true })).toHaveCount(0);
   const portable = "private_raster_01.png";
@@ -1335,8 +1366,22 @@ test("drops a preview verified after observing withdrawal in another tab", async
 
 test("withdrawal closes a pending PDF frame and discards its queued page reply @engine", async ({
   page,
+  browser,
+  baseURL,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(160_000);
+  if (baseURL === undefined) {
+    throw new Error("Expected the published workspace origin.");
+  }
+  const independent = await browser.newContext({
+    baseURL,
+    ignoreHTTPSErrors: true,
+    storageState: { cookies: [], origins: [] },
+  });
+  const withdrawal = await independent.newPage();
+  await seedSignedOut(withdrawal);
+  await withdrawal.goto("/", { waitUntil: "commit" });
+  await login(withdrawal);
   await page.addInitScript(() => {
     if (window !== window.top) {
       return;
@@ -1416,16 +1461,15 @@ test("withdrawal closes a pending PDF frame and discards its queued page reply @
   await expect(controls.status).toHaveText("Page 1 of 2");
   await expect(controls.iframe).toBeVisible();
 
-  const withdrawal = await page.context().newPage();
   await withdrawal.goto(page.url());
   const withdrawalRow = withdrawal.locator(".data-table tbody").filter({ hasText: pdfName });
   await withdrawalRow.getByRole("button", { name: "Withdraw attachment", exact: true }).click();
   await confirm(withdrawal, "/api/operation.execute");
-  await withdrawal.close();
-  await page
-    .locator(".case-timeline-panel")
-    .getByRole("tab", { name: "Attachments", exact: true })
-    .click();
+  await independent.close();
+  await page.bringToFront();
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+  });
   await expect(panel.locator("iframe")).toHaveCount(0);
   await expect(row).toHaveCount(0);
   await page.evaluate(() => {

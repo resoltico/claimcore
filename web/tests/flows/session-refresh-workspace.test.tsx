@@ -52,7 +52,7 @@ it("the persistent App masks a replaced session's authored registration and perm
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByRole("textbox", { name: "Policy number" });
   fillRegistrationInputs({
-    caseReference: "REFRESH-DRAFT",
+    caseReference: "CC-BPJK-NZFS-D0WQ-EPJX-53",
     policyNumber: "AUTHORED_REFRESH_CANARY",
   });
   const pending = Promise.withResolvers<ApiResult<ServiceResponse<"context">>>();
@@ -137,17 +137,18 @@ it("masks a prior session’s private uncertain request and recovers only its id
   const view = render(<App />);
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByRole("textbox", { name: "Policy number" });
-  fillRegistrationInputs({ caseReference: "UNCERTAIN_OWNER_CANARY" });
+  fillRegistrationInputs({ policyNumber: "UNCERTAIN_OWNER_CANARY" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
-  expect(document.body).toHaveTextContent("UNCERTAIN_OWNER_CANARY");
+  expect(document.body).not.toHaveTextContent("UNCERTAIN_OWNER_CANARY");
   const [firstExecution] = execute.mock.calls;
   if (firstExecution === undefined) {
     throw new Error("The controlled uncertain request must be dispatched");
   }
   const [original] = firstExecution;
+  expect(original.input.inputs).toHaveProperty("field:policyNumber", "UNCERTAIN_OWNER_CANARY");
   const pending = Promise.withResolvers<ApiResult<ServiceResponse<"context">>>();
   const [first] = context.mock.results;
   if (first === undefined || first.type !== "return") {

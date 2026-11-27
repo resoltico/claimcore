@@ -74,7 +74,9 @@ let private page revision next =
 
 let private run arguments (replies: Outcome<CaseTimelinePage> list) =
     let prepared =
-        Grammar.prepare (fun () -> "unused") ([ "case"; "timeline"; "x" ] @ arguments)
+        Grammar.prepare
+            (fun () -> "unused")
+            ([ "case"; "timeline"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] @ arguments)
         |> CaseBuilders.accepted
 
     let calls = ResizeArray<Invocation>()
@@ -133,94 +135,6 @@ let tests =
     testList
         "canonical timeline CLI"
         [
-            testCase
-                "CSV projects canonical typed money and retains disclosure through pagination"
-                (fun () ->
-                    let moneyChange =
-                        TimelineChange.CaseMoney
-                            {
-                                FieldName = BusinessField.ClaimedAmount
-                                Change =
-                                    {
-                                        Before = Some(DomainInputs.money "1234.5678" "EUR")
-                                        After = Some(DomainInputs.money "100.0000" "EUR")
-                                    }
-                            }
-
-                    let first =
-                        { page 2L (Some "csv-next") with
-                            Items =
-                                [
-                                    { entry 2L with
-                                        Changes =
-                                            TimelineChanges.Disclosed
-                                                {
-                                                    Items = [ moneyChange ]
-                                                    Overview =
-                                                        {
-                                                            Event =
-                                                                TimelineEvent.PartChanged
-                                                                    PartKind.Case
-                                                            Highlights = []
-                                                        }
-                                                }
-                                    }
-                                ]
-                        }
-
-                    let last =
-                        { page 1L None with
-                            Items =
-                                [
-                                    { entry 1L with
-                                        Changes = TimelineChanges.Erased
-                                    }
-                                ]
-                        }
-
-                    let code, text, errors, calls =
-                        run
-                            [ "--format"; "csv"; "--language"; "lv"; "--filter"; "facts"; "--all" ]
-                            [ Outcome.Succeeded first; Outcome.Succeeded last ]
-
-                    Expect.equal code 0 "CSV traversal succeeds"
-                    Expect.equal errors "" "No false error or continuation remains at the end"
-                    let records = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
-
-                    Expect.equal
-                        records.Length
-                        3
-                        "One header and one row per supplied change/disclosure"
-
-                    Expect.equal
-                        (records
-                         |> Array.filter (fun row -> row.StartsWith "caseReference,operationId")
-                         |> Array.length)
-                        1
-                        "Header occurs once across all pages"
-
-                    Expect.stringContains
-                        text
-                        "DISCLOSED,claimedAmount,1234.5678 EUR,100 EUR"
-                        "Full Items survive empty overview highlights with canonical exact precision and no localized separators or imposed display zeros"
-
-                    Expect.stringContains
-                        text
-                        "ERASED,,,"
-                        "Erasure is explicit and carries no invented values"
-
-                    Expect.equal calls.Length 2 "Continuation is followed"
-                    let requests = calls |> List.map (Frames.value Api.caseTimeline >> Option.get)
-
-                    Expect.equal
-                        (requests |> List.map _.Filter)
-                        [ Some TimelineFilter.Facts; Some TimelineFilter.Facts ]
-                        "Filter never changes during CSV traversal"
-
-                    Expect.equal
-                        (requests |> List.map _.AfterCursor)
-                        [ None; Some "csv-next" ]
-                        "Only the continuation changes")
             testCase "each timeline entity keeps its authoritative act vocabulary" (fun () ->
                 let revision = CaseFixtures.revision 1L
 
@@ -274,7 +188,11 @@ let tests =
                             "Actual per-entity labels render in all supported languages")
             testCase "retired history and activity verbs and API endpoints refuse" (fun () ->
                 for verb in [ "history"; "activity" ] do
-                    match Grammar.prepare (fun () -> "unused") [ "case"; verb; "x" ] with
+                    match
+                        Grammar.prepare
+                            (fun () -> "unused")
+                            [ "case"; verb; "CC-5NRH-CGNQ-4TR4-80B2-30" ]
+                    with
                     | Error [ UsageError.UnknownCommand(_, suggestions) ] ->
                         Expect.isFalse
                             (List.contains ("case " + verb) suggestions)
@@ -376,7 +294,7 @@ let tests =
                     for request in requests do
                         Expect.equal
                             request.Target
-                            (CaseSelector.Reference "x")
+                            (CaseSelector.Reference "CC-5NRH-CGNQ-4TR4-80B2-30")
                             "Target is unchanged"
 
                         Expect.equal

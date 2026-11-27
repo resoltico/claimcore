@@ -37,7 +37,7 @@ it("the compiler rejects raw bytes and structural forgeries at mutation submissi
     task: "case.close",
     binding: {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
       expectedRevision: 1,
     },
     inputs: { "field:outcome": "OTHER" },
@@ -56,7 +56,7 @@ it("final prepared wire admission bounds actual UTF-8 bytes before dispatch", ()
     task: "case.void",
     binding: {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
       expectedRevision: 1,
     },
     inputs: { "input:reason": "💼".repeat(strictByteProfile.maximumRequestBytes) },

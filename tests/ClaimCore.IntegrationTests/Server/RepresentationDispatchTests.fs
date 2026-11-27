@@ -78,7 +78,7 @@ let private dispatch () =
             read.Prepare(
                 Api.caseGet.Input.Write
                     {
-                        Target = CaseSelector.Reference "REP-READ"
+                        Target = caseTarget fixture "REP-READ"
                     }
             )
             |> Result.defaultWith (fun error -> failtestf "%A" error)
@@ -118,10 +118,7 @@ let private dispatch () =
                 "case.open"
                 (identity)
                 (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
-                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))
-                 |> Map.add
-                     (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                     (ClaimCore.Application.Contracts.SubmissionValue.Text("REP-WRITE"))))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))))
 
         let preview = ApiRoutes.route (ActorEndpoint.Operation OperationEndpoint.Preview)
 
@@ -180,10 +177,10 @@ let private dispatch () =
                 "case.open"
                 (identity)
                 (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
-                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values registration)
                  |> Map.add
-                     (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                     (ClaimCore.Application.Contracts.SubmissionValue.Text("REP-CHANGED"))))
+                     (Submissions.field BusinessField.PolicyNumber)
+                     (SubmissionValue.Text "REP-CHANGED")))
 
         let changed =
             execute.Prepare(Api.operationExecute.Input.Write((changed)))

@@ -767,7 +767,6 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
           expectedRevision: 0,
         },
         inputs: {
-          "field:caseReference": "OWN-REF",
           "field:incidentDate": "2026-09-01",
           "field:receivedDate": "2026-09-02",
           "field:incidentCountry": "LV",
@@ -815,6 +814,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
       case "UNRESOLVED":
         operation = {
           kind,
+          recoveryOnly: false,
           source,
           pending: null,
         };
@@ -967,7 +967,7 @@ it("rejects a current read whose document belongs to another case", () => {
     type: "READ_CURRENT",
     identity,
     caseId: "requested-case",
-    reference: "CASE-1",
+    reference: "CC-55KW-SSJ4-8HMS-G1BH-73",
   });
   expect(reading.disclosed.read).toEqual({
     resource: "case.get",

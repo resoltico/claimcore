@@ -79,7 +79,6 @@ let peopleReceipt =
 
 let caseRead: CaseReadModel =
     {
-        MatchedReference = None
         RelatedCases = RelatedCaseLinks.empty
         FamilySequence = Sequence.create 1L |> Option.get
         Snapshot = snapshot
@@ -283,7 +282,6 @@ let internal replies () : IEndpointOutput list =
                                         [
                                             InstallationOffer.Open(
                                                 ClaimCore.Domain.Tasks.Case.Open.editableInputs
-                                                    CaseReferencePolicy.CustomAllowed
                                             )
                                         ]
                                 }
@@ -560,6 +558,7 @@ let internal replies () : IEndpointOutput list =
                                             AttachmentId = None
                                             Outcome = DisclosureOutcome.Succeeded
                                             Export = None
+                                            Page = None
                                         }
                                 }
                             ]

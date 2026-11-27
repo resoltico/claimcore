@@ -95,7 +95,7 @@ let private uncertainContinues () =
         let clock = Clock()
 
         let mutation =
-            "case close --outcome other REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
+            "case close --outcome other CC-951Y-HX0E-H66F-CPM9-95 --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
 
         use terminal =
             new Terminal(
@@ -210,7 +210,7 @@ let private interruptAroundPublication () =
 
             let download target =
                 ShellLine.Text(
-                    "attachment download REF 018f785e-1b45-7cc4-b9c9-cebf5f897689 --output "
+                    "attachment download CC-951Y-HX0E-H66F-CPM9-95 018f785e-1b45-7cc4-b9c9-cebf5f897689 --output "
                     + CommandGrammar.quoteArgument target
                 )
 
@@ -396,7 +396,7 @@ let private failedStatusRetainsUncertainty () =
             new Terminal(
                 [
                     ShellLine.Text
-                        "case close --outcome other REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
+                        "case close --outcome other CC-951Y-HX0E-H66F-CPM9-95 --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
                 ]
             )
 
@@ -441,7 +441,7 @@ let private downloadPreviewRefusal () =
             let path = Path.Combine(directory.FullName, "attachment.pdf")
 
             let command =
-                "attachment download REF 10000000-0000-7000-8000-000000000001 --output "
+                "attachment download CC-951Y-HX0E-H66F-CPM9-95 10000000-0000-7000-8000-000000000001 --output "
                 + CommandGrammar.quoteArgument path
 
             use terminal = new Terminal([ ShellLine.Text command; ShellLine.Text "exit" ])

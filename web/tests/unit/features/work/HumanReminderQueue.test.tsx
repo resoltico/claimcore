@@ -42,7 +42,7 @@ const review: HumanReview = {
       kind: "REVIEW",
       confirmation: {
         kind: "CASE_REFERENCE",
-        reference: "CORE-SELECTED",
+        reference: "CC-H2QY-FYHM-KT59-BVXK-77",
       },
       consequence: "ROUTINE",
     },

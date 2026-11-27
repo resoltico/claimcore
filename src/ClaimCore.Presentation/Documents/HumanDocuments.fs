@@ -133,6 +133,7 @@ type HumanExecuteResult =
     | AlreadyAccepted of HumanDocument
     | Rejected of HumanRejection
     | Failed of CoreFault
+    | ReceiptUnavailable
     | OutcomeUnknown
 
 [<RequireQualifiedAccess>]

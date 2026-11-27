@@ -73,10 +73,12 @@ type Compartment =
             DescriptorValue: CompartmentDescriptor
             CommitmentValue: byte array
             ContentValue: (byte array * byte array) option
+            ClearedRelationship: bool
         }
 
     member this.Descriptor = this.DescriptorValue
     member this.Commitment = Array.copy this.CommitmentValue
+    member this.RelationshipCleared = this.ClearedRelationship
 
 module Compartment =
     [<Literal>]
@@ -109,6 +111,7 @@ module Compartment =
                 DescriptorValue = descriptor
                 CommitmentValue = hash nonce payload
                 ContentValue = Some(nonce, payload)
+                ClearedRelationship = false
             })
 
     let restore descriptor commitment nonce payload =
@@ -122,6 +125,7 @@ module Compartment =
                         DescriptorValue = descriptor
                         CommitmentValue = Array.copy commitment
                         ContentValue = None
+                        ClearedRelationship = false
                     }
             | Some nonce, Some payload ->
                 seal descriptor nonce payload
@@ -137,6 +141,15 @@ module Compartment =
     let content value =
         value.ContentValue
         |> Option.map (fun (nonce, payload) -> Array.copy nonce, Array.copy payload)
+
+    let clearedRelationship value =
+        if value.ContentValue.IsSome then
+            Error CompartmentProblem.IncompleteContent
+        else
+            Ok
+                { value with
+                    ClearedRelationship = true
+                }
 
     let withoutContent value = { value with ContentValue = None }
 

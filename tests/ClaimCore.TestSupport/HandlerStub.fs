@@ -41,16 +41,12 @@ let private registration =
         ]
         DomainInputs.registration
 
-let private request reference =
+let commandInput =
     Submissions.create
         "case.open"
         operationId
         (Binding.CaseNew Revision.zero)
-        (Submissions.fields (RegistrationInput.values registration)
-         |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text reference))
-
-let commandInput =
-    request "WEB-001"
+        (Submissions.fields (RegistrationInput.values registration))
     |> OperationSubmissionCodecs.submission.Write
     |> ClaimCore.Json.WireWriter.bytes
 
@@ -75,12 +71,7 @@ let reference (request: OperationSubmission) =
     match Binding.caseTarget (Submissions.command request).Binding with
     | Some(CaseSelector.Reference reference) -> reference
     | Some(CaseSelector.Id _) -> "WEB-001"
-    | None ->
-        match
-            Map.tryFind (Submissions.field BusinessField.CaseReference) request.Envelope.Inputs
-        with
-        | Some(SubmissionValue.Text reference) -> reference
-        | _ -> "WEB-001"
+    | None -> "WEB-001"
 
 let receipt id (reference: string) : OperationReceipt =
     {
@@ -136,7 +127,13 @@ let peopleReceipt (request: OperationSubmission) =
     }
 
 // Host tests configure replies rather than implement ledger state or transitions.
-type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?reads: IStore) =
+type internal ScriptedStore
+    (
+        observed: DateTimeOffset,
+        actor: Actor option,
+        ?reads: IStore,
+        ?recordDisclosure: DisclosureEvent -> Task<Result<unit, StoreFailure>>
+    ) =
     let contexts = System.Collections.Concurrent.ConcurrentQueue<ContextQuery>()
 
     let facts principal =
@@ -185,7 +182,6 @@ type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?read
                         AuthorityVersion = 1L
                         TerminationCutoff = None
                         ObservedAt = observed
-                        CaseReferencePolicy = CaseReferencePolicy.CustomAllowed
                     }
             )
 
@@ -195,9 +191,10 @@ type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?read
             | None -> Task.FromResult(Error StoreFailure.Unavailable)
 
         member _.RecordDisclosure(event, token) =
-            match reads with
-            | Some store -> store.RecordDisclosure(event, token)
-            | None -> Task.FromResult(Error StoreFailure.Unavailable)
+            match recordDisclosure, reads with
+            | Some record, _ -> record event
+            | None, Some store -> store.RecordDisclosure(event, token)
+            | None, None -> Task.FromResult(Error StoreFailure.Unavailable)
 
         member _.Write _ =
             invalidOp "Host reply stubs do not execute writes."
@@ -334,56 +331,32 @@ type Stub() =
             definition.Accept
                 { new IEndpointVisitor<ClaimCore.Server.Route> with
                     member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
-                        {
-                            Description = ClaimCore.Wire.Route.describe endpoint
-                            Prepare =
-                                fun raw ->
-                                    endpoint.Input.Validate "$" raw
-                                    |> Result.bind (fun () -> endpoint.Input.Read "$" raw)
-                                    |> Result.map (fun input ->
-                                        {
-                                            OperationId =
-                                                endpoint.Correlation
-                                                |> Option.map (fun echo -> echo.Request input)
-                                            Invoke =
-                                                fun representation context _ completed ->
-                                                    task {
-                                                        let! reply =
-                                                            match context with
-                                                            | None ->
-                                                                Task.FromResult(
-                                                                    ResponseExamples.unavailable
-                                                                        representation
-                                                                        endpoint
-                                                                        input
-                                                                )
-                                                            | Some _ ->
-                                                                inputs.Add(
-                                                                    EndpointValues.input
-                                                                        endpoint
-                                                                        input
-                                                                )
+                        Route.prepare endpoint (fun input representation context _ completed ->
+                            task {
+                                let! reply =
+                                    match context with
+                                    | None ->
+                                        Task.FromResult(
+                                            ResponseExamples.unavailable
+                                                representation
+                                                endpoint
+                                                input
+                                        )
+                                    | Some _ ->
+                                        inputs.Add(EndpointValues.input endpoint input)
 
-                                                                this.Invoke
-                                                                    endpoint.Token
-                                                                    (ResponseExamples
-                                                                        .forRepresentation
-                                                                        representation
-                                                                        endpoint)
+                                        this.Invoke
+                                            endpoint.Token
+                                            (ResponseExamples.forRepresentation
+                                                representation
+                                                endpoint)
 
-                                                        completed ()
+                                completed ()
 
-                                                        return
-                                                            {
-                                                                Response =
-                                                                    ClaimCore.Server.RouteBody.Json(
-                                                                        Endpoint.reply
-                                                                            endpoint
-                                                                            reply
-                                                                    )
-                                                                RecordedBy = None
-                                                            }
-                                                    }
-                                        })
-                        }
+                                return
+                                    {
+                                        Response = RouteBody.Json(Endpoint.reply endpoint reply)
+                                        RecordedBy = None
+                                    }
+                            })
                 }

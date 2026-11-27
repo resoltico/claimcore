@@ -240,7 +240,8 @@ let nextAndConflicts =
             testCase
                 "recommended command arguments round trip through the actual shell grammar"
                 (fun () ->
-                    for raw in [ "R-1"; "R'Q"; "R$Q"; "R\\Q"; "R;Q"; "a b"; "" ] do
+                    for raw in
+                        [ "CC-NVJN-9VCD-PZVY-CKAX-07"; "R'Q"; "R$Q"; "R\\Q"; "R;Q"; "a b"; "" ] do
                         Expect.equal
                             (ShellTokenizer.split (CommandGrammar.quoteArgument raw))
                             (Ok [ raw ])
@@ -467,7 +468,7 @@ let nextAndConflicts =
                                 true
                                 (Some(TimelineScreen.rows entries))
                                 (RenderingContext.forLanguage language)
-                                (Some "CASE-1")
+                                (Some "CC-55KW-SSJ4-8HMS-G1BH-73")
                                 refusal
                             |> String.concat "\n"
 
@@ -482,12 +483,12 @@ let nextAndConflicts =
 
                         Expect.stringContains
                             output
-                            "claimcore case timeline CASE-1 --cursor literal-cursor"
+                            "claimcore case timeline CC-55KW-SSJ4-8HMS-G1BH-73 --cursor literal-cursor"
                             "Continuation retains the core range cursor"
 
                         Expect.stringContains
                             output
-                            "claimcore case get CASE-1"
+                            "claimcore case get CC-55KW-SSJ4-8HMS-G1BH-73"
                             "The next step uses the actual target"
 
                         for key in [ "label.changesWithheld"; "label.changesErased" ] do

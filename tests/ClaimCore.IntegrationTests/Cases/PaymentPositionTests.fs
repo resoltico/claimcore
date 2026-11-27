@@ -51,8 +51,7 @@ let private actualPayments () =
 
         let execute identity expected taskName values =
             let input =
-                StoreFixtures.request fixture 0 "FIN-SERVICE-51" expected taskName values
-                |> Submissions.withOperationId identity
+                StoreFixtures.requestAs fixture identity "FIN-SERVICE-51" expected taskName values
 
             let reply =
                 Service.executeSubmission actor input CancellationToken.None
@@ -142,10 +141,7 @@ let private actualPayments () =
                     (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                     (ClaimCore.TestSupport.Submissions.fields (
                         RegistrationInput.values (DomainInputs.registration)
-                     )
-                     |> Map.add
-                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                         (ClaimCore.Application.Contracts.SubmissionValue.Text("FIN-SERVICE-OTHER")))))
+                    ))))
                 CancellationToken.None
             |> fun pending -> pending.GetAwaiter().GetResult()
 
@@ -351,7 +347,7 @@ let private actualPayments () =
                 "UPDATE claimcore.case_payments SET payment_date=payment_date+1"
                 "UPDATE claimcore.case_payments SET removed=NOT removed"
                 "UPDATE claimcore.case_payments SET accepting_sequence=1,effect_index=0 WHERE payment_id=(SELECT payment_id FROM claimcore.case_payments ORDER BY payment_id LIMIT 1)"
-                "UPDATE claimcore.case_payments SET case_id=(SELECT case_id FROM claimcore.cases WHERE case_reference='FIN-SERVICE-OTHER')"
+                "UPDATE claimcore.case_payments p SET case_id=(SELECT c.case_id FROM claimcore.cases c WHERE c.case_id<>p.case_id)"
                 "DELETE FROM claimcore.case_payments"
             ] do
             sql damage
@@ -501,11 +497,12 @@ let private lockedBounds () =
     try
         let actor = StoreFixtures.caseWorker fixture |> awaitResult
         let mutable revision = 0L
-        let target = CaseSelector.Reference "PAYMENT-BOUNDS"
+
+        let target () =
+            StoreFixtures.caseTarget fixture "PAYMENT-BOUNDS"
 
         let request identity taskName values =
-            StoreFixtures.request fixture 0 "PAYMENT-BOUNDS" revision taskName values
-            |> Submissions.withOperationId identity
+            StoreFixtures.requestAs fixture identity "PAYMENT-BOUNDS" revision taskName values
 
         let accept services identity taskName values =
             let reply =
@@ -589,7 +586,7 @@ let private lockedBounds () =
         entries <- earlier :: entries
 
         let checkPosition () =
-            let current = Service.get actor { Target = target } token |> awaitResult
+            let current = Service.get actor { Target = target () } token |> awaitResult
 
             let finance =
                 match current with

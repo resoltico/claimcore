@@ -41,7 +41,7 @@ const widgetHints = {
     policyNumber: "رقم وثيقة التأمين الذي تستخدمه شركة التأمين.",
   },
 } as const;
-const unacceptedCase = async (page: Page, reference: string) => {
+const unacceptedCase = async (page: Page) => {
   const reply = await browserRequest(page, "/api/case.get", {
     method: "POST",
     headers: {
@@ -51,7 +51,7 @@ const unacceptedCase = async (page: Page, reference: string) => {
     body: JSON.stringify({
       target: {
         kind: "REFERENCE",
-        caseReference: reference,
+        caseReference: "CC-7K3M-Q8T2-PW6D-X9HR-49",
       },
     }),
   });
@@ -78,11 +78,11 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
         task: "case.open",
         binding: { kind: "CASE", expectedRevision: 0 },
         inputs: {
-          "field:caseReference": reference,
           ...prefixedInputs(
             "field:",
             registration({
               incidentDate,
+              policyNumber: reference,
             }),
             true,
           ),
@@ -228,7 +228,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
     await policyRefusal(page, requests, language);
     await expectAccessible(page);
-    await unacceptedCase(page, reference);
+    await unacceptedCase(page);
     expect(requests.filter((request) => request === "POST /api/operation.execute")).toEqual([]);
   });
 }

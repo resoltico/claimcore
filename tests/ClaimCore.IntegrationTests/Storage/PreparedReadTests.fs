@@ -55,7 +55,6 @@ let private withPool run =
 let private freshness (database: PostgresFixture.Database) =
     task {
         let! admin = caseWorker database.Fixture
-        let target = CaseSelector.Reference "PREPARED-CASE"
 
         let! opened =
             Service.executeSubmission
@@ -72,6 +71,7 @@ let private freshness (database: PostgresFixture.Database) =
                 token
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId
+        let target = CaseSelector.Id caseId
         let human = principal "prepared-scoped"
 
         let service =

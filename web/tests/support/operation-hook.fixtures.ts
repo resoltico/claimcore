@@ -44,7 +44,7 @@ export const preview = (
           reference:
             input.binding.target.kind === "REFERENCE"
               ? input.binding.target.caseReference
-              : "CASE-SERIALIZATION",
+              : "CC-3PBY-1JRP-Z70W-2VXH-71",
         };
   return {
     kind: "outcome",

@@ -95,7 +95,7 @@ module internal Baseline =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ("SELECT installation_id,business_time_zone,installation_format,case_reference_policy, "
+                    ("SELECT installation_id,business_time_zone,installation_format, "
                      + "(SELECT months FROM claimcore.disclosure_retention WHERE singleton) "
                      + "FROM claimcore.installation")
                     [||]
@@ -103,19 +103,13 @@ module internal Baseline =
 
             match rows with
             | [ row ] when DatabaseSession.value<int16> 2 row = int16 InstallationFormat.Current ->
-                if DatabaseSession.optional<int> 4 row <> Some DisclosureTrail.retentionMonths then
+                if DatabaseSession.optional<int> 3 row <> Some DisclosureTrail.retentionMonths then
                     raise (InstallationConfigurationException())
-
-                let policy =
-                    DatabaseSession.optional<string> 3 row
-                    |> Option.bind CaseReferencePolicy.parse
-                    |> Option.defaultWith (fun () -> raise (InstallationConfigurationException()))
 
                 return
                     {
                         InstallationId = DatabaseSession.value<Guid> 0 row
                         BusinessTimeZone = DatabaseSession.value<string> 1 row
-                        CaseReferencePolicy = policy
                     }
             | [ _ ] -> return raise (OperatorFaultException OperatorFault.FormatMismatch)
             | _ -> return raise (InstallationConfigurationException())
@@ -170,8 +164,6 @@ module internal Baseline =
         && root.Header.PreviousHash = EntryHash.zero
         && root.Header.Authority = Authority.Operator
         && root.Structure.Task = (Task.declaration Registry.provisionOwner).Id
-        && Registry.initialReferencePolicy root.Structure.Retained =
-            Some installation.CaseReferencePolicy
 
     /// Decode and authenticate the first public root without loading any private profile bytes.
     let requireBootstrap (installation: Installation) connection token =
@@ -349,12 +341,11 @@ module internal Baseline =
             let! _ =
                 DatabaseSession.execute
                     connection
-                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,case_reference_policy,wrapped_data_key) VALUES ($1,$2,$3,$4,$5)"
+                    "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,wrapped_data_key) VALUES ($1,$2,$3,$4)"
                     [|
                         box installation.InstallationId
                         box installation.BusinessTimeZone
                         box (int16 InstallationFormat.Current)
-                        box (CaseReferencePolicy.token installation.CaseReferencePolicy)
                         box wrapped
                     |]
                     token
@@ -373,7 +364,6 @@ module internal Baseline =
         (source: NpgsqlDataSource)
         masterKey
         timeZone
-        requestedPolicy
         initializeOwner
         initialized
         existing
@@ -416,10 +406,6 @@ module internal Baseline =
                                     {
                                         InstallationId = Guid.NewGuid()
                                         BusinessTimeZone = timeZone
-                                        CaseReferencePolicy =
-                                            defaultArg
-                                                requestedPolicy
-                                                CaseReferencePolicy.SystemAssignedOnly
                                     }
 
                                 use cipher = InstallationCipher.create installation.InstallationId
@@ -449,7 +435,6 @@ module internal SchemaAdministration =
             source
             masterKey
             timeZone
-            (Some CaseReferencePolicy.CustomAllowed)
             (fun connection (installation: Installation) cipher ->
                 initializeOwner connection installation.InstallationId cipher)
             (fun (installation: Installation) -> installation.InstallationId)

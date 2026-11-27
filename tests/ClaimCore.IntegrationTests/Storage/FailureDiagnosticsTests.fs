@@ -211,9 +211,7 @@ let tests =
             testTask "startup sessions and housekeeping report real provider failures once" {
                 do!
                     task {
-                        let! database =
-                            PostgresFixture.createWithReferencePolicy
-                                CaseReferencePolicy.CustomAllowed
+                        let! database = PostgresFixture.createWithOwner ()
 
                         try
                             let settings =

@@ -88,7 +88,7 @@ it("admits recovers identity independently of current task captions", () => {
 });
 
 it("admits the authored shared operation settlement cases", () => {
-  expect(settlements).toHaveLength(7);
+  expect(settlements).toHaveLength(8);
   for (const expected of settlements) {
     const settlement =
       operationSettlement[expected.observation as keyof typeof operationSettlement];

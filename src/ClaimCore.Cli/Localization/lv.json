@@ -397,10 +397,6 @@
     "text": "Apturiet darbību un lūdziet administratoram pārbaudīt problēmu.",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "Izvēlieties citu atsauci.",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "Lūdziet īpašniekam pārbaudīt jūsu piekļuvi.",
     "source": "a18257b39d89"

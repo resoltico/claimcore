@@ -182,6 +182,7 @@ type WorklistFixture =
     {
         Service: ServiceContext
         Database: PostgresFixture.Database
+        IssuedReferences: Map<string, string>
     }
 
 let private execute fixture request =
@@ -287,6 +288,7 @@ let prepare () =
                 {
                     Service = service
                     Database = database
+                    IssuedReferences = Map.empty
                 }
 
             let sequence = ref 1000
@@ -316,7 +318,16 @@ let prepare () =
                         "case.reopen"
                         (CaseTransitionInputs.reopened))
 
-            return fixture
+            let references =
+                cases
+                |> List.map (fun item ->
+                    item.Reference, issuedCaseReference database.Fixture item.Reference)
+                |> Map.ofList
+
+            return
+                { fixture with
+                    IssuedReferences = references
+                }
         with error ->
             FixtureDisposal.afterFailure error [ database.Fixture.Dispose ]
             return raise error
@@ -336,7 +347,8 @@ let private selected values candidate =
     List.isEmpty values
     || candidate |> Option.exists (fun value -> List.contains value values)
 
-let expected (filter: CaseListFilter<string>) =
+let expected fixture (filter: CaseListFilter<string>) =
+    let issued (row: ExpectedCase) = fixture.IssuedReferences[row.Reference]
     let recent = List.head cases :: (List.tail cases |> List.rev)
 
     let ordered =
@@ -345,7 +357,7 @@ let expected (filter: CaseListFilter<string>) =
         | CaseListOrder.Reference ->
             cases
             |> List.sortWith (fun a b ->
-                StringComparer.OrdinalIgnoreCase.Compare(a.Reference, b.Reference))
+                StringComparer.OrdinalIgnoreCase.Compare(issued a, issued b))
         | CaseListOrder.Recent -> recent
         | CaseListOrder.Received ->
             cases
@@ -356,7 +368,7 @@ let expected (filter: CaseListFilter<string>) =
                 if erased <> 0 then
                     erased
                 else
-                    StringComparer.OrdinalIgnoreCase.Compare(a.Reference, b.Reference))
+                    StringComparer.OrdinalIgnoreCase.Compare(issued a, issued b))
 
     ordered
     |> List.filter (fun row ->

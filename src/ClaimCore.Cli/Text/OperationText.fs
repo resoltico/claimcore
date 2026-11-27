@@ -80,6 +80,13 @@ module internal OperationText =
             | HumanExecuteResult.Rejected rejection ->
                 HumanText.rejection details rendering rejection
             | HumanExecuteResult.Failed fault -> HumanText.fault rendering fault
+            | HumanExecuteResult.ReceiptUnavailable ->
+                [
+                    ReplyTextFormat.label rendering "notice.receiptUnavailable"
+                    ReplyTextFormat.label rendering "input.operationId.label"
+                    + " "
+                    + value.OperationId.ToString("D")
+                ]
             | HumanExecuteResult.OutcomeUnknown ->
                 [
                     ReplyTextFormat.label rendering (CliMessages.key CliMessage.UncertainDelivery)

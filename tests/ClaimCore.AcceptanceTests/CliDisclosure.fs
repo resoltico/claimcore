@@ -18,25 +18,21 @@ let private original (fixture: PublishedFixture.Fixture) =
         |> nonNull
 
     let input = source["input"] |> nonNull
-    let reference = "CLI-DISCLOSURE-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create(id ())
-
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     (input["inputs"] |> nonNull)["field:incidentDescription"] <-
         JsonValue.Create "Earlier history\nOriginal exact paragraph"
 
-    Encoding.UTF8.GetBytes(source.ToJsonString()), input, reference
+    Encoding.UTF8.GetBytes(source.ToJsonString()), input
 
-let private amend (input: JsonNode) =
+let private amend (input: JsonNode) (reference: string) =
     let pending = input.DeepClone()
     pending["operationId"] <- JsonValue.Create(id ())
     (pending["binding"] |> nonNull)["expectedRevision"] <- JsonValue.Create 1L
     let target = JsonObject()
     target["kind"] <- JsonValue.Create "REFERENCE"
 
-    target["caseReference"] <-
-        ((pending["inputs"] |> nonNull)["field:caseReference"] |> nonNull).DeepClone()
+    target["caseReference"] <- JsonValue.Create reference
 
     (pending["binding"] |> nonNull)["target"] <- target
     pending["task"] <- JsonValue.Create "case.amendRegistration"
@@ -49,7 +45,7 @@ let private amend (input: JsonNode) =
     pending
 
 let private staleReview (fixture: PublishedFixture.Fixture) input reference =
-    let pending = amend input
+    let pending = amend input reference
     let bytes = frame "operation.preview" pending
     FixtureFiles.write fixture.Directory "stale-review.frame.json" bytes |> ignore
 
@@ -287,8 +283,13 @@ let private directoryDetails fixture reference =
     Expect.stringContains history subject "Historical registered principal subject remains visible."
 
 let private qualify fixture =
-    let source, input, reference = original fixture
+    let source, input = original fixture
     let accepted = run fixture fixture.Environment source 0 |> require "ACCEPTED"
+
+    let reference =
+        accepted.GetProperty("subject").GetProperty("caseReference").GetString()
+        |> nonNull
+
     staleReview fixture input reference
 
     let textTimeline () =

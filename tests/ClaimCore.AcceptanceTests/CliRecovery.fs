@@ -33,12 +33,12 @@ let private submitted (fixture: PublishedFixture.Fixture) =
         |> nonNull
 
     let input = source["input"] |> nonNull
-    let operation, reference = id (), "RECOVERY-PROCESS-" + (id ()).Substring(24)
+    let operation, marker = id (), "RECOVERY-PROCESS-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create operation
 
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
+    (input["inputs"] |> nonNull)["field:policyNumber"] <- JsonValue.Create marker
 
-    Encoding.UTF8.GetBytes(source.ToJsonString()), operation, reference
+    Encoding.UTF8.GetBytes(source.ToJsonString()), operation, marker
 
 let private acceptedEvidence (fixture: PublishedFixture.Fixture) operation =
     let path = Path.Combine(fixture.Directory, "redirect-evidence.json")
@@ -141,7 +141,7 @@ let private relativeRoot (fixture: PublishedFixture.Fixture) =
 /// Two actual processes share an operation UUID. Only the still-pending attempt survives a replay.
 let qualify (fixture: PublishedFixture.Fixture) =
     relativeRoot fixture
-    let source, operation, reference = submitted fixture
+    let source, operation, marker = submitted fixture
 
     JsonSerializer.Serialize
         {|
@@ -199,8 +199,8 @@ let qualify (fixture: PublishedFixture.Fixture) =
             "Exact declared task identity"
 
         Expect.isFalse
-            (own.Head.GetRawText().Contains(reference, StringComparison.Ordinal))
-            "The reference is absent"
+            (own.Head.GetRawText().Contains(marker, StringComparison.Ordinal))
+            "The authored policy number is absent"
 
         let replay = run fixture fixture.Environment source 0 |> require "ALREADY_ACCEPTED"
 

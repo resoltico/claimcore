@@ -95,7 +95,16 @@ let private qualify () =
                 let! opened =
                     Service.executeSubmission
                         service
-                        (request fixture (10000 + index) reference 0L "case.open" registration)
+                        (request
+                            fixture
+                            (10000 + index)
+                            reference
+                            0L
+                            "case.open"
+                            (Map.add
+                                (Submissions.field BusinessField.PolicyNumber)
+                                (SubmissionValue.Text reference)
+                                registration))
                         token
 
                 accepted opened |> ignore
@@ -107,7 +116,7 @@ let private qualify () =
                 | RequesterState.Active value -> value.Runtime.Basis.BusinessDate
                 | value -> failtestf "%A" value
 
-            let target = CaseSelector.Reference "CSV-001"
+            let target = caseTarget fixture "CSV-001"
 
             for index in 1..51 do
                 let input =
@@ -307,8 +316,8 @@ let private qualify () =
                     return!
                         DatabaseSession.rows
                             connection
-                            ("SELECT export_query,export_row_count,export_selection::text "
-                             + "FROM claimcore.disclosure_trail WHERE kind=$1 ORDER BY id")
+                            ("SELECT export_query,export_row_count,export_filtered::text "
+                             + "FROM claimcore.disclosure_trail WHERE kind=$1 AND outcome='SUCCEEDED' ORDER BY id")
                             [| box kind |]
                             token
                 }
@@ -437,14 +446,54 @@ let private qualify () =
 
             let selection = DatabaseSession.value<string> 2 emptyEvent
 
-            Expect.stringContains
-                selection
-                "textFilter"
-                "An authored filter is recorded by its presence"
+            Expect.stringContains selection "true" "An authored filter is recorded by its presence"
 
             Expect.isFalse
                 (selection.Contains("no-such-csv-selection"))
                 "The authored filter stays private"
+
+            let paged filter continuation =
+                host.SendResponse(
+                    System.Net.Http.HttpMethod.Post,
+                    ExportTransport.path,
+                    Some(Codec.encode ExportTransport.request (ExportSelection.Cases filter)),
+                    [
+                        "Origin",
+                        (nonNull host.Client.BaseAddress).GetLeftPart(UriPartial.Authority)
+                        "X-ClaimCore-Antiforgery", credential
+                        "ClaimCore-Contract", ContractIdentity.value
+                        "ClaimCore-Installation", fixture.InstallationId.ToString("D")
+                        ExportTransport.pageSizeHeader, "50"
+                        match continuation with
+                        | Some cursor -> ExportTransport.afterHeader, cursor
+                        | None -> ()
+                    ]
+                )
+
+            use! firstPage = paged filter None
+            let! firstBytes = firstPage.Content.ReadAsByteArrayAsync()
+
+            let continuation =
+                firstPage.Headers.GetValues ExportTransport.nextHeader |> Seq.exactlyOne
+
+            use! lastPage = paged filter (Some continuation)
+            let! lastBytes = lastPage.Content.ReadAsByteArrayAsync()
+
+            Expect.equal
+                (Array.append firstBytes lastBytes)
+                cases
+                "Two audited pages reproduce the bounded download"
+
+            Expect.isFalse
+                (lastPage.Headers.Contains ExportTransport.nextHeader)
+                "The last page exhausts the traversal"
+
+            use! transplanted = paged { filter with Text = Some "CSV-01" } (Some continuation)
+            let! rejected = transplanted.Content.ReadAsByteArrayAsync()
+
+            match Codec.decode Limits.MaximumResponseBytes ExportTransport.failure rejected with
+            | Ok(ExportFailure.Rejected _) -> ()
+            | value -> failtestf "A cursor cannot cross export selections: %A" value
 
             use! ownerConnection = database.OwnerSource.OpenConnectionAsync(token)
 
@@ -658,6 +707,174 @@ let private qualify () =
                 afterErasure.Length
                 beforeErasure.Length
                 "A rejected release creates no success audit"
+
+            inject <- false
+
+            for number, caseName, policy in
+                [
+                    61001, "MEMBER-A", "synthetic-equal-membership"
+                    61002, "MEMBER-B", "synthetic-unselected-member"
+                ] do
+                let! opened =
+                    Service.executeSubmission
+                        service
+                        (request
+                            fixture
+                            number
+                            caseName
+                            0L
+                            "case.open"
+                            (Map.ofList
+                                [
+                                    Submissions.field BusinessField.PolicyNumber,
+                                    SubmissionValue.Text policy
+                                ]))
+                        token
+
+                accepted opened |> ignore
+
+            let aggregate =
+                ExportSelection.CaseSummary
+                    {
+                        Filter =
+                            { filter with
+                                Text = Some "synthetic-equal-membership"
+                            }
+                        GroupBy = None
+                    }
+
+            let callAggregate () =
+                host.CallResponse(
+                    ExportTransport.token,
+                    Codec.encode ExportTransport.request aggregate,
+                    credential
+                )
+
+            use! saved = callAggregate ()
+            let! original = saved.Content.ReadAsByteArrayAsync()
+
+            Expect.equal
+                (nonNull saved.Content.Headers.ContentType).MediaType
+                "text/csv"
+                "Initial authorized aggregate"
+
+            Expect.stringContains
+                (Encoding.UTF8.GetString original)
+                "ALL_CASES,1"
+                "The report counts one contributor"
+
+            afterFirst <-
+                fun () ->
+                    task {
+                        for number, caseName, policy in
+                            [
+                                61003, "MEMBER-A", "synthetic-unselected-member"
+                                61004, "MEMBER-B", "synthetic-equal-membership"
+                            ] do
+                            let! changed =
+                                Service.executeSubmission
+                                    service
+                                    (request
+                                        fixture
+                                        number
+                                        caseName
+                                        1L
+                                        "case.amendRegistration"
+                                        (Map.ofList
+                                            [
+                                                Submissions.field BusinessField.PolicyNumber,
+                                                SubmissionValue.Text policy
+                                            ]))
+                                    token
+
+                            accepted changed |> ignore
+                    }
+
+            inject <- true
+            reads <- 0
+            use! swapped = callAggregate ()
+            let! swappedBytes = swapped.Content.ReadAsByteArrayAsync()
+
+            match Codec.decode Limits.MaximumResponseBytes ExportTransport.failure swappedBytes with
+            | Ok(ExportFailure.Rejected _) -> ()
+            | result ->
+                failtestf "Identical aggregate bytes with a new member must be refused: %A" result
+
+            Expect.equal reads 2 "The same-cut aggregate control traverses two observations"
+            inject <- false
+
+            use! final = callAggregate ()
+            let! finalBytes = final.Content.ReadAsByteArrayAsync()
+            Expect.equal finalBytes original "The newly authorized aggregate bytes are identical"
+
+            afterFirst <-
+                fun () ->
+                    task {
+                        let command =
+                            request
+                                fixture
+                                61006
+                                "MEMBER-B"
+                                2L
+                                "case.amendRegistration"
+                                (Map.ofList
+                                    [
+                                        Submissions.field BusinessField.ClaimedAmount,
+                                        SubmissionValue.Text "123"
+                                        Submissions.field BusinessField.ClaimedCurrency,
+                                        SubmissionValue.Text "EUR"
+                                    ])
+
+                        let! changed = Service.executeSubmission service command token
+                        accepted changed |> ignore
+                    }
+
+            inject <- true
+            reads <- 0
+            use! changed = callAggregate ()
+            let! changedBytes = changed.Content.ReadAsByteArrayAsync()
+
+            match Codec.decode Limits.MaximumResponseBytes ExportTransport.failure changedBytes with
+            | Ok(ExportFailure.Rejected _) -> ()
+            | result ->
+                failtestf "An aggregate value changed without changing membership: %A" result
+
+            Expect.equal reads 2 "A value change is compared at the fresh cut"
+
+            Expect.isNull
+                changed.Content.Headers.ContentDisposition
+                "No CSV headers escape on refusal"
+
+            inject <- false
+
+            use! current = callAggregate ()
+            let! currentBytes = current.Content.ReadAsByteArrayAsync()
+
+            Expect.stringContains
+                (Encoding.UTF8.GetString currentBytes)
+                "ALL_CASES,1,EUR,123"
+                "Fresh authorized value and unchanged count"
+
+            Expect.equal finalBytes original "Previously delivered output stays byte-identical"
+            let unknown = CaseSelector.Id(CaseFixtures.caseId (id fixture 61005))
+
+            use! denied =
+                host.CallResponse(
+                    ExportTransport.token,
+                    Codec.encode
+                        ExportTransport.request
+                        (ExportSelection.Timeline { timeline with Target = unknown }),
+                    credential
+                )
+
+            let! deniedBytes = denied.Content.ReadAsByteArrayAsync()
+
+            match Codec.decode Limits.MaximumResponseBytes ExportTransport.failure deniedBytes with
+            | Ok(ExportFailure.Rejected _) -> ()
+            | result ->
+                failtestf
+                    "A denied timeline cannot escape the candidate into a raw audit write: %A"
+                    result
         finally
             database.Fixture.Dispose()
     }

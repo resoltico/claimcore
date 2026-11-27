@@ -178,6 +178,7 @@ PYTHON
     dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
     tests "${project}" Debug 15m
   done
+  bash eng/check-disclosure-boundary.sh
 }
 
 frontend() {
@@ -235,14 +236,14 @@ browsers() {
       *) echo "invalid browser engine" >&2; return 64 ;;
     esac
   fi
-  # Every Chromium launch is headless; CLI PKCE also needs its shell for other engines.
+  # The history probe needs full Chromium. CLI PKCE uses its headless shell on every shard.
   restore_node
   local platform
   platform="$(uname -s)"
   if [[ "${platform}" == Linux ]]; then
-    npm --prefix web exec -- playwright install --with-deps --only-shell "${engines[@]}"
+    npm --prefix web exec -- playwright install --with-deps "${engines[@]}"
   else
-    npm --prefix web exec -- playwright install --only-shell "${engines[@]}"
+    npm --prefix web exec -- playwright install "${engines[@]}"
   fi
 }
 

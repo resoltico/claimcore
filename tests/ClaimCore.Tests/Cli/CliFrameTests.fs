@@ -306,6 +306,23 @@ let private exampleFrames () =
         let input =
             StrictJson.read Limits.MaximumRequestBytes (File.ReadAllBytes path)
             |> CaseBuilders.accepted
+            |> function
+                | JsonValue.Object [ "endpoint", endpoint; "input", JsonValue.Object fields ] when
+                    index = 0
+                    ->
+                    JsonValue.Object
+                        [
+                            "endpoint", endpoint
+                            "input",
+                            JsonValue.Object(
+                                fields
+                                @ [
+                                    "operationId",
+                                    JsonValue.String "10000000-0000-7000-8000-000000000001"
+                                ]
+                            )
+                        ]
+                | frame -> frame
             |> WireWriter.bytes
 
         let invocation = Frames.admit input |> CaseBuilders.accepted
@@ -351,7 +368,7 @@ let private exampleFrames () =
                 task.Admit context environment facts command.Binding command.Inputs
                 |> Result.bind (fun opening ->
                     ClaimCore.Domain.Tasks.Case.Open.accept
-                        (CaseFixtures.reference "DEMO-0001")
+                        (CaseFixtures.reference "CC-H4NE-ZPWS-Y472-2RC6-73")
                         None
                         opening)
             | ClaimCore.Domain.Tasks.Task.Family task ->
@@ -371,7 +388,12 @@ let private exampleFrames () =
             "Example revision sequence"
 
     let final = current.Value
-    Expect.equal (CaseReference.format final.Reference) "DEMO-0001" "Original reference retained"
+
+    Expect.equal
+        (CaseReference.format final.Reference)
+        "CC-H4NE-ZPWS-Y472-2RC6-73"
+        "Original reference retained"
+
     Expect.equal final.Case.Value.Lifecycle Lifecycle.Erased "Explicit erasure"
 
 [<Tests>]

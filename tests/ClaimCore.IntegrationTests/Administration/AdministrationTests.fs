@@ -108,11 +108,6 @@ let private initialize binary connection keyFile =
 
         Expect.equal (kind first) "INITIALIZED" "Schema and owner are committed together"
 
-        Expect.equal
-            (first.GetProperty("caseReferencePolicy").GetString())
-            "SYSTEM_ASSIGNED_ONLY"
-            "Omission installs and reports the system-assigned default"
-
         let! repeated =
             invoke binary connection keyFile ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
 
@@ -122,30 +117,19 @@ let private initialize binary connection keyFile =
         Expect.equal (kind skipped) "INITIALIZATION_SKIPPED" "Readable installation is kept"
 
         Expect.equal
-            (skipped.GetProperty("caseReferencePolicy").GetString())
-            "SYSTEM_ASSIGNED_ONLY"
-            "Omitted skip reports the existing policy"
-
-        Expect.equal
             (skipped.GetProperty("installationId").GetGuid())
             (first.GetProperty("installationId").GetGuid())
             "The original installation is identified"
 
-        let policy value args =
-            args @ [ "--case-reference-policy"; value ]
+        let! obsolete =
+            invoke
+                binary
+                connection
+                keyFile
+                (skip @ [ "--case-reference-policy"; "CUSTOM_ALLOWED" ])
+                2
 
-        let! matched =
-            invoke binary connection keyFile (policy "SYSTEM_ASSIGNED_ONLY" skip) 0
-
-        Expect.equal (matched.GetRawText()) (skipped.GetRawText()) "Explicit matching policy skips"
-
-        let! conflicting = invoke binary connection keyFile (policy "CUSTOM_ALLOWED" skip) 2
-        fault "CASE_REFERENCE_POLICY_MISMATCH" conflicting
-
-        let! malformed =
-            invoke binary connection keyFile (policy "private-value-sentinel" skip) 2
-
-        fault "CASE_REFERENCE_POLICY_INVALID" malformed
+        fault "INVOCATION_INVALID" obsolete
 
         let! after = invoke binary connection keyFile [ "head" ] 0
 
@@ -155,11 +139,6 @@ let private initialize binary connection keyFile =
             "The skip leaves the ledger unchanged"
 
         let! status = invoke binary connection keyFile [ "status" ] 0
-
-        Expect.equal
-            (status.GetProperty("caseReferencePolicy").GetString())
-            "SYSTEM_ASSIGNED_ONLY"
-            "Owner status reports effective policy"
 
         Expect.equal
             (status

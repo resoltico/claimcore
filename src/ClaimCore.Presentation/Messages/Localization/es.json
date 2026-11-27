@@ -1424,10 +1424,6 @@
     "text": "Consulta del registro de acceso y exportación",
     "source": "42bd45e7fe95"
   },
-  "disclosureKind.ACCESS_REFUSED.label": {
-    "text": "Acceso denegado",
-    "source": "07edbc210200"
-  },
   "disclosureOutcome.SUCCEEDED.label": {
     "text": "Correcto",
     "source": "6d9a6f97a5fd"
@@ -3418,39 +3414,6 @@
     "text": "Elija un resultado de cierre de la lista.",
     "source": "ed45fada7999"
   },
-  "task.case.changeReference.label": {
-    "text": "Cambiar la referencia del expediente",
-    "source": "c48c7e896bb5"
-  },
-  "task.case.changeReference.meaning": {
-    "text": "Sustituya la referencia actual. Las referencias anteriores siguen encontrando el mismo expediente.",
-    "source": "1065858202dd"
-  },
-  "task.case.changeReference.done": {
-    "text": "Se cambió la referencia del expediente.",
-    "source": "58241a331134"
-  },
-  "task.case.changeReference.consequence": {
-    "text": "Elija una nueva referencia para este expediente.",
-    "source": "73700635d1ab"
-  },
-  "field.newReference.label": {
-    "text": "Nueva referencia",
-    "source": "42906b7cf062"
-  },
-  "field.newReference.rule": {
-    "text": "Use el formato de referencia del expediente.",
-    "source": "b905bbf44b8b"
-  },
-  "field.newReference.hint": {
-    "text": "La referencia anterior sigue permitiendo encontrar este expediente. Evite incluir datos personales en la nueva referencia.",
-    "source": "2712ad08d240",
-    "machineMade": true
-  },
-  "label.referenceChangedFrom": {
-    "text": "Referencia anterior",
-    "source": "0f0590159e51"
-  },
   "field.reopenReason.hint": {
     "text": "Por qué se reanudó la tramitación.",
     "source": "52db5e07d84d"
@@ -4628,54 +4591,9 @@
     "text": "Introduzca el importe y la moneda.",
     "source": "11da00ab5ba1"
   },
-  "diagnostic.REFERENCE_UNAVAILABLE": {
-    "text": "Referencia del expediente no disponible.",
-    "source": "233033263ef9",
-    "machineMade": true
-  },
-  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
-    "text": "Este registro asigna todas las referencias automáticamente. Quite la referencia personalizada para continuar.",
-    "source": "072632d9c59c",
-    "machineMade": true
-  },
   "label.caseReferencePending": {
     "text": "Se asignará al abrir el expediente.",
     "source": "9fcad855f05a",
-    "machineMade": true
-  },
-  "label.useCustomCaseReference": {
-    "text": "Usar una referencia de expediente personalizada",
-    "source": "3796d7f0af59",
-    "machineMade": true
-  },
-  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
-    "source": "22c0bf147040",
-    "text": "Solo asignadas por el sistema",
-    "machineMade": true
-  },
-  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
-    "source": "2126c4e1b515",
-    "text": "Se permiten referencias del expediente personalizadas",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.label": {
-    "source": "00276badc096",
-    "text": "Política de referencias del expediente",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.rule": {
-    "source": "d15f3878c38a",
-    "text": "La política de asignación de referencias elegida durante la configuración.",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.hint": {
-    "source": "8e971dfd9ae8",
-    "text": "Elige si se pueden introducir referencias del expediente personalizadas.",
-    "machineMade": true
-  },
-  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
-    "source": "a743fa65aff6",
-    "text": "Elige una política de referencias del expediente compatible.",
     "machineMade": true
   },
   "diagnostic.TRAVERSAL_CHANGED": {

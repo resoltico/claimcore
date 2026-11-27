@@ -78,7 +78,7 @@ module TaskInputPresentation =
     let scalar =
         function
         | TaskInputId.Target(InputTarget.Field field) -> Some(FieldPresentation.descriptor field)
-        | TaskInputId.Target(InputTarget.NewCaseReference | InputTarget.LinkTargetReference) ->
+        | TaskInputId.Target(InputTarget.LinkTargetReference) ->
             Some(FieldPresentation.descriptor BusinessField.CaseReference)
         | TaskInputId.Target InputTarget.LinkNote -> Some(ScalarRule.PlainText NoteText.constraints)
         | TaskInputId.CaseDate _ -> Some(ScalarRule.PlannedDate CalendarDate.descriptor)

@@ -77,13 +77,19 @@ let tests =
                     Expect.isError
                         (Grammar.prepare
                             (fun () -> "unused")
-                            [ "case"; "get"; "LOCALE"; "--display-locale"; "unsupported" ])
+                            [
+                                "case"
+                                "get"
+                                "CC-JNBE-ED50-FGSC-P1TC-23"
+                                "--display-locale"
+                                "unsupported"
+                            ])
                         "Invalid per-command locale is visible"
 
                     Expect.isError
                         (CliInvocations.admitConfiguredWith
                             (read [])
-                            [ "case"; "get"; "LOCALE"; "--display-locale" ])
+                            [ "case"; "get"; "CC-JNBE-ED50-FGSC-P1TC-23"; "--display-locale" ])
                         "Missing locale is not a fallback request")
             testCase
                 "configured executable and shell boundary carries one resolved context into verbs and recovery"
@@ -120,7 +126,7 @@ let tests =
                         match
                             CliInvocations.admitConfiguredWith
                                 profileOnly
-                                [ "case"; "get"; "LOCALE" ]
+                                [ "case"; "get"; "CC-JNBE-ED50-FGSC-P1TC-23" ]
                             |> required
                         with
                         | CliInvocation.Verb arguments ->
@@ -164,7 +170,7 @@ let tests =
                         let admitted =
                             CliInvocations.admitConfiguredWith
                                 environment
-                                [ "case"; "get"; "LOCALE" ]
+                                [ "case"; "get"; "CC-JNBE-ED50-FGSC-P1TC-23" ]
                             |> required
 
                         match admitted with
@@ -220,7 +226,7 @@ let tests =
                         Expect.isError
                             (CliInvocations.admitConfiguredWith
                                 environment
-                                [ "case"; "get"; "LOCALE" ])
+                                [ "case"; "get"; "CC-JNBE-ED50-FGSC-P1TC-23" ])
                             "Invalid loaded configuration refuses visibly"
                     finally
                         directory.Delete(true))
@@ -483,7 +489,7 @@ let tests =
                         [
                             "case"
                             "record-payment"
-                            "LOCALE"
+                            "CC-JNBE-ED50-FGSC-P1TC-23"
                             "--expected-revision"
                             "3"
                             "--payment-date"

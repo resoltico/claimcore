@@ -2,7 +2,6 @@ import { type ResponseFor, endpoints } from "@contracts/client";
 import { showAccountActions } from "./workspace-navigation";
 import { expect, type Page } from "@playwright/test";
 import { browserRequest, sessionToken } from "./session-helpers";
-import { randomUUID } from "node:crypto";
 export const refusedRead = async (
   page: Page,
   endpoint: "case.get",
@@ -84,7 +83,7 @@ const directCaseRefusal = async (page: Page, reference: string) => {
 };
 export const opaqueCaseRefusal = async (page: Page, reference: string) => {
   const actual = await directCaseRefusal(page, reference);
-  const missing = await directCaseRefusal(page, `MISSING-${randomUUID().slice(0, 8)}`);
+  const missing = await directCaseRefusal(page, "CC-7K3M-Q8T2-PW6D-X9HR-49");
   expect(actual).toEqual(missing);
 };
 export const noCaseWorkspace = async (page: Page) => {

@@ -58,7 +58,8 @@ let private page =
                              else
                                  None)
                         |> required
-                    Reference = CaseReference.parse "STATE-OPEN" |> required
+                    Reference =
+                        ClaimCore.TestSupport.DomainInputs.reference "CC-6ZWC-NJFG-4TWN-0AK9-91"
                     Claimants = [ (PartyName.parse "Synthetic claimant" |> required) ]
                     Responsible = None
                     RecordedAt = DomainInputs.workBasis.ObservedAt
@@ -103,7 +104,7 @@ let tests =
                                 "COMPLETED"
                                 "--include-inactive=false"
                                 "--case-reference"
-                                "STATE-OPEN"
+                                "CC-6ZWC-NJFG-4TWN-0AK9-91"
                             ]
 
                     Expect.equal
@@ -150,7 +151,9 @@ let tests =
                         "The adapter does not fabricate an explicit selector")
             testCase "Core case link Wire retains explicit ANY and inactive selection" (fun () ->
                 let selected =
-                    match Link.remindersForCase (CaseSelector.Reference "STATE-OPEN") with
+                    match
+                        Link.remindersForCase (CaseSelector.Reference "CC-6ZWC-NJFG-4TWN-0AK9-91")
+                    with
                     | Link.ReminderList value -> value
                     | _ -> failtest "Reminder link required"
 

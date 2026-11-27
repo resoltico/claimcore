@@ -8,7 +8,6 @@ type RecommendedAction =
     | ReadCurrent
     | RetrySafe
     | StopAndInvestigate
-    | ChooseAnotherReference
     | AskForAccess
     | ReviewLatest
     | NoneRequired
@@ -16,7 +15,6 @@ type RecommendedAction =
 module Refusals =
     let private caseAction =
         function
-        | CaseRefusal.ReferenceUnavailable -> RecommendedAction.ChooseAnotherReference
         | CaseRefusal.CorrectionNoChanges
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
         | CaseRefusal.SelfLink

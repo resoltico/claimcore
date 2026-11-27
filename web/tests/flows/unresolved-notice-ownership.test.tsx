@@ -254,7 +254,7 @@ const receiptView: Screen = {
             key: "caseReference",
             labelId: "field.caseReference.label",
             prominence: "PRIMARY",
-            value: { kind: "REFERENCE", value: "RECOVERY-CASE" },
+            value: { kind: "REFERENCE", value: "CC-9114-03WS-D48B-CH82-28" },
           },
           {
             key: "recordedAt",
@@ -319,7 +319,7 @@ it("retains a recorded card with Core facts, time and disclosed case navigation 
   const link = await screen.findByRole("link", { name: "Open case" });
   expect(link).toHaveAttribute("href", `/cases/id/${recoveryRecord().operationId}`);
   expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
-  expect(screen.getByText("RECOVERY-CASE")).toBeVisible();
+  expect(screen.getByText("CC-9114-03WS-D48B-CH82-28")).toBeVisible();
   expect(screen.getByText("Open a case")).toBeVisible();
   expect(screen.queryByText("Void case record")).toBeNull();
   expect(document.querySelector('time[datetime="2026-11-07T10:00:00.000000Z"]')).toBeVisible();
@@ -347,7 +347,7 @@ it("does not attribute another actor's accepted identity or display its receipt"
   await waitFor(() => {
     expect(document.querySelector('[data-state="NOT_RECORDED"]')).toBeVisible();
   });
-  expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+  expect(screen.queryByText("CC-9114-03WS-D48B-CH82-28")).toBeNull();
   expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
 });
 
@@ -378,7 +378,7 @@ it.each(["WITHHELD", "ERASED"] as const)(
       expect(document.querySelector('[data-state="RECORDED"]')).toBeVisible();
     });
     expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
-    expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+    expect(screen.queryByText("CC-9114-03WS-D48B-CH82-28")).toBeNull();
   },
 );
 it("uses the Core navigation handle for a withheld historical receipt without inferring permission from disclosure", async () => {
@@ -404,7 +404,7 @@ it("uses the Core navigation handle for a withheld historical receipt without in
     "href",
     `/cases/id/${recoveryRecord().operationId}`,
   );
-  expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+  expect(screen.queryByText("CC-9114-03WS-D48B-CH82-28")).toBeNull();
 });
 
 it("keeps a known recorded card through cleanup failure and retries identity cleanup without resending", async () => {
@@ -459,7 +459,7 @@ it.each(["actor", "installation", "epoch", "invalidation"])(
         ),
       );
     }
-    expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+    expect(screen.queryByText("CC-9114-03WS-D48B-CH82-28")).toBeNull();
     expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
   },
 );
@@ -481,6 +481,6 @@ it("completes an in-flight identity check across invalidation without surfacing 
     expect(await testJournal.list(recoveryScope)).toEqual([]);
   });
   expect(get).toHaveBeenCalledTimes(1);
-  expect(screen.queryByText("RECOVERY-CASE")).toBeNull();
+  expect(screen.queryByText("CC-9114-03WS-D48B-CH82-28")).toBeNull();
   expect(screen.queryByRole("link", { name: "Open case" })).toBeNull();
 });

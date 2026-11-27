@@ -238,7 +238,7 @@ const current = (
                 prominence: "PRIMARY",
                 value: {
                   kind: "REFERENCE",
-                  value: "CASE-1",
+                  value: "CC-55KW-SSJ4-8HMS-G1BH-73",
                 },
               },
               {
@@ -398,7 +398,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
                   kind: "REVIEW",
                   confirmation: {
                     kind: "CASE_REFERENCE",
-                    reference: "CASE-1",
+                    reference: "CC-55KW-SSJ4-8HMS-G1BH-73",
                   },
                   consequence: task.consequence,
                 },
@@ -941,7 +941,7 @@ it.each([
                           prominence: "PRIMARY",
                           value: {
                             kind: "REFERENCE",
-                            value: "CASE-1",
+                            value: "CC-55KW-SSJ4-8HMS-G1BH-73",
                           },
                         },
                       ],

@@ -90,7 +90,7 @@ let private invalidAmount =
     |> Gen.map (fun raw -> { Raw = raw; Accepted = false })
 
 let private admitOpening inputs =
-    TaskBuilders.openCustom
+    TaskBuilders.openCase
         (TaskBuilders.context 2)
         TaskBuilders.environment
         None
@@ -131,16 +131,14 @@ let private currencyProperty =
     }
 
 type private TextTarget =
-    | Reference
     | Country
     | Claimant
     | Insurer
 
-let private textTargets = [ Reference; Country; Claimant; Insurer ]
+let private textTargets = [ Country; Claimant; Insurer ]
 
 let private textLimit =
     function
-    | Reference -> 32
     | Country -> 2
     | Claimant
     | Insurer -> 80
@@ -148,7 +146,6 @@ let private textLimit =
 let private validateText target value =
     let field =
         match target with
-        | Reference -> BusinessField.CaseReference
         | Country -> BusinessField.IncidentCountry
         | Claimant -> BusinessField.PolicyNumber
         | Insurer -> BusinessField.InsurerClaimReference
@@ -170,7 +167,6 @@ let private validText =
         let value =
             match target with
             | Country -> "LV"
-            | Reference -> String.replicate length "x"
             | _ -> String.replicate length (if supplementary then "😀" else "x")
 
         return target, { Raw = value; Accepted = true }

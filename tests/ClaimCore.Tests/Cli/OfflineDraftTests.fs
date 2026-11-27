@@ -25,12 +25,19 @@ let tests =
                 (fun () ->
                     for arguments, revisionPath in
                         [
-                            [ "case"; "close"; "--outcome"; "other"; "OFFLINE"; "--dry-run" ],
+                            [
+                                "case"
+                                "close"
+                                "--outcome"
+                                "other"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
+                                "--dry-run"
+                            ],
                             "expectedRevision"
                             [
                                 "work"
                                 "update"
-                                "OFFLINE"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
                                 "--handling-summary"
                                 "Current summary"
                                 "--dry-run"
@@ -39,7 +46,7 @@ let tests =
                             [
                                 "reminder"
                                 "complete"
-                                "OFFLINE"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
                                 "--reminder-id"
                                 "10000000-0000-7000-8000-000000000071"
                                 "--dry-run"
@@ -68,7 +75,15 @@ let tests =
                             "Delivery rejects incomplete metadata")
             testCase "other authored syntax still uses the Domain owner" (fun () ->
                 let value =
-                    draft [ "work"; "update"; "OFFLINE"; "--handling-summary"; ""; "--dry-run" ]
+                    draft
+                        [
+                            "work"
+                            "update"
+                            "CC-BGYE-HN4P-W9H6-QPV6-64"
+                            "--handling-summary"
+                            ""
+                            "--dry-run"
+                        ]
 
                 Expect.isSome value.Issues "Invalid narrative is not excused by a missing version"
                 let fields = value.Issues |> Option.get |> InputIssues.toList |> List.map _.Target
@@ -81,7 +96,7 @@ let tests =
                 match
                     Grammar.prepare
                         (fun () -> "10000000-0000-7000-8000-000000000072")
-                        [ "case"; "close"; "--outcome"; "other"; "OFFLINE" ]
+                        [ "case"; "close"; "--outcome"; "other"; "CC-BGYE-HN4P-W9H6-QPV6-64" ]
                 with
                 | Error issues ->
                     Expect.contains
@@ -101,11 +116,17 @@ let tests =
                                 "--name"
                                 "Editable profile"
                             ]
-                            [ "note"; "add"; "OFFLINE"; "--text"; "Authored note" ]
+                            [
+                                "note"
+                                "add"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
+                                "--text"
+                                "Authored note"
+                            ]
                             [
                                 "reminder"
                                 "create"
-                                "OFFLINE"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
                                 "--action"
                                 "Authored action"
                                 "--due"
@@ -116,14 +137,14 @@ let tests =
                                 "close"
                                 "--outcome"
                                 "other"
-                                "OFFLINE"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
                                 "--expected-revision"
                                 "7"
                             ]
                             [
                                 "work"
                                 "update"
-                                "OFFLINE"
+                                "CC-BGYE-HN4P-W9H6-QPV6-64"
                                 "--expected-work-revision"
                                 "0"
                                 "--handling-summary"
@@ -153,7 +174,7 @@ let tests =
                             "close"
                             "--outcome"
                             "other"
-                            "OFFLINE"
+                            "CC-BGYE-HN4P-W9H6-QPV6-64"
                             "--expected-revision"
                             "7"
                             "--operation-id"

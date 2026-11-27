@@ -51,8 +51,11 @@ const registerFixture = (fixture: "standard" | "limits", standard: () => DesignD
           const rows = list.locator("tbody tr");
           await expect(rows.first()).toBeVisible();
           if (fixture === "standard" && path.startsWith("/cases")) {
-            await expect(rows.first()).toContainText(dataset.caseMarker);
-            await expect(rows.filter({ hasNotText: dataset.caseMarker })).toHaveCount(0);
+            const references = await rows.locator("a .identifier-value").allTextContents();
+            expect(references.length).toBe(await rows.count());
+            for (const reference of references) {
+              expect(dataset.caseReferences).toContain(reference);
+            }
           }
           const atTall = await tableLayoutState(page);
           if (width >= 1366) {

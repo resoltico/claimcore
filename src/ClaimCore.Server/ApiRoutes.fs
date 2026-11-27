@@ -28,67 +28,72 @@ module internal ApiRoutes =
         |> Representation.select
 
     // This total endpoint-to-handler table has no nested decisions; keeping it exhaustive makes missing transport bindings compiler errors.
-    let route =
+    let private bind =
         function
         | ActorEndpoint.Query QueryTaskId.CasePayments ->
-            Route.representedRead Api.casePayments PaymentsScreen.document Service.payments
+            Route.protectedRead Api.casePayments PaymentsScreen.document Service.Disclosure.payments
         | ActorEndpoint.Query QueryTaskId.CaseNotes ->
-            Route.representedRead Api.caseNotes NotesScreen.document Service.notes
+            Route.protectedRead Api.caseNotes NotesScreen.document Service.Disclosure.notes
         | ActorEndpoint.Query QueryTaskId.CaseAttachments ->
-            Route.representedRead
+            Route.protectedRead
                 Api.caseAttachments
                 AttachmentsScreen.document
-                (fun services (request: CaseGetRequest) token ->
-                    Service.caseAttachments services request.Target token)
+                Service.Disclosure.caseAttachments
         | ActorEndpoint.Query QueryTaskId.ReminderGet ->
-            Route.representedRead Api.reminder ReminderScreen.document Service.reminder
+            Route.protectedRead Api.reminder ReminderScreen.document Service.Disclosure.reminder
         | ActorEndpoint.Query QueryTaskId.ReminderList ->
-            Route.representedReadWithInput
+            Route.protectedReadWithInput
                 Api.reminders
                 ReminderListScreen.document
-                Service.reminders
+                Service.Disclosure.reminders
         | ActorEndpoint.Query QueryTaskId.CaseTimeline ->
-            Route.representedRead Api.caseTimeline TimelineScreen.document Service.timeline
+            Route.protectedRead Api.caseTimeline TimelineScreen.document Service.Disclosure.timeline
         | ActorEndpoint.Query QueryTaskId.Context ->
-            Route.representedRead Api.context ContextScreen.document Service.context
+            Route.protectedRead Api.context ContextScreen.document Service.Disclosure.context
         | ActorEndpoint.Query QueryTaskId.CaseGet ->
-            Route.representedRead Api.caseGet HumanCaseDocument.ofCore Service.get
+            Route.protectedRead Api.caseGet HumanCaseDocument.ofCore Service.Disclosure.get
         | ActorEndpoint.Query QueryTaskId.CaseParties ->
-            Route.representedRead Api.caseParties PartiesScreen.document Service.parties
+            Route.protectedRead Api.caseParties PartiesScreen.document Service.Disclosure.parties
         | ActorEndpoint.Query QueryTaskId.CaseAssignees ->
-            Route.representedRead Api.caseAssignees AssigneesScreen.document Service.assignees
+            Route.protectedRead
+                Api.caseAssignees
+                AssigneesScreen.document
+                Service.Disclosure.assignees
         | ActorEndpoint.Query QueryTaskId.CaseList ->
-            Route.representedRead Api.caseList CaseListScreen.document Service.list
+            Route.protectedRead Api.caseList CaseListScreen.document Service.Disclosure.list
         | ActorEndpoint.Query QueryTaskId.CaseSummary ->
-            Route.representedRead Api.caseSummary CaseTotalsScreen.document Service.caseSummary
+            Route.protectedRead
+                Api.caseSummary
+                CaseTotalsScreen.document
+                Service.Disclosure.caseSummary
         | ActorEndpoint.Query QueryTaskId.WorkViews ->
-            Route.representedRead Api.workViews WorkViewsScreen.document Service.workViews
+            Route.protectedRead Api.workViews WorkViewsScreen.document Service.Disclosure.workViews
         | ActorEndpoint.Query QueryTaskId.OperationGet ->
-            Route.represented
+            Route.protectedReply
                 Api.operationGet
-                Api.operationGetUnavailable
+                Service.Disclosure.unavailableLookup
                 (fun _ reply -> HumanReplies.lookup reply)
                 (fun _ -> None)
-                Service.operationGet
+                Service.Disclosure.operationGet
         | ActorEndpoint.Query QueryTaskId.PeopleList ->
-            Route.representedRead Api.peopleList PeopleScreen.document Service.actors
+            Route.protectedRead Api.peopleList PeopleScreen.document Service.Disclosure.actors
         | ActorEndpoint.Query QueryTaskId.PeopleGrants ->
-            Route.representedRead Api.peopleGrants PersonScreen.document Service.grants
+            Route.protectedRead Api.peopleGrants PersonScreen.document Service.Disclosure.grants
         | ActorEndpoint.Query QueryTaskId.PeopleHistory ->
-            Route.representedRead
+            Route.protectedRead
                 Api.peopleHistory
                 AccessHistoryScreen.document
-                Service.peopleHistory
+                Service.Disclosure.peopleHistory
         | ActorEndpoint.Query QueryTaskId.PeopleRequests ->
-            Route.representedRead
+            Route.protectedRead
                 Api.peopleRequests
                 AccessRequestsScreen.document
-                Service.accessRequests
+                Service.Disclosure.accessRequests
         | ActorEndpoint.Query QueryTaskId.DisclosureTrail ->
-            Route.representedRead
+            Route.protectedRead
                 Api.disclosureTrail
                 DisclosureTrailScreen.document
-                Service.disclosureTrail
+                Service.Disclosure.disclosureTrail
         | ActorEndpoint.Command CommandTaskId.RequestAccess ->
             Route.representedRead
                 Api.peopleRequestsSubmit
@@ -100,33 +105,53 @@ module internal ApiRoutes =
                 AccessRequestsScreen.dismissedDocument
                 Service.dismissAccessRequest
         | ActorEndpoint.Command CommandTaskId.TerminateOwnSessions ->
-            Route.represented
+            Route.protectedReply
                 Api.terminateOwnSessions
-                (fun _ -> SessionTerminationResult.Failed CoreFault.StoreUnavailable)
+                (fun _ -> Service.Disclosure.unavailableTermination ())
                 (fun _ -> HumanReplies.sessionTermination)
                 (fun _ -> None)
-                Service.terminateOwnSessions
+                Service.Disclosure.terminateOwnSessions
         | ActorEndpoint.Command CommandTaskId.TerminatePersonSessions ->
-            Route.represented
+            Route.protectedReply
                 Api.terminatePersonSessions
-                (fun _ -> SessionTerminationResult.Failed CoreFault.StoreUnavailable)
+                (fun _ -> Service.Disclosure.unavailableTermination ())
                 (fun _ -> HumanReplies.sessionTermination)
                 (fun _ -> None)
-                Service.terminatePersonSessions
+                Service.Disclosure.terminatePersonSessions
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
-            Route.represented
+            Route.protectedReply
                 Api.operationPreview
-                Api.operationPreviewUnavailable
+                Service.Disclosure.unavailablePreview
                 HumanReplies.previewSubmission
                 (fun _ -> None)
-                Service.previewSubmission
+                Service.Disclosure.previewSubmission
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
-            Route.represented
+            Route.protectedReply
                 Api.operationExecute
-                Api.operationExecuteUnavailable
+                Service.Disclosure.unavailableExecute
                 (fun _ reply -> HumanReplies.execute reply)
                 executionActor
-                Service.executeSubmission
+                Service.Disclosure.executeSubmission
+
+    let private requiresDisclosure =
+        function
+        | ActorEndpoint.Command(CommandTaskId.RequestAccess | CommandTaskId.DismissAccessRequest) ->
+            false
+        | ActorEndpoint.Command(CommandTaskId.TerminateOwnSessions | CommandTaskId.TerminatePersonSessions)
+        | ActorEndpoint.Query _
+        | ActorEndpoint.Operation _ -> true
+
+    let internal requireClassification endpoint (route: ClaimCore.Server.Route) =
+        if
+            route.Description.Id <> EndpointId.Actor endpoint
+            || route.Protected <> requiresDisclosure endpoint
+        then
+            invalidOp "An actor route does not match its disclosure classification."
+
+        route
+
+    let route endpoint =
+        bind endpoint |> requireClassification endpoint
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with

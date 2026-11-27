@@ -298,18 +298,12 @@ let private resolveInitialization (database: PostgresFixture.Database) =
                         administration.Initialize(
                             "Etc/UTC",
                             DatabaseScenarios.initialOwner database,
-                            None,
                             token
                         ))
                     "A landed initialization is inspected, not repeated"
         else
             let! _ =
-                administration.Initialize(
-                    "Etc/UTC",
-                    DatabaseScenarios.initialOwner database,
-                    None,
-                    token
-                )
+                administration.Initialize("Etc/UTC", DatabaseScenarios.initialOwner database, token)
 
             let! status = administration.Status token
             Expect.isSome status.InitialOwner "A fresh retry after rollback records its owner"
@@ -475,7 +469,6 @@ let tests =
                                     administration.Initialize(
                                         "Etc/UTC",
                                         DatabaseScenarios.initialOwner database,
-                                        None,
                                         token
                                     ) in
 

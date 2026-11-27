@@ -51,7 +51,6 @@ CREATE TABLE claimcore.installation (
         AND business_time_zone = btrim(business_time_zone)
         AND business_time_zone !~ '[[:cntrl:]]'
     ),
-    case_reference_policy text NOT NULL,
     wrapped_data_key bytea NOT NULL CHECK (octet_length(wrapped_data_key)=92),
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
@@ -176,6 +175,7 @@ CREATE TABLE claimcore.ledger_compartments (
     nonce bytea,
     nonce_fingerprint bytea UNIQUE,
     payload bytea STORAGE EXTERNAL,
+    relationship_cleared boolean NOT NULL DEFAULT false CHECK (NOT relationship_cleared OR payload IS NULL),
     PRIMARY KEY(operation_sequence,ordinal),
     UNIQUE(operation_sequence,owner_kind,owner_id),
     CHECK ((nonce IS NULL AND nonce_fingerprint IS NULL AND payload IS NULL)
@@ -186,6 +186,30 @@ CREATE TABLE claimcore.ledger_compartments (
 ALTER TABLE claimcore.ledger_effects ADD CONSTRAINT effect_compartment
     FOREIGN KEY(operation_sequence,compartment) REFERENCES claimcore.ledger_compartments(operation_sequence,ordinal) DEFERRABLE INITIALLY DEFERRED;
 CREATE INDEX ledger_compartment_owner ON claimcore.ledger_compartments(owner_kind,owner_id,operation_sequence);
+
+-- Live dependencies have the same privacy lifetime as the protected relationship.
+-- The coverage record retains only the accepting erasure's position and cleared count.
+CREATE TABLE claimcore.ledger_link_dependencies (
+    operation_sequence bigint NOT NULL,
+    ordinal integer NOT NULL,
+    effect_index integer NOT NULL,
+    source_case_id uuid NOT NULL,
+    target_case_id uuid NOT NULL,
+    CHECK (source_case_id <> target_case_id AND target_case_id <> '00000000-0000-0000-0000-000000000000'),
+    PRIMARY KEY(operation_sequence,ordinal),
+    FOREIGN KEY(operation_sequence,ordinal) REFERENCES claimcore.ledger_compartments(operation_sequence,ordinal),
+    FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index)
+);
+CREATE INDEX ledger_link_dependency_target ON claimcore.ledger_link_dependencies(target_case_id,operation_sequence);
+CREATE INDEX ledger_link_dependency_source ON claimcore.ledger_link_dependencies(source_case_id,operation_sequence);
+
+CREATE TABLE claimcore.ledger_link_coverage (
+    operation_sequence bigint NOT NULL,
+    effect_index integer NOT NULL,
+    cleared_count bigint NOT NULL CHECK (cleared_count >= 0),
+    PRIMARY KEY(operation_sequence,effect_index),
+    FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index)
+);
 
 -- Authoritative attachment payloads and their indexed accepting links. Neither depends on case
 -- projections. A family erasure clears the private columns and keeps the accepting identities.
@@ -278,6 +302,8 @@ CREATE TRIGGER ledger_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger FOR
 CREATE TRIGGER ledger_guard_truncate BEFORE TRUNCATE ON claimcore.ledger FOR EACH STATEMENT EXECUTE FUNCTION claimcore.immutable_ledger_row();
 CREATE TRIGGER effects_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_effects FOR EACH ROW EXECUTE FUNCTION claimcore.immutable_ledger_row();
 CREATE TRIGGER effects_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_effects FOR EACH STATEMENT EXECUTE FUNCTION claimcore.immutable_ledger_row();
+CREATE TRIGGER link_coverage_guard_rows BEFORE UPDATE OR DELETE ON claimcore.ledger_link_coverage FOR EACH ROW EXECUTE FUNCTION claimcore.immutable_ledger_row();
+CREATE TRIGGER link_coverage_guard_truncate BEFORE TRUNCATE ON claimcore.ledger_link_coverage FOR EACH STATEMENT EXECUTE FUNCTION claimcore.immutable_ledger_row();
 
 -- The owner-only repair function sets this transaction-local gate after checking the
 -- permanent accepting identity. Append and erasure never set it.
@@ -394,8 +420,16 @@ BEGIN
     IF NEW.nonce IS NOT NULL OR NEW.nonce_fingerprint IS NOT NULL OR NEW.payload IS NOT NULL OR
        (NEW.operation_sequence,NEW.ordinal,NEW.owner_kind,NEW.owner_id,NEW.commitment)
        IS DISTINCT FROM (OLD.operation_sequence,OLD.ordinal,OLD.owner_kind,OLD.owner_id,OLD.commitment)
-       OR NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.erases_kind=OLD.owner_kind AND erased.erases_id=OLD.owner_id
-                     AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,last_reference)) THEN
+       OR OLD.relationship_cleared
+       OR NEW.relationship_cleared IS DISTINCT FROM EXISTS(
+           SELECT 1 FROM claimcore.ledger_link_dependencies link
+             JOIN claimcore.ledger_effects erased ON erased.erases_kind='FAMILY'
+                AND erased.erases_id IN (link.source_case_id,link.target_case_id)
+                AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,last_reference)
+             WHERE (link.operation_sequence,link.ordinal)=(OLD.operation_sequence,OLD.ordinal))
+       OR (NOT NEW.relationship_cleared AND NOT EXISTS(
+           SELECT 1 FROM claimcore.ledger_effects erased WHERE erased.erases_kind=OLD.owner_kind AND erased.erases_id=OLD.owner_id
+           AND (erased.operation_sequence,erased.effect_index)>(OLD.operation_sequence,last_reference))) THEN
         RAISE EXCEPTION 'private contents clear only under a later accepted owner erasure' USING ERRCODE='CC003';
     END IF;
     RETURN NEW;
@@ -554,7 +588,7 @@ CREATE TABLE claimcore.case_attachments (
 CREATE FUNCTION claimcore.append_operation(p_installation uuid,p_sequence bigint,p_previous_hash bytea,p_hash bytea,p_format smallint,p_operation uuid,p_actor uuid,p_recorded_at timestamptz,p_business_date date,p_aggregate_kind text,p_task text,p_structure jsonb,p_effects jsonb,p_compartments jsonb,p_attachment_payload bytea DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
-        effect claimcore.ledger_effects%ROWTYPE; attachment_link jsonb; blob_identity uuid;
+        effect claimcore.ledger_effects%ROWTYPE; attachment_link jsonb; blob_identity uuid; related_case uuid;
         blob_length bigint; blob_digest bytea; consumed_payload boolean:=false;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
@@ -570,9 +604,11 @@ BEGIN
     FOR n IN 0..jsonb_array_length(p_effects)-1 LOOP
         item:=p_effects->n;
         IF jsonb_typeof(item) IS DISTINCT FROM 'object' OR NOT item ?& ARRAY['aggregate','part','revision']
-           OR item-ARRAY['aggregate','part','revision','naturalKey','retained','erases','compartment','attachmentLink']<>'{}'::jsonb
+           OR item-ARRAY['aggregate','part','revision','naturalKey','retained','erases','compartment','attachmentLink','relatedCase']<>'{}'::jsonb
            OR (item ? 'attachmentLink' AND
                (item#>>'{part,kind}' IS DISTINCT FROM 'ATTACHMENT' OR item#>'{retained,withdrawn}'='true'::jsonb))
+           OR ((item ? 'relatedCase') IS DISTINCT FROM
+               (item#>>'{part,kind}'='LINK' AND (item->>'revision')='1'))
            OR NOT claimcore.json_shape(item->'aggregate',ARRAY['kind','id']) OR NOT claimcore.json_shape(item->'part',ARRAY['kind','id'])
            OR jsonb_typeof(item->'revision') IS DISTINCT FROM 'number' OR item->>'revision' !~ $integer$\A[0-9]+\Z$integer$
            OR (item ? 'erases' AND NOT claimcore.json_shape(item->'erases',ARRAY['kind','id'])) THEN
@@ -596,6 +632,19 @@ BEGIN
         INSERT INTO claimcore.ledger_compartments(operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload)
         VALUES(p_sequence,(item->>'ordinal')::integer,item->'owner'->>'kind',(item->'owner'->>'id')::uuid,
                decode(item->>'commitment','hex'),decode(item->>'nonce','hex'),decode(item->>'nonceFingerprint','hex'),decode(item->>'payload','hex'));
+    END LOOP;
+    FOR effect IN SELECT * FROM claimcore.ledger_effects
+        WHERE operation_sequence=p_sequence AND part_kind='LINK' AND revision=1
+    LOOP
+        related_case:=(p_effects->effect.effect_index->>'relatedCase')::uuid;
+        IF jsonb_array_length(p_effects)<>1 OR jsonb_array_length(p_compartments)<>1
+           OR effect.aggregate_kind<>'FAMILY' OR effect.compartment IS NULL
+           OR NOT EXISTS(SELECT 1 FROM claimcore.cases c WHERE c.case_id=related_case AND c.snapshot IS NOT NULL)
+           OR EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.erases_kind='FAMILY' AND e.erases_id=related_case)
+           THEN RAISE EXCEPTION 'relationship requires a live target and a dedicated private compartment' USING ERRCODE='CC004';
+        END IF;
+        INSERT INTO claimcore.ledger_link_dependencies VALUES
+          (p_sequence,effect.compartment,effect.effect_index,effect.aggregate_id,related_case);
     END LOOP;
     FOR effect IN SELECT * FROM claimcore.ledger_effects
         WHERE operation_sequence=p_sequence AND part_kind='ATTACHMENT' ORDER BY effect_index
@@ -651,11 +700,30 @@ $$;
 -- An old eraser cannot clear private data accepted after its frontier.
 CREATE FUNCTION claimcore.clear_owner(target_kind text,target_id uuid)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE frontier bigint; erase_index integer; erased bigint;
+DECLARE frontier bigint; erase_index integer; erased bigint; covered bigint;
 BEGIN
     SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects
       WHERE erases_kind=target_kind AND erases_id=target_id ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
     IF frontier IS NULL THEN RAISE EXCEPTION 'owner has no accepted erasure' USING ERRCODE='CC002'; END IF;
+    IF target_kind='FAMILY' THEN
+        UPDATE claimcore.ledger_compartments c SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL,relationship_cleared=true
+          FROM claimcore.ledger_link_dependencies d
+          WHERE (c.operation_sequence,c.ordinal)=(d.operation_sequence,d.ordinal)
+            AND target_id IN (d.source_case_id,d.target_case_id)
+            AND (d.operation_sequence,d.effect_index)<(frontier,erase_index)
+            AND c.payload IS NOT NULL;
+        GET DIAGNOSTICS covered=ROW_COUNT;
+        INSERT INTO claimcore.ledger_link_coverage VALUES(frontier,erase_index,covered)
+          ON CONFLICT (operation_sequence,effect_index) DO NOTHING;
+        DELETE FROM claimcore.ledger_link_dependencies d
+          WHERE target_id IN (d.source_case_id,d.target_case_id)
+            AND (d.operation_sequence,d.effect_index)<(frontier,erase_index);
+        UPDATE claimcore.case_links SET target_case_id=NULL,note=NULL
+          WHERE (source_case_id=target_id OR target_case_id=target_id)
+            AND target_case_id IS NOT NULL;
+    ELSE
+        covered:=0;
+    END IF;
     UPDATE claimcore.ledger_compartments c SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL
       WHERE c.owner_kind=target_kind AND c.owner_id=target_id AND c.payload IS NOT NULL
         AND (c.operation_sequence,COALESCE((SELECT max(e.effect_index) FROM claimcore.ledger_effects e WHERE e.operation_sequence=c.operation_sequence AND e.compartment=c.ordinal),-1))<(frontier,erase_index);
@@ -667,7 +735,7 @@ BEGIN
         UPDATE claimcore.attachment_blobs b SET length=NULL,digest=NULL,payload=NULL WHERE b.case_id=target_id
           AND b.payload IS NOT NULL AND (b.operation_sequence,b.effect_index)<(frontier,erase_index);
     END IF;
-    RETURN erased;
+    RETURN erased+covered;
 END;
 $$;
 
@@ -678,7 +746,7 @@ $$;
 CREATE TABLE claimcore.cases (
     -- The UUID of the operation which created the case.
     case_id uuid PRIMARY KEY CHECK (case_id <> '00000000-0000-0000-0000-000000000000'),
-    -- Current spelling. Every assigned spelling stays reserved in the ledger, including after erasure.
+    -- Permanent reference from the opening effect.
     case_reference text COLLATE "C" NOT NULL,
     revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
     state text NOT NULL CHECK (state ~ '^[A-Z][A-Z_]{0,39}$'),
@@ -866,12 +934,23 @@ CREATE TABLE claimcore.disclosure_trail (
     attachment_id uuid CHECK (attachment_id <> '00000000-0000-0000-0000-000000000000'),
     outcome text COLLATE "C" NOT NULL CHECK (outcome ~ '^[A-Z][A-Z_]*$'),
     export_query text COLLATE "C",
-    export_selection jsonb,
+    export_filtered boolean,
+    export_paged boolean,
+    export_order text COLLATE "C",
+    export_grouping text COLLATE "C",
     export_row_count integer,
+    disclosed_count integer CHECK (disclosed_count >= 0),
+    disclosed_cases uuid[],
+    disclosed_people uuid[],
+    CHECK ((disclosed_count IS NULL AND disclosed_cases IS NULL AND disclosed_people IS NULL)
+        OR (disclosed_count IS NOT NULL AND disclosed_cases IS NOT NULL AND disclosed_people IS NOT NULL
+            AND array_position(disclosed_cases,NULL) IS NULL AND array_position(disclosed_people,NULL) IS NULL)),
+
     CHECK (
-        (export_query IS NULL AND export_selection IS NULL AND export_row_count IS NULL)
-        OR (export_query IS NOT NULL AND export_selection IS NOT NULL AND export_row_count IS NOT NULL
-            AND jsonb_typeof(export_selection) = 'object' AND export_row_count >= 0)
+        (export_query IS NULL AND export_filtered IS NULL AND export_paged IS NULL
+            AND export_order IS NULL AND export_grouping IS NULL AND export_row_count IS NULL)
+        OR (export_query IS NOT NULL AND export_filtered IS NOT NULL
+            AND export_paged IS NOT NULL AND export_row_count IS NOT NULL AND export_row_count >= 0)
     )
 );
 
@@ -902,18 +981,24 @@ FOR EACH STATEMENT EXECUTE FUNCTION claimcore.disclosure_guard();
 -- runtime only this keyset read rather than direct SELECT on the trail's storage columns.
 CREATE FUNCTION claimcore.read_disclosure_trail(
     p_actor uuid, p_case uuid, p_kind text, p_from timestamptz, p_until timestamptz,
-    p_before_time timestamptz, p_before_id bigint, p_limit integer
+    p_before_time timestamptz, p_before_id bigint, p_through_id bigint, p_limit integer
 )
 RETURNS SETOF claimcore.disclosure_trail LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
     SELECT t.* FROM claimcore.disclosure_trail t
     WHERE (p_actor IS NULL OR t.actor_id=p_actor)
-      AND (p_case IS NULL OR t.case_id=p_case)
+      AND (p_case IS NULL OR t.case_id=p_case OR p_case=ANY(t.disclosed_cases))
       AND (p_kind IS NULL OR t.kind=p_kind)
       AND (p_from IS NULL OR t.recorded_at>=p_from)
       AND (p_until IS NULL OR t.recorded_at<p_until)
+      AND t.id <= p_through_id
       AND (p_before_time IS NULL OR (t.recorded_at,t.id)<(p_before_time,p_before_id))
     ORDER BY t.recorded_at DESC,t.id DESC
     LIMIT p_limit
+$$;
+
+CREATE FUNCTION claimcore.disclosure_trail_upper_bound()
+RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT coalesce(max(id),0) FROM claimcore.disclosure_trail
 $$;
 
 CREATE FUNCTION claimcore.prune_disclosure_trail(p_cutoff timestamptz, p_months integer)
@@ -1109,6 +1194,24 @@ BEGIN
     ELSE
         family_id:=NEW.case_id;
     END IF;
+    IF TG_TABLE_NAME='ledger_effects' THEN
+        IF NOT EXISTS(SELECT 1 FROM claimcore.ledger_link_coverage coverage
+                       WHERE (coverage.operation_sequence,coverage.effect_index)=(NEW.operation_sequence,NEW.effect_index))
+           OR EXISTS(SELECT 1 FROM claimcore.ledger_link_dependencies d
+                      WHERE family_id IN (d.source_case_id,d.target_case_id))
+           OR EXISTS(SELECT 1 FROM claimcore.case_links l WHERE l.target_case_id=family_id) THEN
+            RAISE EXCEPTION 'accepted family erasure must clear relationship dependencies and projections atomically' USING ERRCODE='CC003';
+        END IF;
+    END IF;
+    IF TG_TABLE_NAME='case_links' AND EXISTS(
+        SELECT 1 FROM claimcore.case_links l
+          WHERE l.source_case_id=family_id AND l.target_case_id IS NOT NULL
+            AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects e JOIN claimcore.ledger_link_dependencies d
+                            USING(operation_sequence,effect_index)
+                           WHERE e.part_id=l.link_id AND e.part_kind='LINK' AND e.revision=1
+                             AND (d.source_case_id,d.target_case_id)=(l.source_case_id,l.target_case_id))) THEN
+        RAISE EXCEPTION 'a live relationship requires matching accepted private dependencies' USING ERRCODE='CC003';
+    END IF;
     IF TG_TABLE_NAME='ledger_effects' AND EXISTS(SELECT 1 FROM claimcore.ledger_compartments c WHERE c.owner_kind='FAMILY' AND c.owner_id=family_id AND c.payload IS NOT NULL) THEN
         RAISE EXCEPTION 'accepted family erasure must clear retained private values atomically' USING ERRCODE='CC003';
     END IF;
@@ -1141,7 +1244,10 @@ BEGIN
             OR EXISTS(SELECT 1 FROM claimcore.reminders WHERE case_id=family_id AND snapshot IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_parties WHERE case_id=family_id AND role IS NULL)
             OR EXISTS(SELECT 1 FROM claimcore.case_work WHERE case_id=family_id AND revision>0 AND snapshot IS NULL)
-            OR EXISTS(SELECT 1 FROM claimcore.case_links WHERE source_case_id=family_id AND NOT removed AND target_case_id IS NULL)
+            OR EXISTS(SELECT 1 FROM claimcore.case_links l WHERE l.source_case_id=family_id AND NOT l.removed AND l.target_case_id IS NULL
+                AND NOT EXISTS(SELECT 1 FROM claimcore.ledger_effects e JOIN claimcore.ledger_compartments c
+                               ON (c.operation_sequence,c.ordinal)=(e.operation_sequence,e.compartment)
+                               WHERE e.part_kind='LINK' AND e.part_id=l.link_id AND e.revision=1 AND c.relationship_cleared))
             OR EXISTS(SELECT 1 FROM claimcore.notes n WHERE n.case_id=family_id AND n.text IS NULL AND NOT EXISTS(
                 SELECT 1 FROM claimcore.ledger_effects e WHERE e.part_kind='NOTE' AND e.part_id=n.note_id
                   AND e.aggregate_kind='FAMILY' AND e.aggregate_id=family_id AND e.retained->>'removed'='true'
@@ -1229,7 +1335,7 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.encryption_generations, claimcore.recovery_generation, claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
-GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments,claimcore.attachment_blobs,claimcore.attachment_references,claimcore.case_attachments TO claimcore_runtime;
+GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments,claimcore.ledger_link_dependencies,claimcore.ledger_link_coverage,claimcore.attachment_blobs,claimcore.attachment_references,claimcore.case_attachments TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb,bytea) TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.case_links, claimcore.actors TO claimcore_runtime;
@@ -1245,9 +1351,10 @@ GRANT EXECUTE ON FUNCTION claimcore.attachment_repair_active() TO claimcore_runt
 
 
 GRANT SELECT ON claimcore.access_request_generation, claimcore.disclosure_retention TO claimcore_runtime;
-GRANT INSERT(actor_id,kind,case_id,attachment_id,outcome,export_query,export_selection,export_row_count)
+GRANT INSERT(actor_id,kind,case_id,attachment_id,outcome,export_query,export_filtered,export_paged,export_order,export_grouping,export_row_count,disclosed_count,disclosed_cases,disclosed_people)
     ON claimcore.disclosure_trail TO claimcore_runtime;
-GRANT EXECUTE ON FUNCTION claimcore.read_disclosure_trail(uuid,uuid,text,timestamptz,timestamptz,timestamptz,bigint,integer) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.read_disclosure_trail(uuid,uuid,text,timestamptz,timestamptz,timestamptz,bigint,bigint,integer) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.disclosure_trail_upper_bound() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.prune_disclosure_trail(timestamptz,integer) TO claimcore_runtime;
 
 GRANT SELECT, INSERT, UPDATE(generation,confirmed_at) ON claimcore.credential_publications TO claimcore_runtime;

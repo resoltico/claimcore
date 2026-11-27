@@ -36,7 +36,10 @@ const execute = async (
   body: RequestByEndpoint["operation.execute"],
 ) => {
   const result = await workRequest(page, "operation.execute", body, access);
-  expect(result.outcome.kind).toBe("ACCEPTED");
+  if (result.outcome.kind !== "ACCEPTED") {
+    throw new Error(`Expected accepted ${body.task}, received ${result.outcome.kind}.`);
+  }
+  return result.outcome.data;
 };
 
 const human = async <K extends "case.get" | "case.summary" | "operation.preview">(
@@ -65,17 +68,21 @@ test("renders both related directions and requires a distinct Owner for Owner re
   test.setTimeout(120_000);
   const access = await owner(page);
   const prefix = `LINKFIELD-${randomUUID().slice(0, 8)}`;
-  const a = `${prefix}-A`;
-  const b = `${prefix}-B`;
-  const c = `${prefix}-C`;
-  for (const reference of [a, b, c]) {
-    await execute(page, access, {
+  const open = async (policy: string) => {
+    const receipt = await execute(page, access, {
       operationId: operationId(),
       task: "case.open",
       binding: { kind: "CASE", expectedRevision: 0 },
-      inputs: { "field:caseReference": reference },
+      inputs: { "field:policyNumber": policy },
     });
-  }
+    if (receipt.subject.kind !== "CASE") {
+      throw new Error("Expected the issued case reference.");
+    }
+    return receipt.subject.caseReference;
+  };
+  const a = await open(`${prefix}-A`);
+  const b = await open(`${prefix}-B`);
+  const c = await open(`${prefix}-C`);
 
   const add = (from: string, to: string) =>
     execute(page, access, {
@@ -243,7 +250,7 @@ for (const releaseOn of ["Settings", "return"] as const) {
           operationId: operationId(),
           task: "case.open",
           binding: { kind: "CASE", expectedRevision: 0 },
-          inputs: { "field:caseReference": reference },
+          inputs: { "field:policyNumber": reference },
         });
         const total = page.locator('[data-region="TOTALS"] [data-entry="total"] dd');
         if (releaseOn === "Settings") {
@@ -479,7 +486,7 @@ test("traverses the live 51-month report and complete CSV with independent page 
       task: "case.open",
       binding: { kind: "CASE", expectedRevision: 0 },
       inputs: {
-        "field:caseReference": `${prefix}-${index}`,
+        "field:policyNumber": `${prefix}-${index}`,
         "field:receivedDate": month,
         "field:claimedAmount": "1",
         "field:claimedCurrency": "EUR",

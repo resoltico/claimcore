@@ -391,7 +391,7 @@ let closedFlagsBeforeInput =
                 [
                     "attachment"
                     "download"
-                    "R-1"
+                    "CC-NVJN-9VCD-PZVY-CKAX-07"
                     "11111111-2222-7333-8444-555555555554"
                     "--output"
                     "sample.txt"

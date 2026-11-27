@@ -32,8 +32,10 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
   browser,
 }) => {
   await openAuthenticated(page);
-  const reference = `STEWARD-LOCALE-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `STEWARD-LOCALE-${randomUUID().slice(0, 8)}`,
+  );
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
@@ -155,8 +157,10 @@ test("accepted void and reinstatement reasons remain historical in actual receip
   browser,
 }) => {
   await openAuthenticated(page);
-  const reference = `ACCEPTED-REASONS-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `ACCEPTED-REASONS-${randomUUID().slice(0, 8)}`,
+  );
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,

@@ -109,7 +109,7 @@ let tests =
                         AttachmentDisclosure = Sequence.zero
                         Basis = DomainInputs.workBasis
                         CaseId = CaseFixtures.caseId raw
-                        Reference = DomainInputs.reference "CASE-PROOF"
+                        Reference = DomainInputs.reference "CC-51X6-JJ3P-QP7W-6CNM-62"
                         Items = [ timeline ]
                         NextCursor = None
                     })
@@ -187,7 +187,7 @@ let completeByteGoldens =
             let target =
                 DomainInputs.namedActorReference (CaseFixtures.actorId targetRaw) "=Target α"
 
-            let reference = DomainInputs.reference "CSV-GOLDEN"
+            let reference = DomainInputs.reference "CC-1FN1-TM2B-BW5Y-TH15-14"
             let changed = DateTimeOffset(2026, 11, 9, 12, 0, 0, TimeSpan.Zero)
 
             let basis =
@@ -267,7 +267,7 @@ let completeByteGoldens =
                 (expected
                     "caseReference,revision,workRevision,state.kind,headline,attention,claimants,insurers,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,netPaid,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
                     [
-                        "CSV-GOLDEN"
+                        "CC-1FN1-TM2B-BW5Y-TH15-14"
                         "7"
                         "3"
                         "ACTIVE"
@@ -341,7 +341,7 @@ let completeByteGoldens =
                     "caseId,caseReference,reminderId,revision,action,dueDate,state,kind,doneOn,deadlineOutcome,recordedAt,recordedBy.actorId,recordedBy.displayName,active"
                     [
                         "019aa6a0-0000-7000-8000-000000000001"
-                        "CSV-GOLDEN"
+                        "CC-1FN1-TM2B-BW5Y-TH15-14"
                         "019aa6a0-0000-7000-8000-000000000002"
                         "3"
                         "\"'+CSV, α \"\"quoted\"\"\""
@@ -452,7 +452,7 @@ let completeByteGoldens =
                 (expected
                     "caseReference,operationId,sequence,effectIndex,operationHash,recordedAt,recordedBy.actorId,recordedBy.displayName.value,recordedBy.displayName.kind,act,revision,reminderId,nextReminderId,nextReminderRevision,changes.kind,field,before,after"
                     [
-                        "CSV-GOLDEN"
+                        "CC-1FN1-TM2B-BW5Y-TH15-14"
                         "019aa6a0-0000-7000-8000-000000000001"
                         "7"
                         "3"

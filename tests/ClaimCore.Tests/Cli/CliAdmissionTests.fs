@@ -77,13 +77,13 @@ let tests =
                         [
                             "case"
                             "erase"
-                            "CASE-X"
+                            "CC-55KW-SSJ4-8HMS-G1BH-73"
                             "--expected-revision"
                             "7"
                             "--expected-family-sequence"
                             "12"
                         ],
-                        "CASE-X"
+                        "CC-55KW-SSJ4-8HMS-G1BH-73"
                         [
                             "people"
                             "erase-profile"
@@ -342,7 +342,7 @@ let tests =
                             "--role"
                             "CASE_READER"
                             "--role"
-                            "OWNER@CASE-1"
+                            "OWNER@CC-55KW-SSJ4-8HMS-G1BH-73"
                         ]
 
                 Expect.equal
@@ -363,7 +363,7 @@ let tests =
                      |> Map.find (
                          TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
                      ))
-                    (InputValue.Text "CASE-1")
+                    (InputValue.Text "CC-55KW-SSJ4-8HMS-G1BH-73")
                     "Applicability remains core-owned")
             testCase
                 "collection bounds are enforced at preparation without a partial operation"
@@ -434,7 +434,7 @@ let tests =
                         [
                             "case"
                             "erase"
-                            "CASE-1"
+                            "CC-55KW-SSJ4-8HMS-G1BH-73"
                             "--expected-revision"
                             "1"
                             "--expected-family-sequence"

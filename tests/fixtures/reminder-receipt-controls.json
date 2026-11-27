@@ -30,7 +30,7 @@
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73",
               "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
@@ -109,7 +109,7 @@
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73",
               "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
@@ -188,7 +188,7 @@
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73",
               "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",
@@ -267,7 +267,7 @@
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73",
               "act": "reminder.completeAndPlanNext",
               "effects": {
                 "kind": "COMPLETED_AND_PLANNED",

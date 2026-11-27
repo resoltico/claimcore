@@ -11,13 +11,13 @@ it("copies safe values and provides an accessible fallback when clipboard access
   const user = userEvent.setup();
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
-  const view = render(<CopyValue label="reference" value="CASE-1" />);
+  const view = render(<CopyValue label="reference" value="CC-55KW-SSJ4-8HMS-G1BH-73" />);
   await user.click(screen.getByRole("button", { name: "Copy reference" }));
-  expect(writeText).toHaveBeenCalledWith("CASE-1");
+  expect(writeText).toHaveBeenCalledWith("CC-55KW-SSJ4-8HMS-G1BH-73");
   expect(screen.getByText("reference copied.")).toBeVisible();
   writeText.mockRejectedValueOnce(new Error("denied"));
   await user.click(screen.getByRole("button", { name: "Copy reference" }));
-  expect(screen.getByLabelText("reference copy fallback")).toHaveValue("CASE-1");
+  expect(screen.getByLabelText("reference copy fallback")).toHaveValue("CC-55KW-SSJ4-8HMS-G1BH-73");
   view.unmount();
 });
 
@@ -25,7 +25,7 @@ it("associates catalog field errors", () => {
   render(
     <CatalogField
       field={definition.catalog.fields[0]!}
-      value="CASE-1"
+      value="CC-55KW-SSJ4-8HMS-G1BH-73"
       error={localNotice("unreachable")}
       onChange={vi.fn()}
     />,

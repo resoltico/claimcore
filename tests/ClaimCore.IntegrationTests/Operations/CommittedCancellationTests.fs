@@ -27,10 +27,7 @@ let tests =
                         "case.open"
                         (OperationIds.fresh ())
                         (OperationBinding.CaseNew 0L)
-                        (Submissions.fields (RegistrationInput.values registration)
-                         |> Map.add
-                             (Submissions.field BusinessField.CaseReference)
-                             (SubmissionValue.Text "BOUNDARY"))
+                        (Submissions.fields (RegistrationInput.values registration))
                     Submissions.createRaw
                         "people.register"
                         (OperationIds.fresh ())
@@ -111,13 +108,17 @@ let tests =
                         |> Async.AwaitTask
 
                     match reply.Outcome, observed.Outcome with
-                    | ExecuteResult.Accepted receipt,
+                    | ExecuteResult.ReceiptUnavailable,
                       Outcome.Succeeded(OperationLookupResult.Accepted(stored, true)) ->
-                        expectReceipt
-                            stored
-                            receipt
-                            "Completed acceptance is forwarded despite cancellation"
-                    | _ -> failtest "Committed acceptance and stored receipt must agree"
+                        Expect.equal
+                            (OperationId.value stored.OperationId)
+                            input.OperationId
+                            "The existing operation is found by its original identity"
+                    | _ ->
+                        failtestf
+                            "Cancellation must suppress the receipt and preserve settlement: %A / %A"
+                            reply.Outcome
+                            observed.Outcome
 
                     Expect.isTrue
                         cancellation.IsCancellationRequested

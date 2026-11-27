@@ -1,5 +1,4 @@
 import { fillNamedField } from "./typed-entry";
-import { randomUUID } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, test } from "./fixtures";
@@ -10,8 +9,7 @@ test("records supplementary scalar boundaries through Web for published native r
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `UNICODE-${randomUUID().slice(0, 8)}`;
-  await startOpen(page, reference);
+  await startOpen(page);
   const name = "🙂".repeat(80);
   await fillNamedField(page, "Country", "LT");
   await page.getByLabel("Policy number", { exact: true }).fill(name);
@@ -24,7 +22,11 @@ test("records supplementary scalar boundaries through Web for published native r
       "section.case-detail [data-region=FACTS] .entries-view [data-entry='policyNumber']",
     ),
   ).toContainText(name);
-  await expect(page.locator("#case-detail-title")).toHaveText(reference);
+  const title = page.locator("#case-detail-title");
+  await expect(title).toHaveText(
+    /^CC-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}-[0-9]{2}$/u,
+  );
+  const reference = await title.innerText();
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
   if (output === undefined) {
     throw new Error("Private cross-client fixture output is missing.");

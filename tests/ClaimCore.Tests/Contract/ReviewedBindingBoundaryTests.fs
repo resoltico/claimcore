@@ -13,7 +13,12 @@ let tests =
             |> Option.get
 
         let binding revision =
-            OperationBinding.Case(CaseSelector.Reference "REVISION-1", revision, None, Some 1L)
+            OperationBinding.Case(
+                CaseSelector.Reference "CC-MPF7-EW0T-0XTQ-PS3F-23",
+                revision,
+                None,
+                Some 1L
+            )
 
         for revision in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do
             Expect.isError

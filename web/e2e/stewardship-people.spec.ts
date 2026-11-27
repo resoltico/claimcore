@@ -72,7 +72,7 @@ const stewardAct = async (
   const action = dialog.locator("button[data-confirm-operation]");
   if (kind === "case.erase") {
     await expect(dialog).toContainText(
-      "This permanently removes current and retained case details, payments, work, reminders and notes.",
+      "This permanently clears private details, attachments and related-case notes and targets from the live register. The case ID, reference and record of changes remain. Copies held elsewhere are unaffected.",
     );
     const challenge = dialog.getByRole("textbox", {
       name: "Case reference (exact)",
@@ -123,8 +123,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   browser,
 }) => {
   await openAuthenticated(page);
-  const reference = `STEWARD-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `STEWARD-${randomUUID().slice(0, 8)}`);
   const ownerHistory = page.locator(".case-timeline-panel");
   await ownerHistory.getByRole("button", { name: "View details", exact: true }).first().click();
   const ownerDetails = page.getByRole("dialog", { name: "View details", exact: true });
@@ -147,7 +146,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await stewardAct(steward, reference, "case.reinstate", "Synthetic correction");
     await stewardAct(steward, reference, "case.erase");
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
-      "Erased. Only",
+      "Case erased. The case ID, reference and record of changes remain.",
     );
     await expect(steward.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
     const history = steward.locator(".case-timeline-panel");
@@ -379,8 +378,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
 }, testInfo) => {
   await openAuthenticated(page);
   const source = await syntheticPrincipals();
-  const reference = `PEOPLE-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `PEOPLE-${randomUUID().slice(0, 8)}`);
   await goToView(page, "people");
   const subject = `browser-service-${randomUUID()}`;
   const name = `Authored browser service ${randomUUID()}`;

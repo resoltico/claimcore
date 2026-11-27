@@ -63,7 +63,7 @@ let private serviceCases fixture (admin: ServiceContext) principal =
                     principal
                     {
                         Role = Role.CaseReader
-                        Scope = (GrantTarget.CaseReference reference)
+                        Scope = (caseGrant fixture reference)
                     }
                     true
 
@@ -108,7 +108,7 @@ let private serviceScopeCorruption installationRead =
                     [|
                         box (id database.Fixture 400)
                         box (Role.token Role.DataSteward)
-                        box "SERVICE-1"
+                        box (issuedCaseReference database.Fixture "SERVICE-1")
                     |]
                     CancellationToken.None
                 |> Async.AwaitTask
@@ -125,7 +125,7 @@ let private serviceScopeCorruption installationRead =
                 (Service.get
                     service
                     ({
-                        Target = CaseSelector.Reference("SERVICE-1")
+                        Target = caseTarget database.Fixture "SERVICE-1"
                     })
                     (CancellationToken.None))
                 |> Async.AwaitTask
@@ -147,7 +147,7 @@ let private serviceScopeCorruption installationRead =
                 Expect.equal
                     (page.Items
                      |> List.map (fun (summary: CaseSummary) ->
-                         CaseReference.format summary.Reference))
+                         caseAlias database.Fixture summary.CaseId))
                     [ "SERVICE-2" ]
                     "List authorization cannot disclose through a corrupt human-only row"
             | _ -> failtest "Valid independent case must remain readable"

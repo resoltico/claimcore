@@ -205,18 +205,12 @@ let tests =
                         }
 
                     let offers =
-                        ClaimCore.Application.Reads.Advice.installationOffers
-                            CaseReferencePolicy.CustomAllowed
-                            principal
-                            access
+                        ClaimCore.Application.Reads.Advice.installationOffers principal access
 
                     Expect.equal
                         offers
                         [
-                            InstallationOffer.Open(
-                                ClaimCore.Domain.Tasks.Case.Open.editableInputs
-                                    CaseReferencePolicy.CustomAllowed
-                            )
+                            InstallationOffer.Open(ClaimCore.Domain.Tasks.Case.Open.editableInputs)
                             InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register")
                             InstallationOffer.PeopleAct(TaskId.ofLiteral "people.admit")
                         ]

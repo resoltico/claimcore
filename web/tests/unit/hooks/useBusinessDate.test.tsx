@@ -158,63 +158,30 @@ it("refreshes completed paginated rows on focus and business-date invalidation w
   }
 });
 
-it("waits for activation, coalesces resume signals and cancels work for a replaced cache", () => {
-  const frames = new Map<number, FrameRequestCallback>();
-  let sequence = 0;
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    frames.set(++sequence, callback);
-    return sequence;
-  });
-  vi.stubGlobal("cancelAnimationFrame", (key: number) => {
-    frames.delete(key);
-  });
-  const calls = vi.fn();
-  const FocusProbe = () => {
-    const cache = useEndpointCache();
-    useLayoutEffect(() => {
-      const spy = vi.spyOn(cache!, "revalidate").mockImplementation(() => {
-        calls();
-        return Promise.resolve();
-      });
-      return () => {
-        spy.mockRestore();
-      };
-    }, [cache]);
+it("masks on history suspension and renews only the current cache on activation", () => {
+  const first = vi.fn();
+  const second = vi.fn();
+  const FocusProbe = ({ onDisplay }: { onDisplay: (allowed: boolean) => void }) => {
+    const cache = useEndpointCache()!;
+    useLayoutEffect(
+      () =>
+        cache.subscribeInvalidation(() => {
+          onDisplay(cache.admitsDisplay(cache.display()));
+        }),
+      [cache, onDisplay],
+    );
     return null;
   };
-  const paint = () => {
-    const next = frames.entries().next().value;
-    expect(next).toBeDefined();
-    const [id, callback] = next!;
-    frames.delete(id);
-    act(() => {
-      callback(0);
-    });
-  };
-  const probe = (scope: string) => (
+  const probe = (scope: string, onDisplay: (allowed: boolean) => void) => (
     <EndpointProvider scope={scope}>
-      <FocusProbe />
+      <FocusProbe onDisplay={onDisplay} />
     </EndpointProvider>
   );
-  const view = renderComponent(probe("first"));
-  try {
-    fireEvent.focus(window);
-    fireEvent(globalThis.document, new Event("visibilitychange"));
-    expect(frames.size).toBe(1);
-    paint();
-    expect(calls).not.toHaveBeenCalled();
-    paint();
-    expect(calls).toHaveBeenCalledOnce();
-    fireEvent.focus(window);
-    view.rerender(probe("second"));
-    expect(frames.size).toBe(0);
-    fireEvent.focus(window);
-    paint();
-    paint();
-    expect(calls).toHaveBeenCalledTimes(2);
-  } finally {
-    view.unmount();
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  }
+  const view = renderComponent(probe("first", first));
+  fireEvent(window, new Event("pagehide"));
+  expect(first).toHaveBeenCalledWith(false);
+  view.rerender(probe("second", second));
+  fireEvent(window, new Event("pageshow"));
+  expect(second).toHaveBeenCalledWith(true);
+  expect(first).toHaveBeenCalledExactlyOnceWith(false);
 });

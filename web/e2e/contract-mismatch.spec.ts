@@ -42,9 +42,7 @@ test("a real contract refusal prompts reload without replaying the draft", async
     page.getByRole("dialog").getByRole("heading", { name: "Open a case", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveCount(0);
-  await expect(
-    page.getByRole("checkbox", { name: "Use a custom case reference" }),
-  ).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Use a custom case reference" })).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "Policy number", exact: true })).toHaveValue("");
   expect(previews).toBe(1);
   expect(executions).toBe(0);

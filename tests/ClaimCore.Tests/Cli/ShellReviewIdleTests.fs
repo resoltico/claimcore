@@ -72,7 +72,9 @@ let private idleConfirmation () =
         let clock = Clock()
         use provider = new Provider(clock)
         use credentials = session provider
-        use terminal = new Terminal([ ShellLine.Text "case close --outcome other x" ])
+
+        use terminal =
+            new Terminal([ ShellLine.Text "case close --outcome other CC-5NRH-CGNQ-4TR4-80B2-30" ])
 
         let invoke frame dispatched cancelled =
             task {
@@ -89,7 +91,6 @@ let private idleConfirmation () =
                                 HumanCaseDocument.ofCore
                                 (Outcome.Succeeded
                                     {
-                                        MatchedReference = None
                                         Parties = []
                                         PartyOffers = []
                                         RelatedCases = RelatedCaseLinks.empty

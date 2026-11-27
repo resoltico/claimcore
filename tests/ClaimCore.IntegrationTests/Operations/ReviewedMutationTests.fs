@@ -292,8 +292,6 @@ let private familyReview (database: PostgresFixture.Database) =
         | ExecuteResult.Accepted _ -> ()
         | other -> failtestf "Steward setup: %A" other
 
-        let target = CaseSelector.Reference "FAMILY-REVIEW"
-
         let! _ =
             acceptedChange
                 owner
@@ -306,6 +304,8 @@ let private familyReview (database: PostgresFixture.Database) =
                     (ClaimCore.TestSupport.Submissions.fields (
                         RegistrationInput.values (registration)
                     )))))
+
+        let target = caseTarget fixture "FAMILY-REVIEW"
 
         let review number =
             task {

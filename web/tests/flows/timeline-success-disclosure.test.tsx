@@ -66,7 +66,7 @@ it.each([
     const user = userEvent.setup();
     render(
       <CaseTimeline
-        target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+        target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }}
         onDisclosureChanged={changed}
       />,
     );
@@ -93,9 +93,17 @@ it.each([
     }
     expect(screen.queryByText("NEW_2") !== null).toBe(!empty);
     expect(inputs).toEqual([
-      { target: { kind: "REFERENCE", caseReference: "CASE-1" }, limit: 50 },
-      { target: { kind: "REFERENCE", caseReference: "CASE-1" }, cursor: "first-range", limit: 50 },
-      { target: { kind: "REFERENCE", caseReference: "CASE-1" }, cursor: "last-range", limit: 50 },
+      { target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }, limit: 50 },
+      {
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
+        cursor: "first-range",
+        limit: 50,
+      },
+      {
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
+        cursor: "last-range",
+        limit: 50,
+      },
     ]);
     expect(changed).toHaveBeenCalledTimes(level === "FULL" ? 0 : 1);
   },
@@ -114,7 +122,7 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
     if (input.cursor !== undefined) {
       return late.promise;
     }
-    const first = input.target.caseReference === "CASE-1";
+    const first = input.target.caseReference === "CC-55KW-SSJ4-8HMS-G1BH-73";
     return Promise.resolve(
       humanReadHttpReply("case.timeline", {
         screen: supplied(first ? "OLD_OWNER_FULL" : "NEW_OWNER_FULL", 1),
@@ -132,7 +140,7 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
   const user = userEvent.setup();
   const view = render(
     <CaseTimeline
-      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }}
       onDisclosureChanged={changed}
     />,
   );
@@ -140,7 +148,7 @@ it("ignores an obsolete owner's successful downgrade without clearing the replac
   await user.click(screen.getByRole("button", { name: "Load more" }));
   view.rerender(
     <CaseTimeline
-      target={{ kind: "REFERENCE", caseReference: "CASE-2" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-6XBX-RTDQ-XE13-CG4W-91" }}
       onDisclosureChanged={changed}
     />,
   );

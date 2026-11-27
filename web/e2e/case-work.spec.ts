@@ -18,8 +18,7 @@ test("records future planned work and scoped responsibility, then finds the case
   browserName,
 }, testInfo) => {
   await openAuthenticated(page);
-  const reference = `WORK-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `WORK-${randomUUID().slice(0, 8)}`);
   const context = await browserRequest(page, "/api/context", {
     method: "POST",
     headers: {
@@ -137,8 +136,7 @@ for (const [entered, expected] of [
     page,
   }) => {
     await openAuthenticated(page);
-    const reference = `ENTRY-${randomUUID().slice(0, 8)}`;
-    await openCase(page, reference);
+    const { caseReference: reference } = await openCase(page, `ENTRY-${randomUUID().slice(0, 8)}`);
     await selectFormat(page, entered);
     await startAct(page, "case.amendRegistration", "en");
     await page.locator('input[data-selects-fields~="claimedAmount"]').check();

@@ -5,7 +5,7 @@ import { prepareWorklistDensity } from "./design-matrix-fixtures";
 
 test("ordinary wide worklists meet row and chip density", async ({ browser, page, baseURL }) => {
   test.setTimeout(120_000);
-  const { marker, cookies } = await prepareWorklistDensity(browser, baseURL!);
+  const { marker, references, cookies } = await prepareWorklistDensity(browser, baseURL!);
   await page.context().addCookies(cookies);
   const query = `q=${encodeURIComponent(marker)}`;
   for (const width of [1440, 1366]) {
@@ -21,10 +21,15 @@ test("ordinary wide worklists meet row and chip density", async ({ browser, page
       await page.goto(path);
       const list = page.locator("main .data-table");
       const rows = list.locator("tbody tr:not(.table-group)");
-      const seededRows = rows.filter({ hasText: marker });
+      const cases = path.startsWith("/cases");
+      const seededRows = cases ? rows : rows.filter({ hasText: marker });
       await expect(seededRows, path).toHaveCount(count);
-      if (path.startsWith("/cases")) {
-        await expect(rows.filter({ hasNotText: marker }), path).toHaveCount(0);
+      if (cases) {
+        const actual = await rows.locator("a .identifier-value").allTextContents();
+        expect(actual).toHaveLength(count);
+        for (const reference of actual) {
+          expect(references).toContain(reference);
+        }
       }
       expect(isWideTable(await tableLayoutState(page)), path).toBe(true);
       if (path === `/cases?view=ALL&${query}`) {
@@ -34,7 +39,10 @@ test("ordinary wide worklists meet row and chip density", async ({ browser, page
           }),
         ).toHaveCount(5);
       }
-      const { violations } = await geometryReport(page, { densityMarker: marker });
+      const { violations } = await geometryReport(page, {
+        densityMarker: marker,
+        caseReferences: references,
+      });
       expect(
         violations.filter((id) => ["G4", "G5", "G5b", "G5c", "G18"].includes(id)),
         path,

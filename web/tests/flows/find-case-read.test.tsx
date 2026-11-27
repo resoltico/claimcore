@@ -31,7 +31,7 @@ it("supersedes repeated Enter and drops a held refusal after closing Find", asyn
     render(<Find />);
     const user = userEvent.setup();
     const dialog = await screen.findByRole("dialog", { name: "Find a case" });
-    await user.type(within(dialog).getByRole("combobox"), "CLM-0012");
+    await user.type(within(dialog).getByRole("combobox"), "CC-0000-0000-0000-0000-98");
     await user.keyboard("{Enter}");
     await waitFor(() => {
       expect(get).toHaveBeenCalledOnce();
@@ -106,9 +106,7 @@ it("opens Find from a malformed case read and leaves other input refusals alone"
   navigate(malformed);
   render(<Dashboard />);
   const main = within(screen.getByRole("main"));
-  expect(await main.findByRole("alert")).toHaveTextContent(
-    /^Check the case reference and its hyphens/u,
-  );
+  expect(await main.findByRole("alert")).toHaveTextContent(/^Check the complete case reference/u);
   const recovery = main.getByRole("button", { name: "Find a case" });
   expect(main.queryByRole("button", { name: "Try again" })).toBeNull();
 

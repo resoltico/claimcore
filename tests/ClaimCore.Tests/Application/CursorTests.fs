@@ -349,7 +349,7 @@ let private boundaries () =
         [
             baseJson.Replace("\"v\":7", "\"v\":7.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
-            baseJson.Replace("DEMO-0050", "\\ud800")
+            baseJson.Replace("CC-TGZB-ASN3-7WQW-9Y2R-10", "\\ud800")
         ] do
         Expect.notEqual json baseJson "Each rejection control actually changes the accepted token"
 
@@ -408,7 +408,10 @@ let private worklistBinding () =
         |> admitted
 
     let position =
-        CaseListPosition.Recent(DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero), "CASE-2")
+        CaseListPosition.Recent(
+            DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero),
+            "CC-6XBX-RTDQ-XE13-CG4W-91"
+        )
 
     let encoded =
         Cursors.encodeCases
@@ -461,14 +464,14 @@ let private worklistBinding () =
         Cursors.encodeCases
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             compatibility
-            (CaseListPosition.Reference "CASE-1")
+            (CaseListPosition.Reference "CC-55KW-SSJ4-8HMS-G1BH-73")
 
     Expect.equal
         (Cursors.decodeCases
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             compatibility
             cursor)
-        (Ok(CaseListPosition.Reference "CASE-1"))
+        (Ok(CaseListPosition.Reference "CC-55KW-SSJ4-8HMS-G1BH-73"))
         "Normalized compatibility text is compared without re-admitting it as authored input"
 
 let private recentPrecision () =
@@ -478,7 +481,7 @@ let private recentPrecision () =
         }
 
     let instant = DateTimeOffset(2026, 10, 28, 0, 0, 0, TimeSpan.Zero)
-    let position = CaseListPosition.Recent(instant, "CASE-1")
+    let position = CaseListPosition.Recent(instant, "CC-55KW-SSJ4-8HMS-G1BH-73")
 
     Expect.equal
         (Cursors.decodeCases
@@ -496,7 +499,7 @@ let private recentPrecision () =
             Cursors.encodeCases
                 (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                 filter
-                (CaseListPosition.Recent(instant.AddTicks 1L, "CASE-1"))
+                (CaseListPosition.Recent(instant.AddTicks 1L, "CC-55KW-SSJ4-8HMS-G1BH-73"))
             |> ignore)
         "An encoder cannot produce an unsupported recorded instant"
 
@@ -604,7 +607,7 @@ let triageCursors =
             }
 
         for date in [ None; Some(CaseFixtures.date "2026-08-03") ] do
-            let expected = CaseListPosition.Received(date, "CASE-2")
+            let expected = CaseListPosition.Received(date, "CC-6XBX-RTDQ-XE13-CG4W-91")
 
             Expect.equal
                 (Cursors.decodeCases
@@ -689,7 +692,7 @@ let durableCursor =
 
         let vector = document.RootElement.GetProperty "cursor"
         let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
-        let position = CaseListPosition.Reference "DEMO-0050"
+        let position = CaseListPosition.Reference "CC-TGZB-ASN3-7WQW-9Y2R-10"
         let expected = text "token" vector
 
         Expect.equal

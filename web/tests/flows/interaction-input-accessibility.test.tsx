@@ -80,14 +80,14 @@ it.each(["en", "lv", "ar"] as const)(
       <TaskInputs
         binding={{
           kind: "CASE",
-          target: { kind: "REFERENCE", caseReference: "CASE-1" },
+          target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
           expectedRevision: 1,
         }}
         task={operationEntry({ subject: "CASE", kind: "case.correct" })}
         values={initialOperationValues(
           operationAffordance("case.correct", {
             kind: "CASE",
-            target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
             expectedRevision: 0,
           }),
         )}

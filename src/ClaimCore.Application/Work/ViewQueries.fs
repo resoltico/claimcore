@@ -30,7 +30,15 @@ module internal ViewQueries =
     let private counts (services: ServiceContext) query token =
         task {
             let! result =
-                services.Store.Read
+                DisclosureReads.pageRead
+                    services
+                    DisclosureKind.WorkViews
+                    (fun _ -> None)
+                    (fun (views: WorkViews) ->
+                        DisclosurePageEvidence.create
+                            (List.length views.CaseViews + List.length views.ReminderViews)
+                            []
+                            [])
                     {
                         Work =
                             fun tx ->
@@ -46,7 +54,7 @@ module internal ViewQueries =
                         CancellationToken = token
                     }
 
-            return QueryResults.readResult result
+            return result
         }
 
     let work services () token =

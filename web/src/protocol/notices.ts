@@ -10,6 +10,7 @@ export type LocalNoticeReason =
   | "definitionMismatch"
   | "invalidSession"
   | "missingCsrf"
+  | "receiptUnavailable"
   | "outcomeUnknown"
   | "notAccepted"
   | "unresolved"

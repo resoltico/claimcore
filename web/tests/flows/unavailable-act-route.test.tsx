@@ -23,7 +23,7 @@ const mount = (value: CurrentCase, act: string) => {
     <RoutedContent
       route={{
         screen: "caseAct",
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         act,
       }}
       setLocked={vi.fn()}

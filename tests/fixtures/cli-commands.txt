@@ -1,24 +1,24 @@
-case open --case-reference R-1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --party {"input:partyRole":"CLAIMANT","input:partyName":"Ann"} --party {"input:partyRole":"INSURER","input:partyName":"Ins"} --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case amend-registration R-1 --expected-revision 1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case correct R-1 --expected-revision 4 --registration keep --decision update --payment-decision-date 2026-02-01 --payable-amount 5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case correct R-1 --expected-revision 4 --registration update --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 1 --claimed-currency EUR --decision keep --operation-id 11111111-2222-7333-8444-555555555555
-case decide R-1 --expected-revision 1 --payment-decision-date 2026-01-02 --payable-amount 1.5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case decide R-1 --expected-revision 1 --payment-decision-date 2026-01-02 --payable-amount 1.5 --payable-currency EUR --preview --operation-id 11111111-2222-7333-8444-555555555555
-case withdraw-decision R-1 --expected-revision 2 --operation-id 11111111-2222-7333-8444-555555555555
-case record-payment R-1 --expected-revision 2 --payment-date 2026-03-01 --paid-amount 1 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-case remove-payment R-1 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
-case close R-1 --outcome other --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
-case reopen R-1 --reason Additional --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
-case void R-1 --expected-revision 3 --reason Mistake --operation-id 11111111-2222-7333-8444-555555555555
-case reinstate R-1 --expected-revision 3 --reason Fixed --operation-id 11111111-2222-7333-8444-555555555555
-case erase R-1 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555 --expected-family-sequence 1
+case open --policy-number CC-NVJN-9VCD-PZVY-CKAX-07 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --party {"input:partyRole":"CLAIMANT","input:partyName":"Ann"} --party {"input:partyRole":"INSURER","input:partyName":"Ins"} --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case amend-registration CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 1 --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 10.50 --claimed-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case correct CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 4 --registration keep --decision update --payment-decision-date 2026-02-01 --payable-amount 5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case correct CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 4 --registration update --incident-date 2026-01-01 --received-date 2026-01-02 --incident-country LV --policy-number Ann --insurer-claim-reference Ins --claimed-amount 1 --claimed-currency EUR --decision keep --operation-id 11111111-2222-7333-8444-555555555555
+case decide CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 1 --payment-decision-date 2026-01-02 --payable-amount 1.5 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case decide CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 1 --payment-decision-date 2026-01-02 --payable-amount 1.5 --payable-currency EUR --preview --operation-id 11111111-2222-7333-8444-555555555555
+case withdraw-decision CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 2 --operation-id 11111111-2222-7333-8444-555555555555
+case record-payment CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 2 --payment-date 2026-03-01 --paid-amount 1 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+case remove-payment CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+case close CC-NVJN-9VCD-PZVY-CKAX-07 --outcome other --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+case reopen CC-NVJN-9VCD-PZVY-CKAX-07 --reason Additional --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+case void CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --reason Mistake --operation-id 11111111-2222-7333-8444-555555555555
+case reinstate CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --reason Fixed --operation-id 11111111-2222-7333-8444-555555555555
+case erase CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555 --expected-family-sequence 1
 people register --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
 people grant 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
-people grant 10000000-0000-4000-8000-000000000001 --role CASE_READER --case-reference R-1 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
+people grant 10000000-0000-4000-8000-000000000001 --role CASE_READER --case-reference CC-NVJN-9VCD-PZVY-CKAX-07 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 people revoke 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 people enable 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 people disable 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
-case get R-1
+case get CC-NVJN-9VCD-PZVY-CKAX-07
 case list
 case list --limit 5 --cursor abc
 people list
@@ -28,29 +28,29 @@ people history --limit 1
 case summary
 case summary --group-by RECEIVED_MONTH --registered-from 2026-11-01 --registered-through 2026-11-30
 operation get 11111111-2222-7333-8444-555555555555
-case amend-registration R-1 --expected-revision 4 --policy-number Selected --operation-id 11111111-2222-7333-8444-555555555555
-case correct R-1 --expected-revision 4 --registration keep --decision update --payable-amount 650 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
-work update R-1 --expected-work-revision 4 --handling-summary Current --operation-id 11111111-2222-7333-8444-555555555555
-work update R-1 --expected-work-revision 4 --responsible-actor 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
-work update R-1 --expected-work-revision 4 --clear-handling-summary --operation-id 11111111-2222-7333-8444-555555555555 --clear-responsible-actor
-case assignees R-1 --limit 1
-case parties R-1 --limit 1
-reminder create R-1 --action Call --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
-reminder update R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-30 --operation-id 11111111-2222-7333-8444-555555555555
-reminder complete R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
-reminder cancel R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
-reminder reopen R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
-reminder complete-and-plan-next R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
+case amend-registration CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 4 --policy-number Selected --operation-id 11111111-2222-7333-8444-555555555555
+case correct CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 4 --registration keep --decision update --payable-amount 650 --payable-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+work update CC-NVJN-9VCD-PZVY-CKAX-07 --expected-work-revision 4 --handling-summary Current --operation-id 11111111-2222-7333-8444-555555555555
+work update CC-NVJN-9VCD-PZVY-CKAX-07 --expected-work-revision 4 --responsible-actor 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555
+work update CC-NVJN-9VCD-PZVY-CKAX-07 --expected-work-revision 4 --clear-handling-summary --operation-id 11111111-2222-7333-8444-555555555555 --clear-responsible-actor
+case assignees CC-NVJN-9VCD-PZVY-CKAX-07 --limit 1
+case parties CC-NVJN-9VCD-PZVY-CKAX-07 --limit 1
+reminder create CC-NVJN-9VCD-PZVY-CKAX-07 --action Call --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
+reminder update CC-NVJN-9VCD-PZVY-CKAX-07 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-30 --operation-id 11111111-2222-7333-8444-555555555555
+reminder complete CC-NVJN-9VCD-PZVY-CKAX-07 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+reminder cancel CC-NVJN-9VCD-PZVY-CKAX-07 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
+reminder reopen CC-NVJN-9VCD-PZVY-CKAX-07 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
+reminder complete-and-plan-next CC-NVJN-9VCD-PZVY-CKAX-07 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
 work views
 reminder list --limit 5 --due overdue --assignment mine
-reminder get R-1 --reminder-id 10000000-0000-4000-8000-000000000007
+reminder get CC-NVJN-9VCD-PZVY-CKAX-07 --reminder-id 10000000-0000-4000-8000-000000000007
 case list --view needs-attention --limit 5
 reminder list --view completed --limit 5
-case timeline CASE-001 --filter facts --limit 1
-case timeline CASE-001 --filter work --limit 2
-case timeline R-1
-case timeline R-1 --filter facts --limit 5 --all
-case timeline R-1 --filter work --cursor abc --limit 1
+case timeline CC-XE9K-MAK4-MB6P-FXMR-33 --filter facts --limit 1
+case timeline CC-XE9K-MAK4-MB6P-FXMR-33 --filter work --limit 2
+case timeline CC-NVJN-9VCD-PZVY-CKAX-07
+case timeline CC-NVJN-9VCD-PZVY-CKAX-07 --filter facts --limit 5 --all
+case timeline CC-NVJN-9VCD-PZVY-CKAX-07 --filter work --cursor abc --limit 1
 people set-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored --expected-revision 1
 people change-sign-in-identity 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --issuer https://id.example/ --subject new-sub --expected-revision 1
 people erase-profile 10000000-0000-4000-8000-000000000001 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
@@ -59,25 +59,24 @@ case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all
 people requests
 people requests submit
 people requests dismiss --principal-kind HUMAN --issuer https://id.example --subject u1
-people admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@Case-A --operation-id 11111111-2222-7333-8444-555555555555
+people admit --principal-kind HUMAN --issuer https://id.example/ --subject admitted --name Authored --contact Contact --role CASE_READER --role CASE_HANDLER@CC-55KW-SSJ4-8HMS-G1BH-73 --operation-id 11111111-2222-7333-8444-555555555555
 people list --text Name
-note add R-1 --text Contacted --operation-id 11111111-2222-7333-8444-555555555555
-note remove R-1 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
-case notes R-1 --limit 1
-case payments CASE-001 --limit 20
-case correct-payment R-1 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --direction returned --payment-date 2026-03-01 --paid-amount 2 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
+note add CC-NVJN-9VCD-PZVY-CKAX-07 --text Contacted --operation-id 11111111-2222-7333-8444-555555555555
+note remove CC-NVJN-9VCD-PZVY-CKAX-07 --note-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+case notes CC-NVJN-9VCD-PZVY-CKAX-07 --limit 1
+case payments CC-XE9K-MAK4-MB6P-FXMR-33 --limit 20
+case correct-payment CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --payment-id 11111111-2222-7333-8444-555555555554 --direction returned --payment-date 2026-03-01 --paid-amount 2 --paid-currency EUR --operation-id 11111111-2222-7333-8444-555555555555
 session terminate-own 00000000-0000-7000-8000-000000000001 --installation-id 10000000-0000-4000-8000-000000000002
 session terminate-own 00000000-0000-7000-8000-000000000001 --confirm-retirement true --installation-id 10000000-0000-4000-8000-000000000002
 people terminate-sessions 10000000-0000-4000-8000-000000000001 00000000-0000-7000-8000-000000000002 --installation-id 10000000-0000-4000-8000-000000000002
-case change-reference R-1 --expected-revision 1 --new-reference R-2 --operation-id 11111111-2222-7333-8444-555555555555
-link add R-1 --related-case-reference R-2 --link-note Related --operation-id 11111111-2222-7333-8444-555555555555
-link remove R-1 --link-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
-party add R-1 --party-role claimant --party-name Ann --operation-id 11111111-2222-7333-8444-555555555555
-party update R-1 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --party-details Office --operation-id 11111111-2222-7333-8444-555555555555
-party remove R-1 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --operation-id 11111111-2222-7333-8444-555555555555
+link add CC-NVJN-9VCD-PZVY-CKAX-07 --related-case-reference CC-55KW-SSJ4-8HMS-G1BH-73 --link-note Related --operation-id 11111111-2222-7333-8444-555555555555
+link remove CC-NVJN-9VCD-PZVY-CKAX-07 --link-id 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+party add CC-NVJN-9VCD-PZVY-CKAX-07 --party-role claimant --party-name Ann --operation-id 11111111-2222-7333-8444-555555555555
+party update CC-NVJN-9VCD-PZVY-CKAX-07 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --party-details Office --operation-id 11111111-2222-7333-8444-555555555555
+party remove CC-NVJN-9VCD-PZVY-CKAX-07 --party-id 10000000-0000-4000-8000-000000000001 --expected-party-revision 1 --operation-id 11111111-2222-7333-8444-555555555555
 people change-sign-in-identity 10000000-0000-4000-8000-000000000001 --expected-revision 1 --issuer https://new.example/ --subject new-sub --operation-id 11111111-2222-7333-8444-555555555555
 case summary --group-by received-month --format csv
-case attachments R-1
-attachment add R-1 --file tests/fixtures/attachment-original.txt --operation-id 11111111-2222-7333-8444-555555555555
-attachment withdraw R-1 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
+case attachments CC-NVJN-9VCD-PZVY-CKAX-07
+attachment add CC-NVJN-9VCD-PZVY-CKAX-07 --file tests/fixtures/attachment-original.txt --operation-id 11111111-2222-7333-8444-555555555555
+attachment withdraw CC-NVJN-9VCD-PZVY-CKAX-07 11111111-2222-7333-8444-555555555554 --operation-id 11111111-2222-7333-8444-555555555555
 disclosure trail --actor-id 10000000-0000-7000-8000-000000000001 --case-id 20000000-0000-7000-8000-000000000001 --kind attachment-download --from 2026-11-04T10:30:00.000000Z --until 2026-11-04T11:30:00.000000Z --limit 1 --all

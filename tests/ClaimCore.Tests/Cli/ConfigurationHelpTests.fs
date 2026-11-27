@@ -170,7 +170,7 @@ let private configureLines () =
 
 let private nativeAcquisition () =
     let id () = "11111111-2222-7333-8444-555555555555"
-    let opening = [ "case"; "open"; "--case-reference"; "CASE-EXAMPLE" ]
+    let opening = [ "case"; "open"; "--policy-number"; "CC-8QDA-G86X-C612-HYNZ-91" ]
     let privateValue = "private-party-canary"
 
     for arguments, expected, machine in
@@ -187,7 +187,7 @@ let private nativeAcquisition () =
             [
                 "case"
                 "close"
-                "CASE-EXAMPLE"
+                "CC-8QDA-G86X-C612-HYNZ-91"
                 "--outcome"
                 "OTHER"
                 "--expected-revision"
@@ -203,7 +203,7 @@ let private nativeAcquisition () =
             [
                 "case"
                 "record-payment"
-                "CASE-EXAMPLE"
+                "CC-8QDA-G86X-C612-HYNZ-91"
                 "--expected-revision"
                 "1"
                 "--direction"
@@ -354,8 +354,8 @@ let private authoredHelp () =
             [
                 "case"
                 "open"
-                "--case-reference"
-                "CASE-EXAMPLE"
+                "--policy-number"
+                "CC-8QDA-G86X-C612-HYNZ-91"
                 "--party"
                 row
                 "--dry-run"
@@ -395,7 +395,7 @@ let private authoredHelp () =
         [
             "case"
             "record-payment"
-            "CASE-EXAMPLE"
+            "CC-8QDA-G86X-C612-HYNZ-91"
             "--expected-revision"
             "1"
             "--payment-date"

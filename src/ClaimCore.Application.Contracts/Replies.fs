@@ -36,6 +36,7 @@ type ExecuteResult =
     | AlreadyAccepted of OperationReceipt
     | Rejected of Refusal
     | Failed of CoreFault
+    | ReceiptUnavailable
     | OutcomeUnknown
 
 type ExecuteReply =

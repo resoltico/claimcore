@@ -385,10 +385,6 @@
     "text": "請停止操作，並聯絡管理員調查。",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "請選擇另一個編號。",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "請聯絡所有者檢查您的存取權限。",
     "source": "a18257b39d89"

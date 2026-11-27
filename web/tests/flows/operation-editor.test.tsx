@@ -90,7 +90,7 @@ it("readonly preview failure stays editable and cannot submit", async () => {
   }
   expect(queryReviewConfirm()).toBeNull();
 });
-it("an invalid input rejection focuses and labels the exact authoring field", async () => {
+it("an invalid input rejection focuses the error summary and labels the authoring field", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
     endpointResponse("operation.preview", {
       representation: "HUMAN",
@@ -107,7 +107,7 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
           },
           issues: [
             {
-              input: "field:caseReference",
+              input: "field:policyNumber",
               row: null,
               message: { messageId: "diagnostic.TEXT_REQUIRED", arguments: [] },
             },
@@ -118,11 +118,10 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
   );
   render(editor({ current: null, initialAct: "case.open" }));
   const user = userEvent.setup();
-  await user.click(screen.getByRole("checkbox", { name: "Use a custom case reference" }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  const input = screen.getByLabelText("Case reference", { exact: true });
+  const input = screen.getByLabelText("Policy number", { exact: true });
   await waitFor(() => {
-    expect(input).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveFocus();
   });
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(document.body).not.toHaveTextContent("PRIVATE_CANARY");

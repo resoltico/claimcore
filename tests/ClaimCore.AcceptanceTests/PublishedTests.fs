@@ -47,7 +47,11 @@ let private verbArguments verb (bytes: byte array) =
 
     [ "case"; verb ]
     @ (match binding.TryGetProperty "target" with
-       | true, target -> [ target.GetProperty("caseReference").GetString() |> nonNull ]
+       | true, target ->
+           match target.GetProperty("kind").GetString() with
+           | "ID" -> [ "--case-id"; target.GetProperty("caseId").GetString() |> nonNull ]
+           | "REFERENCE" -> [ target.GetProperty("caseReference").GetString() |> nonNull ]
+           | _ -> failtest "The example uses an unknown case selector"
        | _ -> [])
     @ (match input.TryGetProperty "operationId" with
        | true, value -> [ "--operation-id"; value.GetString() |> nonNull ]
@@ -81,6 +85,13 @@ let private assertDryRun (fixture: PublishedFixture.Fixture) arguments expected 
         "Verb prepares the independently authored call frame"
 
 
+let private retarget caseId (bytes: byte array) =
+    let document = JsonNode.Parse bytes |> nonNull
+    let input = document["input"] |> nonNull
+    let target = (input["binding"] |> nonNull)["target"] |> nonNull
+    target["caseId"] <- JsonValue.Create<string> caseId
+    Encoding.UTF8.GetBytes(document.ToJsonString())
+
 let private walkthrough (fixture: PublishedFixture.Fixture) =
     let files =
         [
@@ -93,12 +104,27 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         ]
 
     let mutable position = Unchecked.defaultof<JsonElement>
+    let mutable identity = None
 
     for index, (file, act) in List.indexed files do
         let bytes = File.ReadAllBytes(Path.Combine(fixture.Root, "examples", file))
         let arguments = verbArguments act bytes
         assertDryRun fixture arguments bytes
+
+        let arguments =
+            match identity with
+            | None -> arguments
+            | Some(caseId, _) -> verbArguments act (retarget caseId bytes)
+
         let receipt = verb fixture fixture.Environment arguments 0 |> require "ACCEPTED"
+        let subject = receipt.GetProperty "subject"
+
+        if index = 0 then
+            identity <-
+                Some(
+                    subject.GetProperty("caseId").GetString() |> nonNull,
+                    subject.GetProperty("caseReference").GetString() |> nonNull
+                )
 
         Expect.equal
             (receipt.GetProperty("subject").GetProperty("revision").GetInt64())
@@ -117,6 +143,8 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
 
         position <- receipt.GetProperty("position")
 
+    let caseId, reference = identity |> Option.get
+
     let current =
         automation
             fixture
@@ -125,7 +153,7 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
                 target =
                     {|
                         kind = "REFERENCE"
-                        caseReference = "DEMO-0001"
+                        caseReference = reference
                     |}
             |}
             0
@@ -154,14 +182,19 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
         1L
         "Decision editing retains the payment entry"
 
-    position
+    Expect.equal
+        (current.GetProperty("caseId").GetString())
+        caseId
+        "Issued reference resolves to the opening ID"
 
-let private erasedHistory fixture =
+    position, caseId, reference
+
+let private erasedHistory fixture reference =
     let rendered =
         invoke
             fixture
             fixture.Environment
-            [ "case"; "timeline"; "DEMO-0001"; "--format"; "text" ]
+            [ "case"; "timeline"; reference; "--format"; "text" ]
             Array.empty
             0
 
@@ -185,7 +218,7 @@ let private erasedHistory fixture =
                 target =
                     {|
                         kind = "REFERENCE"
-                        caseReference = "DEMO-0001"
+                        caseReference = reference
                     |}
                 filter = "FACTS"
                 limit = 50
@@ -353,9 +386,11 @@ let private erasedView (tombstone: JsonElement) =
     Expect.equal history "FULL" "Current full-history people remains visible for erased identities"
 
 
-let private stewardship (fixture: PublishedFixture.Fixture) =
+let private stewardship (fixture: PublishedFixture.Fixture) caseId reference =
     let source =
-        Path.Combine(fixture.Root, "examples", "07-void.json") |> File.ReadAllBytes
+        Path.Combine(fixture.Root, "examples", "07-void.json")
+        |> File.ReadAllBytes
+        |> retarget caseId
 
     let arguments = verbArguments "void" source
     assertDryRun fixture arguments source
@@ -370,7 +405,9 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
     |> ignore
 
     for file, act in [ "08-reinstate.json", "reinstate"; "09-erase.json", "erase" ] do
-        let original = File.ReadAllBytes(Path.Combine(fixture.Root, "examples", file))
+        let original =
+            File.ReadAllBytes(Path.Combine(fixture.Root, "examples", file))
+            |> retarget caseId
 
         let bytes =
             if act = "erase" then
@@ -383,7 +420,7 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
                             target =
                                 {|
                                     kind = "REFERENCE"
-                                    caseReference = "DEMO-0001"
+                                    caseReference = reference
                                 |}
                         |}
                         0
@@ -405,7 +442,7 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
 
         let confirmed =
             if act = "erase" then
-                arguments @ [ "--confirm"; "DEMO-0001" ]
+                arguments @ [ "--confirm"; reference ]
             else
                 arguments
 
@@ -421,14 +458,14 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
                 target =
                     {|
                         kind = "REFERENCE"
-                        caseReference = "DEMO-0001"
+                        caseReference = reference
                     |}
             |}
             0
         |> require "SUCCEEDED"
 
     erasedView erased
-    erasedHistory fixture
+    erasedHistory fixture reference
 
 let private verify (fixture: PublishedFixture.Fixture) (position: JsonElement) =
     let head = fixture.Administration [ "head" ]
@@ -628,12 +665,11 @@ let private qualify () =
         CliDelivery.qualify fixture
         inputBoundaries fixture
         RejectedDrafts.qualify fixture
-        let position = walkthrough fixture
+        let position, caseId, reference = walkthrough fixture
         verify fixture position
         supplementary fixture
-        stewardship fixture
+        stewardship fixture caseId reference
         DifferentClient.qualify fixture
-        CliNativeOutput.summaryCsv fixture
         fixture.Complete()
     }
 
@@ -646,8 +682,7 @@ let tests =
 
 let private qualifySystemOnly () =
     task {
-        use fixture =
-            new PublishedFixture.Fixture(referencePolicy = CaseReferencePolicy.SystemAssignedOnly)
+        use fixture = new PublishedFixture.Fixture()
 
         do! fixture.Start()
         setup fixture
@@ -665,30 +700,13 @@ let private qualifySystemOnly () =
         let operation = id ()
         let command = [ "case"; "open"; "--operation-id"; operation ]
 
-        let refusal =
-            verb
-                fixture
-                fixture.Environment
-                (command @ [ "--case-reference"; "SERVICE-OVERRIDE" ])
-                2
-            |> require "REJECTED"
-
-        Expect.equal
-            (refusal.GetProperty("code").GetString())
-            "INVALID_INPUT"
-            "The API rejects the override"
-
-        let issue = refusal.GetProperty("issues").EnumerateArray() |> Seq.exactlyOne
-
-        Expect.equal
-            (issue.GetProperty("input").GetString())
-            "field:caseReference"
-            "The API identifies the authored field"
-
-        Expect.equal
-            (issue.GetProperty("code").GetString())
-            "CUSTOM_REFERENCE_NOT_ALLOWED"
-            "The installed system-only policy applies to the service"
+        invoke
+            fixture
+            fixture.Environment
+            (command @ [ "--case-reference"; "SERVICE-OVERRIDE" ])
+            Array.empty
+            64
+        |> ignore
 
         let accepted = verb fixture fixture.Environment command 0 |> require "ACCEPTED"
         let subject = accepted.GetProperty "subject"
@@ -703,13 +721,57 @@ let private qualifySystemOnly () =
             "CC-"
             "Omission accepts an automatic reference"
 
+        verb fixture fixture.Environment [ "case"; "get"; "--case-id"; operation ] 0
+        |> require "SUCCEEDED"
+        |> ignore
+
+        grant
+            fixture
+            {|
+                kind = "HUMAN"
+                issuer = fixture.Issuer
+                subject = ClaimCore.TestSupport.IdentityRealm.ownerSubject
+            |}
+            "AUDITOR"
+
+        let observations =
+            human
+                fixture
+                "synthetic-owner"
+                "disclosure.trail"
+                {|
+                    kind = "CASE_READ"
+                    caseId = operation
+                    limit = 10
+                |}
+                0
+            |> require "SUCCEEDED"
+            |> fun page -> page.GetProperty("items").EnumerateArray() |> Seq.toList
+
+        let evidence = observations |> List.exactlyOne |> fun row -> row.GetProperty "event"
+
+        Expect.equal
+            (evidence.GetProperty("caseId").GetString())
+            operation
+            "CLI detail records only the selected Case ID"
+
+        Expect.equal
+            (evidence.GetProperty("actorId").GetString())
+            (requester.GetProperty("actorId").GetString())
+            "CLI detail records the current requester"
+
+        Expect.equal
+            (evidence.GetProperty("outcome").GetString())
+            "SUCCEEDED"
+            "The recorded observation is allowed"
+
         fixture.Complete()
     }
 
 [<Tests>]
 let systemReferencePolicy =
     testCaseAsync
-        "published system-only policy applies to a service account"
+        "published CLI assigns a reference and refuses authored permanent references"
         (async { do! qualifySystemOnly () |> Async.AwaitTask })
 
 [<Tests>]
@@ -717,6 +779,22 @@ let receiptContentGuards = ReceiptObservations.contentGuards
 
 [<Tests>]
 let nativeOutput = CliNativeOutput.publishedOutput
+
+[<Tests>]
+let publishedServerCsv =
+    testCaseAsync
+        "published CLI uses complete and paged server CSV"
+        (async {
+            do!
+                task {
+                    use fixture = new PublishedFixture.Fixture()
+                    do! fixture.Start()
+                    setup fixture
+                    CliNativeOutput.summaryCsv fixture
+                    fixture.Complete()
+                }
+                |> Async.AwaitTask
+        })
 
 [<Tests>]
 let nativeRelatedDirections = CliNativeOutput.publishedRelatedDirections

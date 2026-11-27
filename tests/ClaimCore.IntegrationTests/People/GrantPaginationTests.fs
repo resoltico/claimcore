@@ -44,8 +44,7 @@ let private seedCases fixture (admin: ServiceContext) target =
                         )))))
                     (token))
 
-            accepted opened |> ignore
-
+            let opened = accepted opened |> caseReceipt
 
             let! added =
                 grant
@@ -54,7 +53,7 @@ let private seedCases fixture (admin: ServiceContext) target =
                     target
                     {
                         Role = Role.CaseReader
-                        Scope = (GrantTarget.CaseReference reference)
+                        Scope = GrantTarget.CaseId opened.CaseId
                     }
                     true
 
@@ -75,11 +74,7 @@ let private seedCases fixture (admin: ServiceContext) target =
                 let first =
                     (page reviewed).Items
                     |> List.find (fun item ->
-                        item.Scope =
-                            GrantScope.Case(
-                                CaseFixtures.caseId (id fixture 301),
-                                CaseFixtures.reference "GRANT-1"
-                            ))
+                        item.Scope = GrantScope.Case(opened.CaseId, opened.Reference))
 
                 Expect.equal
                     first.GrantedAt
@@ -114,13 +109,13 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                 "case.erase"
                 (id database.Fixture 605)
                 (ClaimCore.Application.Contracts.OperationBinding.Case(
-                    CaseSelector.Reference("GRANT-1"),
+                    caseTarget database.Fixture "GRANT-1",
                     (1L),
                     None,
                     (Some(
                         reviewedFamilySequence
                             database.Fixture.Store
-                            (CaseSelector.Reference "GRANT-1")
+                            (caseTarget database.Fixture "GRANT-1")
                     ))
                 ))
                 (Map.empty)
@@ -428,17 +423,19 @@ let private traversal (database: PostgresFixture.Database) =
         Expect.equal all.Length 55 "All case and installation grants traverse"
         Expect.equal (Set.ofList all).Count 55 "No duplicated or omitted grant"
 
-        Expect.contains
+        let erasedId = CaseFixtures.caseId (id database.Fixture 301)
+
+        let! erased = Service.get admin { Target = CaseSelector.Id erasedId } token
+
+        let reference =
+            match erased with
+            | Outcome.Succeeded view -> view.Snapshot.Reference
+            | _ -> failtest "Erased scope remains readable by the administrator"
+
+        Expect.isTrue
             (all
-             |> List.map (fun row -> ({ Role = row.Role; Scope = row.Scope }: ScopedGrant)))
-            {
-                Role = Role.CaseReader
-                Scope =
-                    GrantScope.Case(
-                        CaseFixtures.caseId (id database.Fixture 301),
-                        CaseFixtures.reference "GRANT-1"
-                    )
-            }
+             |> List.exists (fun row ->
+                 row.Role = Role.CaseReader && row.Scope = GrantScope.Case(erasedId, reference)))
             "Erased scope reference remains reviewable"
 
         Expect.isNone last.NextCursor "End follows last included grant"

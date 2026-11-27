@@ -104,7 +104,7 @@ let private reminderRevisionAdmission () =
 
     let raw revision =
         sprintf
-            """{"endpoint":"operation.execute","input":{"operationId":"%s","task":"reminder.complete","binding":{"kind":"REMINDER","target":{"kind":"REFERENCE","caseReference":"CASE-001"},"reminderId":"%s","expectedRevision":%d},"inputs":{}}}"""
+            """{"endpoint":"operation.execute","input":{"operationId":"%s","task":"reminder.complete","binding":{"kind":"REMINDER","target":{"kind":"REFERENCE","caseReference":"CC-55KW-SSJ4-8HMS-G1BH-73"},"reminderId":"%s","expectedRevision":%d},"inputs":{}}}"""
             (operationId.ToString("D"))
             reminderId
             revision
@@ -166,7 +166,7 @@ let private reminderRevisionAdmission () =
         [
             "reminder"
             "complete"
-            "CASE-001"
+            "CC-XE9K-MAK4-MB6P-FXMR-33"
             "--reminder-id"
             reminderId
             "--expected-reminder-revision"
@@ -193,7 +193,7 @@ let private reminderRevisionAdmission () =
 
     for arguments in
         [
-            CliExamples.complete [ "case"; "open"; "--case-reference"; "INITIAL-CASE" ]
+            CliExamples.complete [ "case"; "open"; "--policy-number"; "CC-76H4-ATGD-N7QH-YDSN-92" ]
             @ [ "--dry-run" ]
             [
                 "work"

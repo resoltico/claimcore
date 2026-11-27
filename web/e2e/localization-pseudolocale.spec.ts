@@ -4,7 +4,6 @@ import { acceptanceBanner, expectCaseReadsSettled, openAcceptedReceipt } from ".
 
 import { fillBusinessField } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
-import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "./fixtures";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 import {
@@ -21,9 +20,7 @@ const startPseudo = async (page: Page) => {
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
   await page.locator("#open-case").click();
-  await page.locator('input[data-selects-fields="caseReference"]').check();
   const values = {
-    caseReference: `PSEUDO-${randomUUID().slice(0, 8)}`,
     ...registration({
       policyNumber: "A\u0308 العربية\u200D",
       claimedAmount: "1.0000",
@@ -115,7 +112,7 @@ test("authors and prepares in seeded pseudolocale then restores the frozen revie
 test("keeps expanded accepted-value layout and canonical clipboard on the normal published bytes", async ({
   page,
 }) => {
-  const { values, bytes } = await startPseudo(page);
+  const { bytes } = await startPseudo(page);
   const accepted = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.execute",
   );
@@ -180,7 +177,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await expect(receipt).toHaveCount(0);
   const toast = await acceptanceBanner(page).textContent();
   await selectLanguage(page, "en");
-  await expect(page.locator("#case-detail-title")).toHaveText(values.caseReference);
+  await expect(page.locator("#case-detail-title")).toHaveText(subject.caseReference);
   expect(toast).not.toBeNull();
   await expect(page.locator('.entries-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
     "١٫٠٠ EUR",

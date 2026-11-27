@@ -1424,10 +1424,6 @@
     "text": "访问和导出日志读取",
     "source": "42bd45e7fe95"
   },
-  "disclosureKind.ACCESS_REFUSED.label": {
-    "text": "访问被拒绝",
-    "source": "07edbc210200"
-  },
   "disclosureOutcome.SUCCEEDED.label": {
     "text": "成功",
     "source": "6d9a6f97a5fd"
@@ -3418,39 +3414,6 @@
     "text": "请从列表中选择结案结果。",
     "source": "ed45fada7999"
   },
-  "task.case.changeReference.label": {
-    "text": "更改案件编号",
-    "source": "c48c7e896bb5"
-  },
-  "task.case.changeReference.meaning": {
-    "text": "替换当前案件编号。之前的编号仍可用于找到同一案件。",
-    "source": "1065858202dd"
-  },
-  "task.case.changeReference.done": {
-    "text": "案件编号已更改。",
-    "source": "58241a331134"
-  },
-  "task.case.changeReference.consequence": {
-    "text": "为此案件选择一个新编号。",
-    "source": "73700635d1ab"
-  },
-  "field.newReference.label": {
-    "text": "新编号",
-    "source": "42906b7cf062"
-  },
-  "field.newReference.rule": {
-    "text": "请使用案件编号格式。",
-    "source": "b905bbf44b8b"
-  },
-  "field.newReference.hint": {
-    "text": "仍可使用原编号查找此案件。请勿在新编号中包含个人信息。",
-    "source": "2712ad08d240",
-    "machineMade": true
-  },
-  "label.referenceChangedFrom": {
-    "text": "更改前的编号",
-    "source": "0f0590159e51"
-  },
   "field.reopenReason.hint": {
     "text": "恢复处理的原因。",
     "source": "52db5e07d84d"
@@ -4628,54 +4591,9 @@
     "text": "请输入金额和币种。",
     "source": "11da00ab5ba1"
   },
-  "diagnostic.REFERENCE_UNAVAILABLE": {
-    "text": "案件引用编号不可用。",
-    "source": "233033263ef9",
-    "machineMade": true
-  },
-  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
-    "text": "此登记册自动分配所有案件引用编号。请移除自定义编号以继续。",
-    "source": "072632d9c59c",
-    "machineMade": true
-  },
   "label.caseReferencePending": {
     "text": "开立案件时分配。",
     "source": "9fcad855f05a",
-    "machineMade": true
-  },
-  "label.useCustomCaseReference": {
-    "text": "使用自定义案件引用编号",
-    "source": "3796d7f0af59",
-    "machineMade": true
-  },
-  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
-    "source": "22c0bf147040",
-    "text": "仅由系统分配",
-    "machineMade": true
-  },
-  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
-    "source": "2126c4e1b515",
-    "text": "允许自定义案件编号",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.label": {
-    "source": "00276badc096",
-    "text": "案件编号策略",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.rule": {
-    "source": "d15f3878c38a",
-    "text": "在初始设置时选择的编号分配策略。",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.hint": {
-    "source": "8e971dfd9ae8",
-    "text": "请选择是否允许输入自定义案件编号。",
-    "machineMade": true
-  },
-  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
-    "source": "a743fa65aff6",
-    "text": "请选择受支持的案件编号策略。",
     "machineMade": true
   },
   "diagnostic.TRAVERSAL_CHANGED": {

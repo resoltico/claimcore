@@ -163,7 +163,7 @@ let internal differentHistoryResource
             (Service.timeline
                 actor
                 ({ query with
-                    Target = CaseSelector.Reference("OTHER")
+                    Target = caseTarget fixture "OTHER"
                     AfterCursor = cursor
                 })
                 (CancellationToken.None))

@@ -10,7 +10,7 @@ module HumanReviewDocument =
             | Some principal, _ ->
                 (PrincipalKey.toInput principal).Subject |> ConfirmationTarget.principal
             | None, ReviewTarget.Case(_, reference) -> ConfirmationTarget.CaseReference reference
-            | None, (ReviewTarget.Opening _ | ReviewTarget.Person _) ->
+            | None, (ReviewTarget.Opening | ReviewTarget.Person _) ->
                 ConfirmationTarget.Operation operationId
 
         let screen, presentation =
@@ -179,6 +179,7 @@ module HumanOperationReply =
         | HumanExecuteResult.AlreadyAccepted _ -> ReplyKind.AlreadyAccepted
         | HumanExecuteResult.Rejected _ -> ReplyKind.Rejected
         | HumanExecuteResult.Failed _ -> ReplyKind.Failed
+        | HumanExecuteResult.ReceiptUnavailable -> ReplyKind.ReceiptUnavailable
         | HumanExecuteResult.OutcomeUnknown -> ReplyKind.OutcomeUnknown
 
     let classifyLookup (reply: HumanOperationReply<HumanLookupResult>) =

@@ -47,7 +47,7 @@ it("waits for the initial reminder page before restoring filtered queue focus an
                 {
                   key: reminderId,
                   link: { endpoint: "reminder.get", input: { target, reminderId } },
-                  values: [{ kind: "REFERENCE", value: "QUEUE-FOCUS" }],
+                  values: [{ kind: "REFERENCE", value: "CC-06RQ-0QR5-7GHF-KHF8-25" }],
                 },
               ],
             },
@@ -79,18 +79,18 @@ it("waits for the initial reminder page before restoring filtered queue focus an
     navigate("/reminders?view=PENDING&q=QUEUE", true);
     const user = userEvent.setup();
     render(<Dashboard />);
-    await user.click(await screen.findByRole("link", { name: "QUEUE-FOCUS" }));
+    await user.click(await screen.findByRole("link", { name: "CC-06RQ-0QR5-7GHF-KHF8-25" }));
     await user.click(await screen.findByRole("button", { name: "Close" }));
     await waitFor(() => {
       expect(list).toHaveBeenCalledTimes(2);
     });
-    expect(screen.queryByRole("link", { name: "QUEUE-FOCUS" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "CC-06RQ-0QR5-7GHF-KHF8-25" })).toBeNull();
     await act(async () => {
       pending.resolve(listing);
       await pending.promise;
     });
     await waitFor(() => {
-      expect(screen.getByRole("link", { name: "QUEUE-FOCUS" })).toHaveFocus();
+      expect(screen.getByRole("link", { name: "CC-06RQ-0QR5-7GHF-KHF8-25" })).toHaveFocus();
     });
     expect(location.pathname + location.search).toBe("/reminders?view=PENDING&q=QUEUE");
     expect(scroll).toHaveBeenLastCalledWith(0, 420);

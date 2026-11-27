@@ -48,6 +48,21 @@ module internal CaseLinkStorage =
             [||]
             token
 
+    let liveTargets (tx: ReadTx) ids =
+        task {
+            if List.isEmpty ids then
+                return Set.empty
+            else
+                let! rows =
+                    DatabaseSession.rows
+                        tx.Connection
+                        "SELECT case_id FROM claimcore.cases WHERE case_id=ANY($1) AND snapshot IS NOT NULL"
+                        [| box (ids |> List.map CaseId.value |> List.toArray) |]
+                        tx.CancellationToken
+
+                return rows |> List.map (identifier CaseId.create 0) |> Set.ofList
+        }
+
     let incoming (tx: ReadTx) selection target =
         task {
             let source = CaseSelectionSql.predicate selection

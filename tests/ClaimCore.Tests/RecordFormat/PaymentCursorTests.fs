@@ -128,7 +128,7 @@ let tests =
                 "native raw financial shape agrees without moving equations to transport"
                 (fun () ->
                     let literal =
-                        """{"representation":"DATA","outcome":{"kind":"SUCCEEDED","data":{"basis":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"},"caseId":"019aa6a0-0000-7000-8000-000000000001","caseReference":"FIN-1","revision":3,"workRevision":0,"state":{"kind":"ACTIVE","finance":{"decision":{"paymentDecisionDate":"2026-01-10","payableAmount":"10","payableCurrency":"EUR"},"totals":[{"currency":"EUR","paid":"99","returned":"0"},{"currency":"EUR","paid":"1","returned":"0"}],"paymentCount":2}},"items":[],"payees":[],"nextCursor":null}}}"""
+                        """{"representation":"DATA","outcome":{"kind":"SUCCEEDED","data":{"basis":{"observedAt":"2026-11-09T12:00:00.000000Z","businessDate":"2026-11-09","timeZone":"Etc/UTC"},"caseId":"019aa6a0-0000-7000-8000-000000000001","caseReference":"CC-1JD1-RQYJ-P1TA-WZ5T-66","revision":3,"workRevision":0,"state":{"kind":"ACTIVE","finance":{"decision":{"paymentDecisionDate":"2026-01-10","payableAmount":"10","payableCurrency":"EUR"},"totals":[{"currency":"EUR","paid":"99","returned":"0"},{"currency":"EUR","paid":"1","returned":"0"}],"paymentCount":2}},"items":[],"payees":[],"nextCursor":null}}}"""
 
                     let raw =
                         System.Text.Encoding.UTF8.GetBytes literal

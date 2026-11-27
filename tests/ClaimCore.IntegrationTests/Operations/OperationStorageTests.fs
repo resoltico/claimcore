@@ -146,7 +146,15 @@ let private storage () =
             use cipher = PostgresFixture.reserveCipher database token |> sync
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()
-            OperationStorage.append connection cipher root token |> sync |> ignore
+
+            OperationStorage.append
+                connection
+                cipher
+                (RetainedOperation.restore root |> valid)
+                token
+            |> sync
+            |> ignore
+
             after connection
             transaction.Commit()
             sequence <- root.Header.Sequence
@@ -240,10 +248,7 @@ let private storage () =
                     "case.open"
                     (OperationId.value owner)
                     (OperationBinding.CaseNew 0L)
-                    (Submissions.fields (RegistrationInput.values registration)
-                     |> Map.add
-                         (Submissions.field BusinessField.CaseReference)
-                         (SubmissionValue.Text "DATE-HEADER"))
+                    (Submissions.fields (RegistrationInput.values registration))
                 |> Submissions.command
 
             let change =
@@ -304,7 +309,14 @@ let private storage () =
 
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()
-            OperationStorage.append connection cipher root token |> sync |> ignore
+
+            OperationStorage.append
+                connection
+                cipher
+                (RetainedOperation.restore root |> valid)
+                token
+            |> sync
+            |> ignore
 
             let loaded =
                 OperationStorage.find connection database.Cipher owner token

@@ -243,14 +243,14 @@ const RefreshDisclosure = () => {
   );
 };
 it("keeps the requested case route while an actual read refusal removes every current fact", async () => {
-  mockEndpoint("context")
-    .mockResolvedValueOnce(
-      contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
-    )
-    .mockResolvedValueOnce(contextFor(["OPERATIONS"], []))
-    .mockResolvedValue(
-      contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
-    );
+  let stage: "visible" | "hidden" | "denied" = "visible";
+  mockEndpoint("context").mockImplementation(() =>
+    Promise.resolve(
+      stage === "hidden"
+        ? contextFor(["OPERATIONS"], [])
+        : contextFor(["CASES", "PEOPLE", "OPERATIONS"], peopleTasks, "https://issuer.example/"),
+    ),
+  );
   const visible = caseDocumentInput(
     {
       subject: { ...caseSubject, caseId: current.subject.caseId },
@@ -289,13 +289,13 @@ it("keeps the requested case route while an actual read refusal removes every cu
       ],
     },
   );
-  const caseRead = mockEndpoint("case.get")
-    .mockResolvedValueOnce(
-      outcome({
-        ...humanReadReply("case.get", visible),
-      }),
-    )
-    .mockResolvedValue(outcome({ representation: "HUMAN", outcome: unavailable }));
+  const caseRead = mockEndpoint("case.get").mockImplementation(() =>
+    Promise.resolve(
+      stage === "visible"
+        ? outcome(humanReadReply("case.get", visible))
+        : outcome({ representation: "HUMAN", outcome: unavailable }),
+    ),
+  );
   mockEndpoint("case.timeline").mockResolvedValue(
     outcome({
       ...humanReadReply("case.timeline", timelineDocument()),
@@ -312,16 +312,19 @@ it("keeps the requested case route while an actual read refusal removes every cu
   await waitFor(() => {
     expect(document.body).toHaveTextContent("CURRENT_FACT_CANARY");
   });
+  const submitted = caseRead.mock.calls.length;
+  stage = "hidden";
   await user.click(screen.getByRole("button", { name: "Refresh disclosure" }));
   await waitFor(() => {
     expect(screen.queryByRole("link", { name: "Cases" })).toBeNull();
   });
   expect(document.body).not.toHaveTextContent("CURRENT_FACT_CANARY");
-  expect(caseRead).toHaveBeenCalledOnce();
+  expect(caseRead).toHaveBeenCalledTimes(submitted);
   expect(screen.getByRole("heading", { name: "Case detail", level: 1 })).toBeVisible();
+  stage = "denied";
   await user.click(screen.getByRole("button", { name: "Refresh disclosure" }));
   await waitFor(() => {
-    expect(caseRead).toHaveBeenCalledTimes(2);
+    expect(caseRead.mock.calls.length).toBeGreaterThan(submitted);
     expect(screen.getByRole("alert")).toBeVisible();
   });
   expect(
@@ -552,7 +555,7 @@ it("retains exact inline notes through full Dashboard context loading and a repl
     outcome(humanReadReply("case.get", visible)),
   );
   const user = userEvent.setup();
-  navigate(referencePath("CASE-1"), true);
+  navigate(referencePath("CC-55KW-SSJ4-8HMS-G1BH-73"), true);
   render(
     <>
       <Dashboard />

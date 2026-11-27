@@ -32,7 +32,10 @@ let tests =
                 let first =
                     hash
                         "case.decide"
-                        (Binding.Case(CaseSelector.Reference "Case-One", Revision.first))
+                        (Binding.Case(
+                            CaseSelector.Reference "CC-KZC7-7B45-3H7C-VC65-27",
+                            Revision.first
+                        ))
                         (Tasks.decisionInputs "2026-01-02" "10.0000" "EUR")
 
                 let same =
@@ -70,66 +73,6 @@ let tests =
                         (Tasks.decisionInputs "2026-01-02" "10" "EUR"))
                     "Reviewed version is intent")
             testCase
-                "recording metadata and private result erasure do not erase a known public reference change input"
-                (fun () ->
-                    let state = Tasks.family ()
-                    let binding = Tasks.caseBinding state
-                    let input = Tasks.inputs [ Tasks.text InputTarget.NewCaseReference "NEXT-REF" ]
-                    let record = family "case.changeReference" 2 state binding input
-                    let expected = Some(hash "case.changeReference" binding input)
-                    Expect.equal (OperationIntent.accepted record resolve) expected "Known input"
-
-                    Expect.equal
-                        (OperationIntent.accepted (clear record) resolve)
-                        expected
-                        "Only result content was erased"
-
-                    let header =
-                        { record.Root.Header with
-                            Sequence = Sequence.successor record.Root.Header.Sequence
-                            PreviousHash = record.Root.Hash
-                            OperationId = Tasks.operation 99
-                            RecordedAt = record.Root.Header.RecordedAt.AddSeconds 1.
-                        }
-
-                    let changes =
-                        record.Changes
-                        |> List.map (fun change ->
-                            { change with
-                                Stamp =
-                                    { change.Stamp with
-                                        OperationId = header.OperationId
-                                        RecordedAt = header.RecordedAt
-                                        Position =
-                                            EffectPosition.create header.Sequence 0 |> Option.get
-                                    }
-                            })
-
-                    let again =
-                        RetainedOperation.create
-                            header
-                            record.Root.Structure.Task
-                            binding
-                            input
-                            changes
-                            (fun () -> Array.create 32 99uy)
-                        |> required
-
-                    Expect.notEqual
-                        again.Root.Hash
-                        record.Root.Hash
-                        "Recording and compartment context changed"
-
-                    Expect.equal
-                        (OperationIntent.accepted again resolve)
-                        expected
-                        "Intent excludes that context"
-
-                    Expect.notEqual
-                        (hash "case.changeReference" binding input)
-                        (hash "case.close" binding input)
-                        "Task identity remains explicit")
-            testCase
                 "erased authored inputs stay unavailable rather than receiving a fabricated fingerprint"
                 (fun () ->
                     let record = caseRecord ()
@@ -154,7 +97,7 @@ let tests =
                                 TaskInputId.Scope, InputValue.Text "CASE"
                                 Tasks.text
                                     (InputTarget.Field BusinessField.CaseReference)
-                                    "Case-One"
+                                    "CC-KZC7-7B45-3H7C-VC65-27"
                             ]
 
                     let selected =

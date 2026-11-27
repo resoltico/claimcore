@@ -166,11 +166,13 @@ let internal lifecycle fixture =
         let page = read page
 
         Expect.equal
-            (page.Items |> List.map (_.Reference >> CaseReference.format))
-            [ "PAY-EUR"; "PAY-USD" ]
+            (page.Items |> List.map (fun item -> CaseSelector.Id item.CaseId) |> Set.ofList)
+            (Set.ofList [ caseTarget fixture "PAY-EUR"; caseTarget fixture "PAY-USD" ])
             "Partly paid cases remain in decided, not fully paid"
 
-        let euro = page.Items.Head
+        let euro =
+            page.Items
+            |> List.find (fun item -> CaseSelector.Id item.CaseId = caseTarget fixture "PAY-EUR")
 
         Expect.equal
             (euro.NetPaid |> Option.map (fun totals -> DecimalTotal.format totals.NetPaid))
@@ -246,7 +248,7 @@ let internal lifecycle fixture =
                 token
 
         Expect.equal
-            ((read remaining).Items |> List.map (_.Reference >> CaseReference.format))
+            ((read remaining).Items |> List.map (fun row -> caseAlias fixture row.CaseId))
             [ "PAY-USD" ]
             "Fully paid EUR leaves the selection"
 

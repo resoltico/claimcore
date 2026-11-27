@@ -55,7 +55,128 @@ module internal VerbRunner =
                         io.Errors.Flush()
             }
 
-        ReadCommand.run pageIO prepared token
+        PageCommand.run pageIO prepared token
+
+    let private exportSelection frame =
+        match (Frames.endpoint frame).Id with
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseList) ->
+            Frames.value Api.caseList frame
+            |> Option.map (fun request -> ExportSelection.Cases request.Filter, request.Page)
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseSummary) ->
+            Frames.value Api.caseSummary frame
+            |> Option.map (fun request ->
+                ExportSelection.CaseSummary request.Selection, request.Page)
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.CaseTimeline) ->
+            Frames.value Api.caseTimeline frame
+            |> Option.map (fun request ->
+                ExportSelection.Timeline request,
+                {
+                    Limit = request.Limit
+                    AfterCursor = request.AfterCursor
+                })
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.ReminderList) ->
+            Frames.value Api.reminders frame
+            |> Option.map (fun request ->
+                ExportSelection.Reminders request,
+                {
+                    Limit = request.Limit
+                    AfterCursor = request.AfterCursor
+                })
+        | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.PeopleHistory) ->
+            Frames.value Api.peopleHistory frame
+            |> Option.map (fun request ->
+                ExportSelection.PeopleHistory request,
+                {
+                    Limit = request.Limit
+                    AfterCursor = request.AfterCursor
+                })
+        | _ -> None
+
+    let private exportCsv
+        (io: VerbConsole)
+        (processor: RemoteFrameProcessor)
+        (prepared: PreparedVerb)
+        token
+        =
+        task {
+            let frame = prepared.Invocation
+
+            match exportSelection frame with
+            | None -> return ExitCode.value ExitCode.Usage
+            | Some(selection, page) ->
+                let window =
+                    if prepared.All || page.AfterCursor.IsSome then
+                        Some
+                            {
+                                Limit = page.Limit
+                                After = page.AfterCursor
+                            }
+                    else
+                        None
+
+                let mutable published = false
+
+                let publish bytes =
+                    CliDiscovery.writeOutputBytes io.Output bytes
+                    published <- true
+
+                let failure code lines =
+                    if published then
+                        CliDiscovery.writeText
+                            io.Errors
+                            (ReplyTextFormat.label prepared.Rendering "notice.incompleteExport")
+
+                    lines |> List.iter (CliDiscovery.writeText io.Errors)
+                    ExitCode.value code
+
+                let advice value =
+                    HumanText.advice prepared.Rendering value
+
+                match! processor.Export(frame, selection, window, publish, token) with
+                | Ok() -> return ExitCode.value ExitCode.Success
+                | Error(ExportDownloadFailure.Service reply) ->
+                    if published then
+                        failure ExitCode.Failed [] |> ignore
+
+                    CliDiscovery.writeOutputBytes
+                        io.Errors
+                        (ReplyText.bytesForReply
+                            prepared.Details
+                            prepared.Rendering
+                            (Some frame)
+                            reply)
+
+                    return reply.ExitCode
+                | Error(ExportDownloadFailure.Local error) ->
+                    if published then
+                        failure ExitCode.Failed [] |> ignore
+
+                    let reply =
+                        CliReply.local error |> CliReply.forAttempt frame DeliveryState.NotSent
+
+                    CliDiscovery.writeOutputBytes
+                        io.Errors
+                        (ReplyText.bytesForReply
+                            prepared.Details
+                            prepared.Rendering
+                            (Some frame)
+                            reply)
+
+                    return reply.ExitCode
+                | Error(ExportDownloadFailure.Export error) ->
+                    return
+                        match error with
+                        | ExportFailure.Rejected rejection ->
+                            failure
+                                ExitCode.Rejected
+                                (HumanText.rejection prepared.Details prepared.Rendering rejection)
+                        | ExportFailure.Failed fault ->
+                            failure ExitCode.Failed (HumanText.fault prepared.Rendering fault)
+                        | ExportFailure.LimitExceeded value
+                        | ExportFailure.InvalidContinuation value
+                        | ExportFailure.ProcessingTimeout value ->
+                            failure ExitCode.Failed (advice value)
+        }
 
     let private syntax invocation =
         [
@@ -132,7 +253,18 @@ module internal VerbRunner =
                 |> Frames.withRepresentation Representation.Human
 
             let! dispatched, reply = processor.ExchangePrepared(preview, token)
-            processor.Deliver(render prepared dispatched, reply)
+
+            let deliver () =
+                processor.Deliver(render prepared dispatched, reply)
+
+            if prepared.Format = VerbFormat.Text then
+                deliver ()
+
+            let refusal () =
+                if prepared.Format <> VerbFormat.Text then
+                    deliver ()
+
+                Error reply.ExitCode
 
             match reply.Frame.Result with
             | FrameResult.Reply value ->
@@ -154,8 +286,8 @@ module internal VerbRunner =
                             return Ok(CaseReference.format reference, frozen)
                         | None -> return Error(ExitCode.value ExitCode.Failed)
                     | _ -> return Error(ExitCode.value ExitCode.Failed)
-                | _ -> return Error reply.ExitCode
-            | _ -> return Error reply.ExitCode
+                | _ -> return refusal ()
+            | _ -> return refusal ()
         }
 
     let private attachmentPreflightReply invocation (response: CliReply) =
@@ -343,8 +475,9 @@ module internal VerbRunner =
                 match! attachmentReview io processor prepared token with
                 | Ok frame -> return! execute processor prepared frame token
                 | Error exit -> return exit
-            | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
-                return! readOutput io processor prepared token
+            | Ok(prepared, None) when prepared.Format = VerbFormat.Csv ->
+                return! exportCsv io processor prepared token
+            | Ok(prepared, None) when prepared.All -> return! readOutput io processor prepared token
             | Ok(prepared, None) when CliConfirmation.needsReferencePreview prepared.Invocation ->
                 match! confirmationReference processor prepared token with
                 | Error exit -> return exit

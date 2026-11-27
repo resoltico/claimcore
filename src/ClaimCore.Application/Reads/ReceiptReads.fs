@@ -236,29 +236,10 @@ module internal ReceiptReads =
                                                                     change
                                                                     tx.CancellationToken
 
-                                                            let! basisReference =
-                                                                match change.Value with
-                                                                | PartValue.Case {
-                                                                                     Reference = Some _
-                                                                                 } when
-                                                                    change.Revision > Revision.first
-                                                                    ->
-                                                                    CaseIdentityReads
-                                                                        .referenceBefore
-                                                                        tx
-                                                                        id
-                                                                        change.Revision
-                                                                | _ ->
-                                                                    System.Threading.Tasks
-                                                                        .Task.FromResult
-                                                                        None
-
                                                             match
                                                                 LiveCase.ofState snapshot.State,
                                                                 CaseDescription.fromChanges
-                                                                    (defaultArg
-                                                                        basisReference
-                                                                        historicalReference)
+                                                                    historicalReference
                                                                     before
                                                                     change
                                                             with

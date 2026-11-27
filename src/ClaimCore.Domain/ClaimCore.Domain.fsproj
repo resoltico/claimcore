@@ -113,7 +113,6 @@
     <Compile Include="Tasks/Case/CaseErase.fs" />
     <Compile Include="Tasks/Case/CaseWithdrawDecision.fs" />
     <Compile Include="Tasks/Case/CaseAmendRegistration.fs" />
-    <Compile Include="Tasks/Case/CaseChangeReference.fs" />
     <Compile Include="Tasks/Case/CaseDecide.fs" />
     <Compile Include="Tasks/Case/CaseRecordPayment.fs" />
     <Compile Include="Tasks/Case/CaseRemovePayment.fs" />

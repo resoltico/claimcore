@@ -65,7 +65,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await technical.getByRole("button", { name: "Close", exact: true }).first().click();
 
   await goToView(page, "cases");
-  await lookupCase(page, caseReference);
+  await lookupCase(page, opened.caseReference);
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.getByText("Synthetic amended claimant").first()).toBeVisible();
 });

@@ -48,7 +48,7 @@ module internal Projections =
         + " AS follow_up,"
         + DatabaseSession.dateExpression "deadline_due"
         + " AS deadline_due,claimed_amount::text AS claimed_amount,claimed_currency,payable_amount::text AS payable_amount,payable_currency,payment_review,outcome,"
-        + CaseIdentityReads.referenceAt "c.case_id" ""
+        + CaseIdentityReads.openingReference "c.case_id"
         + " AS reserved_reference,"
         + PartProjections.reportDateColumns
 

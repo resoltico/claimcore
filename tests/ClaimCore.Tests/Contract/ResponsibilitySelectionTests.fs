@@ -40,7 +40,7 @@ let tests =
                     "Explicit filters remain intersections"
 
                 let installation = Guid.Parse "81f5fe15-4789-49ac-b7ae-1f9e3f9688fe"
-                let position = CaseListPosition.Reference "RESP-A"
+                let position = CaseListPosition.Reference "CC-55KW-SSJ4-8HMS-G1BH-73"
                 let cursor = Cursors.encodeCases installation filter position
 
                 Expect.equal

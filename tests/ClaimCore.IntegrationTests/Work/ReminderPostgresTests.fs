@@ -26,7 +26,7 @@ let private parsed =
     | Ok value -> value
     | Error issue -> failtestf "Expected representable retained value: %A" issue
 
-let private target = CaseSelector.Reference "synthetic-a"
+let private target = CaseSelector.Reference populatedReference
 
 let private reminder fixture operation taskName selected values =
     Submissions.createRaw
@@ -420,7 +420,7 @@ let private dates database =
                     "reminder.create"
                     (id database.Fixture 104)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "synthetic-b"),
+                        (caseTarget database.Fixture "synthetic-b"),
                         None
                     ))
                     (ClaimCore.TestSupport.Submissions.reminderPlan
@@ -462,7 +462,7 @@ let private dates database =
 
         Expect.equal
             ((read continued).Items
-             |> List.map (fun value -> CaseReference.format value.Reference))
+             |> List.map (fun value -> caseAlias database.Fixture value.CaseId))
             [ "synthetic-b" ]
             "The case continuation passes the exact maximum date without infinity conversion"
 
@@ -483,7 +483,7 @@ let private dates database =
         let oldest = read oldest
 
         Expect.equal
-            (oldest.Items |> List.map (fun item -> CaseReference.format item.Reference))
+            (oldest.Items |> List.map (fun item -> caseAlias database.Fixture item.CaseId))
             [ "synthetic-b" ]
             "A financial OPEN accepts the minimum Gregorian notification date and indexes it exactly"
 
@@ -524,7 +524,8 @@ let private dates database =
                 token
 
         Expect.equal
-            ((read later).Items |> List.map (fun item -> CaseReference.format item.Reference))
+            ((read later).Items
+             |> List.map (fun item -> caseAlias database.Fixture item.CaseId))
             [ "synthetic-a" ]
             "A notification cursor does not turn the finite minimum into provider negative infinity and repeat the first row"
 
@@ -1108,7 +1109,7 @@ let private currentLookup database =
                 reader
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference "synthetic-a"
+                    Scope = caseGrant database.Fixture "synthetic-a"
                 }
                 true
 
@@ -1188,7 +1189,7 @@ let private currentLookup database =
                     "reminder.create"
                     (id database.Fixture 606)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "synthetic-b"),
+                        (caseTarget database.Fixture "synthetic-b"),
                         None
                     ))
                     (ClaimCore.TestSupport.Submissions.reminderPlan

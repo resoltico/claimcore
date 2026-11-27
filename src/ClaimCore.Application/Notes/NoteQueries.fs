@@ -83,7 +83,7 @@ module internal NoteQueries =
         task {
             if request.Limit < 1 || request.Limit > NotePaging.MaximumLimit then
                 return!
-                    RequestRefusals.read
+                    RequestRefusals.protectedRead
                         services
                         token
                         (Refusal.invalidInput (
@@ -92,10 +92,14 @@ module internal NoteQueries =
                         ))
             else
                 match CaseRecords.validateSelector request.Target with
-                | Error refusal -> return! RequestRefusals.read services token refusal
+                | Error refusal -> return! RequestRefusals.protectedRead services token refusal
                 | Ok() ->
                     let! result =
-                        services.Store.Read
+                        DisclosureReads.pageRead
+                            services
+                            DisclosureKind.CaseNotes
+                            (fun (page: CaseNotesPage) -> Some page.CaseId)
+                            (fun page -> DisclosureReads.rows page.Notes.Items)
                             {
                                 CancellationToken = token
                                 Work =
@@ -135,5 +139,5 @@ module internal NoteQueries =
                                         }
                             }
 
-                    return QueryResults.readResult result
+                    return result
         }

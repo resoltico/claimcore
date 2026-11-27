@@ -9,6 +9,7 @@
     "PENDING": "PENDING",
     "REJECTED": "REFUSED",
     "FAILED": "UNRESOLVED",
+    "RECEIPT_UNAVAILABLE": "UNRESOLVED",
     "OUTCOME_UNKNOWN": "UNRESOLVED"
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
@@ -3088,6 +3089,26 @@
               "minLength": 1,
               "maxLength": 2147483647
             }
+          },
+          {
+            "name": "ClaimCore-Export-Page-Size",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "name": "ClaimCore-Export-After",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16449
+            }
           }
         ],
         "security": [
@@ -3125,6 +3146,13 @@
                 "x-claimcore-csv-success-only": true,
                 "schema": {
                   "const": "identity"
+                }
+              },
+              "ClaimCore-Export-Next": {
+                "x-claimcore-csv-success-only": true,
+                "schema": {
+                  "type": "string",
+                  "maxLength": 16449
                 }
               },
               "Content-Disposition": {
@@ -5008,9 +5036,6 @@
             "$ref": "#/components/schemas/Affordance.case.amendRegistration"
           },
           {
-            "$ref": "#/components/schemas/Affordance.case.changeReference"
-          },
-          {
             "$ref": "#/components/schemas/Affordance.case.correct"
           },
           {
@@ -5136,7 +5161,6 @@
           "mapping": {
             "case.open": "#/components/schemas/Affordance.case.open",
             "case.amendRegistration": "#/components/schemas/Affordance.case.amendRegistration",
-            "case.changeReference": "#/components/schemas/Affordance.case.changeReference",
             "case.correct": "#/components/schemas/Affordance.case.correct",
             "case.decide": "#/components/schemas/Affordance.case.decide",
             "case.withdrawDecision": "#/components/schemas/Affordance.case.withdrawDecision",
@@ -5331,61 +5355,6 @@
             },
             "minItems": 0,
             "maxItems": 8
-          },
-          "choices": {
-            "$ref": "#/components/schemas/AffordanceChoices"
-          },
-          "blocked": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/HumanAdvice"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "task",
-          "labelId",
-          "binding",
-          "seeds",
-          "editable",
-          "choices",
-          "blocked"
-        ]
-      },
-      "Affordance.case.changeReference": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "task": {
-            "const": "case.changeReference"
-          },
-          "labelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160
-          },
-          "shortLabelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 160
-          },
-          "binding": {
-            "$ref": "#/components/schemas/Binding.CASE"
-          },
-          "seeds": {
-            "$ref": "#/components/schemas/AffordanceSeeds"
-          },
-          "editable": {
-            "type": "array",
-            "items": {
-              "const": "input:newReference"
-            },
-            "minItems": 0,
-            "maxItems": 1
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -5749,12 +5718,11 @@
                 "field:insurerClaimReference",
                 "field:claimedAmount",
                 "field:claimedCurrency",
-                "field:caseReference",
                 "input:parties"
               ]
             },
             "minItems": 0,
-            "maxItems": 10
+            "maxItems": 9
           },
           "choices": {
             "$ref": "#/components/schemas/AffordanceChoices"
@@ -7863,16 +7831,37 @@
             "type": "array",
             "items": {
               "enum": [
+                "OPERATION_PREVIEW",
+                "REQUESTER_CONTEXT",
+                "SESSION_TERMINATION",
+                "OPERATION_LOOKUP",
+                "OPERATION_RECEIPT",
                 "CASE_READ",
+                "CASE_TIMELINE",
+                "REVISION_CONFLICT",
+                "CASE_LIST",
+                "CASE_SUMMARY",
+                "CASE_ASSIGNEES",
+                "CASE_PARTIES",
+                "CASE_NOTES",
+                "CASE_PAYMENTS",
+                "ATTACHMENT_LIST",
+                "REMINDER_READ",
+                "REMINDER_LIST",
+                "WORK_VIEWS",
+                "PEOPLE_DIRECTORY",
+                "PEOPLE_GRANTS",
+                "PEOPLE_HISTORY",
+                "ACCESS_REQUESTS",
                 "ATTACHMENT_DOWNLOAD",
                 "ATTACHMENT_PREVIEW",
                 "EXPORT",
-                "TRAIL_READ",
-                "ACCESS_REFUSED"
+                "DIGEST",
+                "TRAIL_READ"
               ]
             },
             "minItems": 0,
-            "maxItems": 6
+            "maxItems": 27
           },
           "input:reminderView": {
             "type": "array",
@@ -8109,9 +8098,6 @@
           "input:principal.subject": {
             "$ref": "#/components/schemas/InputAtom"
           },
-          "input:caseReferencePolicy": {
-            "$ref": "#/components/schemas/InputAtom"
-          },
           "input:profile.displayName": {
             "$ref": "#/components/schemas/InputAtom"
           },
@@ -8155,9 +8141,6 @@
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:attachmentDigest": {
-            "$ref": "#/components/schemas/InputAtom"
-          },
-          "input:newReference": {
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:linkId": {
@@ -8565,9 +8548,9 @@
           },
           "reference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "disclosure": {
             "type": "integer",
@@ -9350,7 +9333,6 @@
                   "enum": [
                     "case.open",
                     "case.amendRegistration",
-                    "case.changeReference",
                     "case.correct",
                     "case.decide",
                     "case.withdrawDecision",
@@ -9365,7 +9347,7 @@
                   ]
                 },
                 "minItems": 0,
-                "maxItems": 14
+                "maxItems": 13
               },
               "correction": {
                 "$ref": "#/components/schemas/CorrectionAdvice"
@@ -9386,7 +9368,6 @@
                     "enum": [
                       "case.open",
                       "case.amendRegistration",
-                      "case.changeReference",
                       "case.correct",
                       "case.decide",
                       "case.withdrawDecision",
@@ -9411,7 +9392,7 @@
                   "$ref": "#/components/schemas/CaseTaskRefusal"
                 },
                 "minItems": 0,
-                "maxItems": 14
+                "maxItems": 13
               }
             },
             "required": [
@@ -9518,59 +9499,6 @@
                       "properties": {
                         "act": {
                           "const": "case.amendRegistration"
-                        }
-                      }
-                    },
-                    "minContains": 1,
-                    "maxContains": 1
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "oneOf": [
-              {
-                "properties": {
-                  "acts": {
-                    "contains": {
-                      "const": "case.changeReference"
-                    },
-                    "minContains": 1
-                  },
-                  "blocked": {
-                    "contains": {
-                      "required": [
-                        "act"
-                      ],
-                      "properties": {
-                        "act": {
-                          "const": "case.changeReference"
-                        }
-                      }
-                    },
-                    "minContains": 0,
-                    "maxContains": 0
-                  }
-                }
-              },
-              {
-                "properties": {
-                  "acts": {
-                    "contains": {
-                      "const": "case.changeReference"
-                    },
-                    "minContains": 0,
-                    "maxContains": 0
-                  },
-                  "blocked": {
-                    "contains": {
-                      "required": [
-                        "act"
-                      ],
-                      "properties": {
-                        "act": {
-                          "const": "case.changeReference"
                         }
                       }
                     },
@@ -10570,9 +10498,9 @@
           },
           "value": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           }
         },
         "required": [
@@ -10624,9 +10552,9 @@
         "properties": {
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "handling": {
             "$ref": "#/components/schemas/Handling"
@@ -11368,9 +11296,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "notes": {
             "$ref": "#/components/schemas/CaseNotes"
@@ -11672,9 +11600,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "revision": {
             "type": "integer",
@@ -11887,9 +11815,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           }
         },
         "required": [
@@ -12185,9 +12113,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "revision": {
             "type": "integer",
@@ -12870,7 +12798,6 @@
             "enum": [
               "case.open",
               "case.amendRegistration",
-              "case.changeReference",
               "case.correct",
               "case.decide",
               "case.withdrawDecision",
@@ -12927,7 +12854,6 @@
             "enum": [
               "case.open",
               "case.amendRegistration",
-              "case.changeReference",
               "case.correct",
               "case.decide",
               "case.withdrawDecision",
@@ -13006,9 +12932,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "items": {
             "type": "array",
@@ -13173,9 +13099,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "revision": {
             "type": "integer",
@@ -13296,12 +13222,6 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 9007199254740991
-          },
-          "matchedReference": {
-            "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 32
           },
           "relatedCases": {
             "$ref": "#/components/schemas/RelatedCaseLinks"
@@ -13966,9 +13886,9 @@
           },
           "reference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           }
         },
         "required": [
@@ -14282,9 +14202,6 @@
             "$ref": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE"
           },
           {
-            "$ref": "#/components/schemas/DataRejection.REFERENCE_UNAVAILABLE"
-          },
-          {
             "$ref": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE"
           },
           {
@@ -14332,7 +14249,6 @@
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "REFERENCE_UNAVAILABLE": "#/components/schemas/DataRejection.REFERENCE_UNAVAILABLE",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "SELF_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "DUPLICATE_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
@@ -14643,22 +14559,6 @@
           "observedAt"
         ]
       },
-      "DataRejection.REFERENCE_UNAVAILABLE": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "const": "REFERENCE_UNAVAILABLE"
-          },
-          "action": {
-            "const": "CHOOSE_ANOTHER_REFERENCE"
-          }
-        },
-        "required": [
-          "code",
-          "action"
-        ]
-      },
       "DataRejection.REMINDER_NOT_OFFERED": {
         "type": "object",
         "additionalProperties": false,
@@ -14843,12 +14743,33 @@
           },
           "kind": {
             "enum": [
+              "OPERATION_PREVIEW",
+              "REQUESTER_CONTEXT",
+              "SESSION_TERMINATION",
+              "OPERATION_LOOKUP",
+              "OPERATION_RECEIPT",
               "CASE_READ",
+              "CASE_TIMELINE",
+              "REVISION_CONFLICT",
+              "CASE_LIST",
+              "CASE_SUMMARY",
+              "CASE_ASSIGNEES",
+              "CASE_PARTIES",
+              "CASE_NOTES",
+              "CASE_PAYMENTS",
+              "ATTACHMENT_LIST",
+              "REMINDER_READ",
+              "REMINDER_LIST",
+              "WORK_VIEWS",
+              "PEOPLE_DIRECTORY",
+              "PEOPLE_GRANTS",
+              "PEOPLE_HISTORY",
+              "ACCESS_REQUESTS",
               "ATTACHMENT_DOWNLOAD",
               "ATTACHMENT_PREVIEW",
               "EXPORT",
-              "TRAIL_READ",
-              "ACCESS_REFUSED"
+              "DIGEST",
+              "TRAIL_READ"
             ]
           },
           "caseId": {
@@ -14886,6 +14807,9 @@
                 "type": "null"
               }
             ]
+          },
+          "page": {
+            "$ref": "#/components/schemas/DisclosurePageEvidence"
           }
         },
         "required": [
@@ -14902,28 +14826,16 @@
         "additionalProperties": false,
         "properties": {
           "query": {
-            "type": "string"
+            "enum": [
+              "case.list",
+              "case.summary",
+              "case.timeline",
+              "reminder.list",
+              "people.history"
+            ]
           },
           "selection": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "key": {
-                  "type": "string"
-                },
-                "value": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "key",
-                "value"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 64
+            "$ref": "#/components/schemas/DisclosureExportSelection"
           },
           "rowCount": {
             "type": "integer",
@@ -14935,6 +14847,88 @@
           "query",
           "selection",
           "rowCount"
+        ]
+      },
+      "DisclosureExportSelection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "filtered": {
+            "type": "boolean"
+          },
+          "paged": {
+            "type": "boolean"
+          },
+          "order": {
+            "oneOf": [
+              {
+                "enum": [
+                  "REFERENCE",
+                  "RECENT",
+                  "RECEIVED",
+                  "FOLLOW_UP"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grouping": {
+            "oneOf": [
+              {
+                "enum": [
+                  "REGISTERED_MONTH",
+                  "RECEIVED_MONTH",
+                  "CLOSED_MONTH",
+                  "OUTCOME",
+                  "RESPONSIBLE",
+                  "DAYS_OPEN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "filtered",
+          "paged",
+          "order",
+          "grouping"
+        ]
+      },
+      "DisclosurePageEvidence": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rowCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "cases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Uuid"
+            },
+            "minItems": 0,
+            "maxItems": 51
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Uuid"
+            },
+            "minItems": 0,
+            "maxItems": 51
+          }
+        },
+        "required": [
+          "rowCount",
+          "cases",
+          "people"
         ]
       },
       "DisclosureTrailPage": {
@@ -15046,12 +15040,33 @@
           },
           "kind": {
             "enum": [
+              "OPERATION_PREVIEW",
+              "REQUESTER_CONTEXT",
+              "SESSION_TERMINATION",
+              "OPERATION_LOOKUP",
+              "OPERATION_RECEIPT",
               "CASE_READ",
+              "CASE_TIMELINE",
+              "REVISION_CONFLICT",
+              "CASE_LIST",
+              "CASE_SUMMARY",
+              "CASE_ASSIGNEES",
+              "CASE_PARTIES",
+              "CASE_NOTES",
+              "CASE_PAYMENTS",
+              "ATTACHMENT_LIST",
+              "REMINDER_READ",
+              "REMINDER_LIST",
+              "WORK_VIEWS",
+              "PEOPLE_DIRECTORY",
+              "PEOPLE_GRANTS",
+              "PEOPLE_HISTORY",
+              "ACCESS_REQUESTS",
               "ATTACHMENT_DOWNLOAD",
               "ATTACHMENT_PREVIEW",
               "EXPORT",
-              "TRAIL_READ",
-              "ACCESS_REFUSED"
+              "DIGEST",
+              "TRAIL_READ"
             ]
           },
           "from": {
@@ -15555,28 +15570,14 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
-          },
-          "matchedReference": {
-            "oneOf": [
-              {
-                "type": "string",
-                "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
-                "minLength": 1,
-                "maxLength": 32
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maxLength": 25
           }
         },
         "required": [
           "caseId",
-          "caseReference",
-          "matchedReference"
+          "caseReference"
         ]
       },
       "ExecuteReply": {
@@ -15644,6 +15645,9 @@
             "$ref": "#/components/schemas/Failed"
           },
           {
+            "$ref": "#/components/schemas/ExecuteResult.RECEIPT_UNAVAILABLE"
+          },
+          {
             "$ref": "#/components/schemas/ExecuteResult.OUTCOME_UNKNOWN"
           }
         ],
@@ -15654,6 +15658,7 @@
             "ALREADY_ACCEPTED": "#/components/schemas/ExecuteResult.ALREADY_ACCEPTED",
             "REJECTED": "#/components/schemas/DataRejected",
             "FAILED": "#/components/schemas/Failed",
+            "RECEIPT_UNAVAILABLE": "#/components/schemas/ExecuteResult.RECEIPT_UNAVAILABLE",
             "OUTCOME_UNKNOWN": "#/components/schemas/ExecuteResult.OUTCOME_UNKNOWN"
           }
         }
@@ -15696,6 +15701,22 @@
         "properties": {
           "kind": {
             "const": "OUTCOME_UNKNOWN"
+          },
+          "data": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "ExecuteResult.RECEIPT_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "RECEIPT_UNAVAILABLE"
           },
           "data": {
             "type": "null"
@@ -16347,9 +16368,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           }
         },
         "required": [
@@ -16922,7 +16943,6 @@
               "READ_CURRENT",
               "RETRY_SAFE",
               "STOP_AND_INVESTIGATE",
-              "CHOOSE_ANOTHER_REFERENCE",
               "ASK_FOR_ACCESS",
               "REVIEW_LATEST",
               "NONE_REQUIRED"
@@ -17030,6 +17050,9 @@
             "$ref": "#/components/schemas/Failed"
           },
           {
+            "$ref": "#/components/schemas/HumanExecuteResult.RECEIPT_UNAVAILABLE"
+          },
+          {
             "$ref": "#/components/schemas/HumanExecuteResult.OUTCOME_UNKNOWN"
           }
         ],
@@ -17040,6 +17063,7 @@
             "ALREADY_ACCEPTED": "#/components/schemas/HumanExecuteResult.ALREADY_ACCEPTED",
             "REJECTED": "#/components/schemas/HumanRejected",
             "FAILED": "#/components/schemas/Failed",
+            "RECEIPT_UNAVAILABLE": "#/components/schemas/HumanExecuteResult.RECEIPT_UNAVAILABLE",
             "OUTCOME_UNKNOWN": "#/components/schemas/HumanExecuteResult.OUTCOME_UNKNOWN"
           }
         }
@@ -17082,6 +17106,18 @@
         "properties": {
           "kind": {
             "const": "OUTCOME_UNKNOWN"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "HumanExecuteResult.RECEIPT_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "RECEIPT_UNAVAILABLE"
           }
         },
         "required": [
@@ -17479,10 +17515,8 @@
             "CONTROL_CHARACTERS": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "FORMATTING_CHARACTER": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "REFERENCE_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
-            "CUSTOM_REFERENCE_NOT_ALLOWED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "COUNTRY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PRINCIPAL_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
-            "CASE_REFERENCE_POLICY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CASE_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "CASE_SELECTION_INVALID": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "ACTOR_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
@@ -17645,10 +17679,8 @@
               "CONTROL_CHARACTERS",
               "FORMATTING_CHARACTER",
               "REFERENCE_FORMAT",
-              "CUSTOM_REFERENCE_NOT_ALLOWED",
               "COUNTRY_FORMAT",
               "PRINCIPAL_FORMAT",
-              "CASE_REFERENCE_POLICY_FORMAT",
               "CASE_ID_REQUIRED",
               "CASE_SELECTION_INVALID",
               "ACTOR_ID_REQUIRED",
@@ -17772,7 +17804,6 @@
           "input:principal.kind",
           "input:principal.issuer",
           "input:principal.subject",
-          "input:caseReferencePolicy",
           "input:profile.displayName",
           "input:profile.contact",
           "input:profile.digestEmail",
@@ -17790,7 +17821,6 @@
           "input:attachmentName",
           "input:attachmentLength",
           "input:attachmentDigest",
-          "input:newReference",
           "input:linkId",
           "input:relatedCaseReference",
           "input:relatedCaseId",
@@ -17878,12 +17908,11 @@
                 "field:insurerClaimReference",
                 "field:claimedAmount",
                 "field:claimedCurrency",
-                "field:caseReference",
                 "input:parties"
               ]
             },
             "minItems": 0,
-            "maxItems": 10
+            "maxItems": 9
           }
         },
         "required": [
@@ -18834,25 +18863,6 @@
         },
         "required": []
       },
-      "OperationInputs.case.changeReference": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "input:newReference": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "input:newReference"
-        ]
-      },
       "OperationInputs.case.close": {
         "type": "object",
         "additionalProperties": false,
@@ -19174,16 +19184,6 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "field:caseReference": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "field:incidentDate": {
             "oneOf": [
               {
@@ -20330,7 +20330,6 @@
             "enum": [
               "case.open",
               "case.amendRegistration",
-              "case.changeReference",
               "case.correct",
               "case.decide",
               "case.withdrawDecision",
@@ -20414,9 +20413,6 @@
           },
           {
             "$ref": "#/components/schemas/OperationSubmission.case.amendRegistration"
-          },
-          {
-            "$ref": "#/components/schemas/OperationSubmission.case.changeReference"
           },
           {
             "$ref": "#/components/schemas/OperationSubmission.case.correct"
@@ -20532,7 +20528,6 @@
           "mapping": {
             "case.open": "#/components/schemas/OperationSubmission.case.open",
             "case.amendRegistration": "#/components/schemas/OperationSubmission.case.amendRegistration",
-            "case.changeReference": "#/components/schemas/OperationSubmission.case.changeReference",
             "case.correct": "#/components/schemas/OperationSubmission.case.correct",
             "case.decide": "#/components/schemas/OperationSubmission.case.decide",
             "case.withdrawDecision": "#/components/schemas/OperationSubmission.case.withdrawDecision",
@@ -20635,30 +20630,6 @@
           },
           "inputs": {
             "$ref": "#/components/schemas/OperationInputs.case.amendRegistration"
-          }
-        },
-        "required": [
-          "task",
-          "operationId",
-          "binding",
-          "inputs"
-        ]
-      },
-      "OperationSubmission.case.changeReference": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "task": {
-            "const": "case.changeReference"
-          },
-          "operationId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "binding": {
-            "$ref": "#/components/schemas/Binding.CASE"
-          },
-          "inputs": {
-            "$ref": "#/components/schemas/OperationInputs.case.changeReference"
           }
         },
         "required": [
@@ -23321,12 +23292,33 @@
           },
           "token": {
             "enum": [
+              "OPERATION_PREVIEW",
+              "REQUESTER_CONTEXT",
+              "SESSION_TERMINATION",
+              "OPERATION_LOOKUP",
+              "OPERATION_RECEIPT",
               "CASE_READ",
+              "CASE_TIMELINE",
+              "REVISION_CONFLICT",
+              "CASE_LIST",
+              "CASE_SUMMARY",
+              "CASE_ASSIGNEES",
+              "CASE_PARTIES",
+              "CASE_NOTES",
+              "CASE_PAYMENTS",
+              "ATTACHMENT_LIST",
+              "REMINDER_READ",
+              "REMINDER_LIST",
+              "WORK_VIEWS",
+              "PEOPLE_DIRECTORY",
+              "PEOPLE_GRANTS",
+              "PEOPLE_HISTORY",
+              "ACCESS_REQUESTS",
               "ATTACHMENT_DOWNLOAD",
               "ATTACHMENT_PREVIEW",
               "EXPORT",
-              "TRAIL_READ",
-              "ACCESS_REFUSED"
+              "DIGEST",
+              "TRAIL_READ"
             ]
           }
         },
@@ -23717,7 +23709,6 @@
             "enum": [
               "case.open",
               "case.amendRegistration",
-              "case.changeReference",
               "case.correct",
               "case.decide",
               "case.withdrawDecision",
@@ -23930,7 +23921,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -23958,7 +23949,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -23992,7 +23983,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24020,7 +24011,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24058,7 +24049,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24088,7 +24079,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24119,7 +24110,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24148,7 +24139,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24179,7 +24170,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24209,7 +24200,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24232,16 +24223,37 @@
             "type": "array",
             "items": {
               "enum": [
+                "OPERATION_PREVIEW",
+                "REQUESTER_CONTEXT",
+                "SESSION_TERMINATION",
+                "OPERATION_LOOKUP",
+                "OPERATION_RECEIPT",
                 "CASE_READ",
+                "CASE_TIMELINE",
+                "REVISION_CONFLICT",
+                "CASE_LIST",
+                "CASE_SUMMARY",
+                "CASE_ASSIGNEES",
+                "CASE_PARTIES",
+                "CASE_NOTES",
+                "CASE_PAYMENTS",
+                "ATTACHMENT_LIST",
+                "REMINDER_READ",
+                "REMINDER_LIST",
+                "WORK_VIEWS",
+                "PEOPLE_DIRECTORY",
+                "PEOPLE_GRANTS",
+                "PEOPLE_HISTORY",
+                "ACCESS_REQUESTS",
                 "ATTACHMENT_DOWNLOAD",
                 "ATTACHMENT_PREVIEW",
                 "EXPORT",
-                "TRAIL_READ",
-                "ACCESS_REFUSED"
+                "DIGEST",
+                "TRAIL_READ"
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24269,7 +24281,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24300,7 +24312,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24329,7 +24341,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24358,7 +24370,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24388,7 +24400,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24416,7 +24428,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24444,7 +24456,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24475,7 +24487,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24504,7 +24516,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24532,7 +24544,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24561,7 +24573,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24594,7 +24606,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24627,7 +24639,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24655,7 +24667,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24683,7 +24695,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24708,7 +24720,6 @@
               "enum": [
                 "case.open",
                 "case.amendRegistration",
-                "case.changeReference",
                 "case.correct",
                 "case.decide",
                 "case.withdrawDecision",
@@ -24750,7 +24761,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -24779,7 +24790,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 41
+            "maxItems": 40
           }
         },
         "required": [
@@ -25408,9 +25419,9 @@
           },
           "value": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           }
         },
         "required": [
@@ -25890,9 +25901,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "attachmentId": {
             "$ref": "#/components/schemas/Uuid"
@@ -25928,9 +25939,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "revision": {
             "type": "integer",
@@ -25941,7 +25952,6 @@
             "enum": [
               "case.open",
               "case.amendRegistration",
-              "case.changeReference",
               "case.correct",
               "case.decide",
               "case.withdrawDecision",
@@ -25980,9 +25990,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "linkId": {
             "$ref": "#/components/schemas/Uuid"
@@ -26014,9 +26024,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "noteId": {
             "$ref": "#/components/schemas/Uuid"
@@ -26052,9 +26062,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "partyId": {
             "$ref": "#/components/schemas/Uuid"
@@ -26138,9 +26148,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "act": {
             "enum": [
@@ -26176,9 +26186,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "revision": {
             "type": "integer",
@@ -26582,7 +26592,6 @@
             "enum": [
               "case.open",
               "case.amendRegistration",
-              "case.changeReference",
               "case.correct",
               "case.decide",
               "case.withdrawDecision",
@@ -26977,9 +26986,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "lifecycle": {
             "enum": [
@@ -27692,9 +27701,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           },
           "claimants": {
             "type": "array",
@@ -28437,9 +28446,9 @@
           },
           "caseReference": {
             "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
+            "pattern": "^(?:[Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2})(?![\\s\\S])",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 25
           }
         },
         "required": [
@@ -28454,12 +28463,6 @@
         "properties": {
           "kind": {
             "const": "OPENING"
-          },
-          "requestedReference": {
-            "type": "string",
-            "pattern": "^(?:([Cc][Cc]-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}(-[0-9ABCDEFGHJKMNPQRSTVWXYZabcdefghjkmnpqrstvwxyz]{4}){3}-[0-9]{2}|(([A-BD-Za-bd-z][A-Za-z0-9]*|[Cc]([A-BD-Za-bd-z0-9][A-Za-z0-9]*)?|[Cc][Cc][A-Za-z0-9]+)(-[A-Za-z0-9]+)*|[Cc][Cc])))(?![\\s\\S])",
-            "minLength": 1,
-            "maxLength": 32
           }
         },
         "required": [
@@ -29379,7 +29382,6 @@
           "input:principal.kind",
           "input:principal.issuer",
           "input:principal.subject",
-          "input:caseReferencePolicy",
           "input:profile.displayName",
           "input:profile.contact",
           "input:profile.digestEmail",
@@ -29395,7 +29397,6 @@
           "input:attachmentName",
           "input:attachmentLength",
           "input:attachmentDigest",
-          "input:newReference",
           "input:linkId",
           "input:relatedCaseReference",
           "input:relatedCaseId",

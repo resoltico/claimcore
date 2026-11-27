@@ -101,7 +101,7 @@ it("offers no copy controls for ordinary facts", () => {
                   key: "future",
                   labelId: "label.details",
                   prominence: "PRIMARY",
-                  value: { kind: "REFERENCE", value: "CASE-1" },
+                  value: { kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" },
                 },
               ],
             },

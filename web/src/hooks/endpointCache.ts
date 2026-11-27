@@ -6,7 +6,6 @@ import {
   type ServiceResponse,
 } from "../protocol/types";
 import { localNotice } from "../protocol/notices";
-import { isDisclosureRefused } from "../api/outcomes";
 export type CacheSnapshot = Readonly<{
   result: ApiResult<EndpointOutcome> | null;
   previous: EndpointOutcome | null;
@@ -30,11 +29,11 @@ const compareNames = (left: string, right: string): number => {
   }
   return left > right ? 1 : 0;
 };
-const previousOutcome = (result: ApiResult<EndpointOutcome>, previous: EndpointOutcome | null) => {
-  if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
+const previousOutcome = (result: ApiResult<EndpointOutcome>) => {
+  if (result.kind === "outcome" && ["SUCCEEDED", "ACCEPTED"].includes(result.value.outcome.kind)) {
     return result.value;
   }
-  return isDisclosureRefused(result) ? null : previous;
+  return null;
 };
 type AttachmentInvalidation = { caseId: string; sequence: number | undefined };
 
@@ -109,6 +108,13 @@ export function typedResult<K extends EndpointId>(
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Cache keys bind endpoint and representation; the server owns payload admission.
   return { ...result, value: result.value as ServiceResponse<K, Representation> };
 }
+export const privateDisplayLifetimeMs = 15_000;
+
+const incomplete = (): ApiResult<EndpointOutcome> => ({
+  kind: "deliveryFailure",
+  notice: localNotice("incomplete"),
+});
+
 export class EndpointCache {
   private readonly entries = new Map<string, Entry>();
   private generation = 0;
@@ -116,7 +122,6 @@ export class EndpointCache {
     symbol,
     { screen: string; key: string | symbol; refresh: () => Promise<unknown> }
   >();
-  private readonly lastRefresh = new Map<string, number>();
   private refreshInFlight: Promise<void> | null = null;
 
   registerRefresh = (screen: string, refresh: () => Promise<unknown>, key?: string) => {
@@ -127,15 +132,10 @@ export class EndpointCache {
     };
   };
 
-  revalidate = (screen: string, now: number, force = false): Promise<void> => {
+  revalidate = (screen: string): Promise<void> => {
     if (this.refreshInFlight !== null) {
       return this.refreshInFlight;
     }
-    const last = this.lastRefresh.get(screen);
-    if (!force && last !== undefined && now - last < 30_000) {
-      return Promise.resolve();
-    }
-    this.lastRefresh.set(screen, now);
     const registrations = [...this.refreshers.keys()];
     const refreshed = new Set<string | symbol>();
     this.refreshInFlight = registrations
@@ -155,6 +155,27 @@ export class EndpointCache {
       });
     return this.refreshInFlight;
   };
+  private displayGeneration = 0;
+  private displayDeadline: number;
+  private readonly available: () => boolean;
+
+  constructor(available: () => boolean = () => true) {
+    this.available = available;
+    this.displayDeadline = available() ? performance.now() + privateDisplayLifetimeMs : 0;
+  }
+
+  display = (): number => this.displayGeneration;
+  admitsDisplay = (generation: number): boolean =>
+    generation === this.displayGeneration &&
+    this.available() &&
+    performance.now() < this.displayDeadline;
+
+  changeDisplay = (active: boolean): void => {
+    this.displayGeneration += 1;
+    this.displayDeadline = active ? performance.now() + privateDisplayLifetimeMs : 0;
+    this.invalidateSnapshots(undefined, true);
+  };
+
   private readonly attachmentDisclosures = new Map<string, number>();
   private readonly erasedAttachmentCases = new Set<string>();
   attachmentsErased = (caseId: string): boolean => this.erasedAttachmentCases.has(caseId);
@@ -245,7 +266,8 @@ export class EndpointCache {
     }
     return entry;
   }
-  snapshot = (key: string): CacheSnapshot => this.entries.get(key)?.snapshot ?? empty;
+  snapshot = (key: string): CacheSnapshot =>
+    this.admitsDisplay(this.displayGeneration) ? (this.entries.get(key)?.snapshot ?? empty) : empty;
   subscribe = (key: string, listener: () => void) => {
     const entry = this.entry(key);
     entry.listeners.add(listener);
@@ -270,6 +292,10 @@ export class EndpointCache {
     quiet = false,
   ): Promise<ApiResult<EndpointOutcome>> => {
     const entry = this.entry(key);
+    const generation = this.displayGeneration;
+    if (!this.admitsDisplay(generation)) {
+      return Promise.resolve(incomplete());
+    }
     if (entry.pending !== null && !retry) {
       return entry.pending;
     }
@@ -282,16 +308,16 @@ export class EndpointCache {
     }
     const pending = request(controller.signal).then((result) => {
       if (entry.controller === controller && !controller.signal.aborted) {
-        if (!quiet || !isReadBusy(result)) {
-          this.publish(entry, {
-            result,
-            loading: false,
-            previous: previousOutcome(result, entry.snapshot.previous),
-          });
-        }
         entry.pending = null;
+        const admitted = this.admitsDisplay(generation) ? result : incomplete();
+        this.publish(entry, {
+          result: admitted,
+          loading: false,
+          previous: previousOutcome(admitted),
+        });
+        return admitted;
       }
-      return result;
+      return incomplete();
     });
     entry.pending = pending;
     return pending;
@@ -305,7 +331,7 @@ export class EndpointCache {
   invalidate = (): void => {
     this.invalidateSnapshots();
   };
-  private invalidateSnapshots(change?: AttachmentInvalidation): void {
+  private invalidateSnapshots(change?: AttachmentInvalidation, mask = false): void {
     this.generation += 1;
     for (const entry of this.entries.values()) {
       if (
@@ -321,7 +347,9 @@ export class EndpointCache {
       this.publish(entry, {
         result: null,
         previous:
-          change !== undefined && retainsStaleAttachments(previous, change) ? null : previous,
+          mask || (change !== undefined && retainsStaleAttachments(previous, change))
+            ? null
+            : previous,
         loading: true,
       });
     }

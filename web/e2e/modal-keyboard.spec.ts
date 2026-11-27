@@ -49,6 +49,6 @@ test("contains keyboard focus and preserves the reviewed draft through guarded E
   await review.getByRole("button", { name: "Return to editing", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(review.getByRole("button", { name: "Review changes", exact: true })).toBeFocused();
-  await expect(review.locator('[data-field-name="caseReference"]')).toHaveValue(reference);
+  await expect(review.locator('[data-field-name="incidentDescription"]')).toHaveValue(reference);
   expect(executions).toEqual([]);
 });

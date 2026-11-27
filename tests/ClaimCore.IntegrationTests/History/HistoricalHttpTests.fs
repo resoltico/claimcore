@@ -73,13 +73,14 @@ let private caller (database: PostgresFixture.Database) =
         return core database.Fixture
     }
 
-let private readRetained (host: ClaimCore.TestSupport.TestServerFixture.Host) csrf name =
+let private readRetained (host: ClaimCore.TestSupport.TestServerFixture.Host) csrf caseId name =
     task {
         let! status, response =
             host.Call(
                 "case.get",
-                Encoding.UTF8.GetBytes
-                    "{\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"historical-1\"}}",
+                Encoding.UTF8.GetBytes(
+                    "{\"target\":{\"kind\":\"ID\",\"caseId\":\"" + CaseId.format caseId + "\"}}"
+                ),
                 csrf
             )
 
@@ -112,7 +113,7 @@ let private retainedHistory (database: PostgresFixture.Database) =
         Expect.equal status 200 "Authenticated synthetic browser"
         let! csrf = host.Token()
 
-        do! readRetained host csrf name
+        do! readRetained host csrf (CaseFixtures.caseId (id database.Fixture 10)) name
 
         let values =
             (ClaimCore.TestSupport.DomainInputs.registrationWith

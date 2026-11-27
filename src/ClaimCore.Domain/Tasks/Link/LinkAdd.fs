@@ -43,7 +43,7 @@ let check inputs =
 let private current (state: DecisionFacts) =
     state.Links
     |> Map.values
-    |> Seq.filter (fun link -> not link.Value.Removed)
+    |> Seq.filter (fun link -> not link.Value.Removed && link.Value.Content.IsSome)
     |> Seq.toList
 
 let private gate state =

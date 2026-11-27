@@ -13,6 +13,9 @@ type ExportFailure =
     | ProcessingTimeout of HumanAdvice
     | InvalidContinuation of HumanAdvice
 
+/// Page mode uses the same selection and CSV representation as a bounded export.
+type ExportPageWindow = { Limit: int; After: string option }
+
 /// A successful complete document is encoded directly as CSV; only failures have JSON grammar.
 module ExportTransport =
     open Codec
@@ -20,6 +23,13 @@ module ExportTransport =
     let path = "/api/" + token
     let mediaType = "text/csv; charset=utf-8"
     let successMediaType = "text/csv"
+    let pageSizeHeader = "ClaimCore-Export-Page-Size"
+    let afterHeader = "ClaimCore-Export-After"
+    let nextHeader = "ClaimCore-Export-Next"
+    let maximumContinuationCharacters = Paging.MaximumCaseCursorCharacters + 65
+
+    let disposition filename =
+        "attachment; filename=\"" + filename + "\""
 
     let request =
         taggedOn

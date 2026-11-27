@@ -34,28 +34,28 @@ test("canonical Case ID links and explicit reference lookup select different act
 }) => {
   await openAuthenticated(page);
   const reference = `CANON-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const opened = await openCase(page, reference);
   await page.waitForLoadState("networkidle");
   const first = await readCase(page, {
     kind: "REFERENCE",
-    caseReference: reference,
+    caseReference: opened.caseReference,
   });
   await expect(page).toHaveURL((url) => url.pathname === `/cases/id/${first.caseId}`);
   await goToView(page, "cases");
   const alias = `Case-${first.caseId.slice(-12)}`;
-  await openCase(page, alias);
+  const next = await openCase(page, alias);
   await page.waitForLoadState("networkidle");
   const second = await readCase(page, {
     kind: "REFERENCE",
-    caseReference: alias.toLowerCase(),
+    caseReference: next.caseReference.toLowerCase(),
   });
   expect(second.caseId).not.toBe(first.caseId);
-  expect(second.caseReference).toBe(alias);
+  expect(second.caseReference).toBe(next.caseReference);
   await page.goto(casePath(first.caseId), {
     waitUntil: "commit",
   });
   await expect(page.locator("#case-detail-title")).toHaveText(first.caseReference);
-  await page.goto(referencePath(alias), {
+  await page.goto(referencePath(next.caseReference), {
     waitUntil: "commit",
   });
   await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
@@ -85,7 +85,7 @@ test("case inspection restores the live work query, selected row focus and scrol
       operationId: operationId(),
       task: "case.open",
       binding: { kind: "CASE", expectedRevision: 0 },
-      inputs: { "field:caseReference": `${marker}-${index}` },
+      inputs: { "field:policyNumber": `${marker}-${index}` },
     });
     expect(result.outcome.kind).toBe("ACCEPTED");
   }
@@ -133,16 +133,9 @@ test("case inspection restores the live work query, selected row focus and scrol
   });
 });
 
-test("phone Cases cards fit a maximal accepted reference @engine", async ({ page }) => {
+test("phone Cases cards fit an issued reference @engine", async ({ page }) => {
   await openAuthenticated(page);
-  const reference = "W".repeat(32);
-  const result = await workRequest(page, "operation.execute", {
-    operationId: operationId(),
-    task: "case.open",
-    binding: { kind: "CASE", expectedRevision: 0 },
-    inputs: { "field:caseReference": reference },
-  });
-  expect(result.outcome.kind).toBe("ACCEPTED");
+  const { caseReference: reference } = await openCase(page, "PHONE-CARD");
   await page.goto(`/cases?view=ALL&q=${reference}`);
   const list = page.locator(".worklist");
   await expect(list).toHaveAttribute("aria-busy", "false");
@@ -160,31 +153,12 @@ test("phone Cases cards fit a maximal accepted reference @engine", async ({ page
   }
 });
 
-test("historical exact Find admits a case-folded reference and restores shortcut focus", async ({
-  page,
-}) => {
+test("exact Find admits a case-folded reference and restores shortcut focus", async ({ page }) => {
   await openAuthenticated(page);
-  const earlier = `OLD-${randomUUID().slice(0, 8)}`;
-  const current = `NEW-${randomUUID().slice(0, 8)}`;
-  await openCase(page, earlier);
-  const changed = await workRequest(page, "operation.execute", {
-    operationId: operationId(),
-    task: "case.changeReference",
-    binding: {
-      kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: earlier },
-      expectedRevision: 1,
-    },
-    inputs: { "input:newReference": current },
-  });
-  expect(changed.outcome.kind).toBe("ACCEPTED");
-  const selectedReference = earlier.toLowerCase();
-  const expectedHref = referencePath(selectedReference);
-  await page.goto(expectedHref, { waitUntil: "commit" });
+  const { caseReference: current } = await openCase(page, "EXACT-FIND");
+  const selectedReference = current.toLowerCase();
+  await page.goto(referencePath(selectedReference), { waitUntil: "commit" });
   await expect(page.locator("#case-detail-title")).toHaveText(current);
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
-    selectedReference,
-  );
 
   await page.goto("/cases?view=ALL");
   const before = page.url();
@@ -192,7 +166,7 @@ test("historical exact Find admits a case-folded reference and restores shortcut
   await trigger.press("Enter");
   const search = page.getByRole("dialog").getByRole("combobox", { name: "Find a case" });
   await expect(search).toBeFocused();
-  await search.fill(earlier);
+  await search.fill(current);
   const selected = page.waitForRequest((request) => {
     if (new URL(request.url()).pathname !== "/api/case.get") {
       return false;
@@ -201,7 +175,7 @@ test("historical exact Find admits a case-folded reference and restores shortcut
   });
   await search.press("Enter");
   expect((await selected).postDataJSON()).toEqual({
-    target: { kind: "REFERENCE", caseReference: earlier },
+    target: { kind: "REFERENCE", caseReference: current },
   });
   await expect(page).toHaveURL(/\/cases\/id\//u);
   await expect(page.locator("#case-detail-title")).toHaveText(current);

@@ -50,7 +50,8 @@ let tests =
 
                     let fields =
                         {
-                            CaseFields.CaseReference = DomainInputs.reference "CASE-1"
+                            CaseFields.CaseReference =
+                                DomainInputs.reference "CC-55KW-SSJ4-8HMS-G1BH-73"
                             Handling = Handling.Open
                             Registration = registration
                             Finance = FinancialPosition.undecided
@@ -58,7 +59,7 @@ let tests =
 
                     Expect.equal
                         (CaseSearch.text [] fields)
-                        "rīga%\u001fa_b\\c\u001fcase-1"
+                        "rīga%\u001fa_b\\c\u001fcc-55kw-ssj4-8hms-g1bh-73"
                         "Only declared searchable values are joined by U+001F"
 
                     Expect.equal
@@ -78,9 +79,11 @@ let tests =
 
                     for description, expected in
                         [
-                            "ＡＢＣ\nالعربية 😀", "abc\nالعربية 😀\u001frīga%\u001fa_b\\c\u001fcase-1"
+                            "ＡＢＣ\nالعربية 😀",
+                            "abc\nالعربية 😀\u001frīga%\u001fa_b\\c\u001fcc-55kw-ssj4-8hms-g1bh-73"
                             String.replicate 600 "X",
-                            String.replicate 600 "x" + "\u001frīga%\u001fa_b\\c\u001fcase-1"
+                            String.replicate 600 "x"
+                            + "\u001frīga%\u001fa_b\\c\u001fcc-55kw-ssj4-8hms-g1bh-73"
                         ] do
                         let described =
                             { fields with
@@ -156,7 +159,7 @@ let tests =
                         Lifecycle.Active
                         (Some CaseStatus.Opened)
                         (Some CaseProgress.Decided)
-                        (Some "rīga\u001finsurer\u001fcase-1"))
+                        (Some "rīga\u001finsurer\u001fcc-55kw-ssj4-8hms-g1bh-73"))
                     "Every selected facet and text matches"
 
                 Expect.isFalse

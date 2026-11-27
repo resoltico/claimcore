@@ -38,7 +38,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
                       key: "caseReference",
                       labelId: "field.caseReference.label",
                       prominence: "PRIMARY",
-                      value: { kind: "REFERENCE", value: "ERASED-1" },
+                      value: { kind: "REFERENCE", value: "CC-KJF5-1B4Z-8Y0G-05TZ-09" },
                     },
                   ],
                 },
@@ -59,15 +59,15 @@ it("erased cases retain their exact reference and revision but expose no facts o
     .mockResolvedValueOnce(response("case.timeline", timelineDocument([], null, "SUMMARY")));
   render(
     <CaseDetail
-      target={{ kind: "REFERENCE", caseReference: "ERASED-1" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-KJF5-1B4Z-8Y0G-05TZ-09" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByText(/Erased\. Only/u)).toBeVisible();
-  expect(document.body).toHaveTextContent("ERASED-1");
+  expect(await screen.findByText(/Case erased\. The case ID/u)).toBeVisible();
+  expect(document.body).toHaveTextContent("CC-KJF5-1B4Z-8Y0G-05TZ-09");
   expect(document.querySelector('.record-view [data-entry="policyNumber"]')).toBeNull();
   expect(screen.queryByText("Available acts")).toBeNull();
 });
@@ -117,7 +117,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   const onAct = vi.fn();
   render(
     <CaseDetail
-      target={{ kind: "REFERENCE", caseReference: "CLOSED-1" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-DHJF-QSDF-HE09-9QQQ-40" }}
       operation={{
         act: "case.decide",
         key: "unsupported",

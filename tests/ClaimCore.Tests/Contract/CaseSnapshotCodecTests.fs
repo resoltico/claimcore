@@ -76,7 +76,7 @@ let tests =
 
                     JsonValue.Object
                         [
-                            "caseReference", text "UNIT-001"
+                            "caseReference", text "CC-ZQ16-FT6R-54T8-E39K-67"
                             "handling", JsonValue.Object [ "kind", text "OPEN" ]
                             "registration", registration
                             "finance", finance

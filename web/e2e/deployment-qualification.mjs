@@ -733,35 +733,29 @@ const qualify = async (origin, provider, ca) => {
         "field:claimedCurrency": "EUR",
       },
     };
-    const write = async (endpoint, submission = input) =>
-      payload(
-        await context.request.post(`${origin}/api/${endpoint}`, {
-          headers: {
-            "ClaimCore-Contract": fingerprint,
-            "ClaimCore-Installation": requester.installationId,
-            "X-ClaimCore-Antiforgery": csrf,
-            Origin: origin,
-          },
-          data: submission,
-        }),
-      );
+    const submit = (endpoint, submission) =>
+      context.request.post(`${origin}/api/${endpoint}`, {
+        headers: {
+          "ClaimCore-Contract": fingerprint,
+          "ClaimCore-Installation": requester.installationId,
+          "X-ClaimCore-Antiforgery": csrf,
+          Origin: origin,
+        },
+        data: submission,
+      });
+    const write = async (endpoint) => payload(await submit(endpoint, input));
     const preview = (await write("operation.preview")).outcome;
     expect(preview.kind).toBe("REVIEWED");
     expect(preview.data.review.target).toEqual({ kind: "OPENING" });
-    for (const [reference, code] of [
-      ["DEPLOYMENT-001", "CUSTOM_REFERENCE_NOT_ALLOWED"],
-      [null, "TEXT_REQUIRED"],
-    ]) {
-      const denied = (
-        await write("operation.execute", {
-          ...input,
-          inputs: { ...input.inputs, "field:caseReference": reference },
-        })
-      ).outcome;
-      expect(denied.kind).toBe("REJECTED");
-      expect(denied.rejection.issues).toEqual(
-        expect.arrayContaining([expect.objectContaining({ code, input: "field:caseReference" })]),
-      );
+    for (const reference of ["DEPLOYMENT-001", null]) {
+      const denied = await submit("operation.execute", {
+        ...input,
+        inputs: { ...input.inputs, "field:caseReference": reference },
+      });
+      expect(denied.status()).toBe(400);
+      expect(await denied.json()).toEqual({
+        hostFailure: { code: "INPUT_INVALID", phase: "NOT_STARTED" },
+      });
     }
     const acceptance = (await write("operation.execute")).outcome;
     expect(acceptance.kind).toBe("ACCEPTED");

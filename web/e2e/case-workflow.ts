@@ -114,7 +114,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
 };
 export const startOpen = async (
   page: Page,
-  caseReference?: string,
+  incidentMarker?: string,
   title = "Open a case",
 ): Promise<void> => {
   await retainResponseBodies(page);
@@ -181,9 +181,8 @@ export const startOpen = async (
       await fillBusinessField(page, name, value);
     }
   }
-  if (caseReference !== undefined) {
-    await page.locator('input[data-selects-fields="caseReference"]').check();
-    await fillBusinessField(page, "caseReference", caseReference);
+  if (incidentMarker !== undefined) {
+    await fillBusinessField(page, "incidentDescription", incidentMarker);
   }
   await progress("open-filled");
 };
@@ -310,8 +309,11 @@ export const completeAct = async (
   await expect(page.locator("#case-detail-title")).toBeVisible();
   return identity;
 };
-export const openCase = async (page: Page, caseReference: string): Promise<ReviewIdentity> => {
-  await startOpen(page, caseReference);
+export const openCase = async (
+  page: Page,
+  incidentMarker: string,
+): Promise<ReviewIdentity & { caseReference: string }> => {
+  await startOpen(page, incidentMarker);
   const identity = await reviewDraft(page);
   await submit(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();
@@ -319,7 +321,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await expect(
     page.locator(".case-workspace .entries-view [data-entry='policyNumber']"),
   ).toBeVisible();
-  return identity;
+  return { ...identity, caseReference: await page.locator("#case-detail-title").innerText() };
 };
 export const lookupCase = async (page: Page, reference: string): Promise<void> => {
   const input = await showExactLookup(page);

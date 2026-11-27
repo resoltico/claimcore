@@ -119,7 +119,6 @@ module internal FailureDiagnostics =
                 refusal.Fault
                 [
                     OperatorFault.AlreadyInitialized
-                    OperatorFault.CaseReferencePolicyMismatch
                     OperatorFault.InitialOwnerInvalid
                     OperatorFault.TimeZoneInvalid
                 ]

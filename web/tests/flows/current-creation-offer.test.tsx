@@ -18,21 +18,9 @@ import { service, type ApiResult, type ServiceResponse } from "../../src/api/ser
 import { consumerContractIdentity } from "@contracts/client";
 import { preview as reviewed } from "../support/operation-hook.fixtures";
 
-const creationActions = (offered: boolean, customReference: boolean) => {
-  const actions = installationActions(offered ? ["case.open"] : []);
-  const [opening] = actions;
-  if (opening?.task === "case.open" && !customReference) {
-    return [
-      { ...opening, editable: opening.editable.filter((input) => input !== "field:caseReference") },
-    ];
-  }
-  return actions;
-};
-
 const contextReply = (
   offered: boolean,
   scopedRegistrar = false,
-  customReference = true,
 ): ApiResult<ServiceResponse<"context">> => ({
   kind: "outcome",
   status: 200,
@@ -61,7 +49,7 @@ const contextReply = (
         },
       ],
     },
-    actions: creationActions(offered, customReference),
+    actions: installationActions(offered ? ["case.open"] : []),
     links: requesterLinks(["CASES", "OPERATIONS"], offered ? ["case.open"] : []),
   }),
 });
@@ -118,10 +106,9 @@ const freshContext = async (
   mock: ReturnType<typeof mockEndpoint<"context">>,
   offered: boolean,
   scopedRegistrar = false,
-  customReference = true,
 ) => {
   const before = mock.mock.calls.length;
-  mock.mockResolvedValue(contextReply(offered, scopedRegistrar, customReference));
+  mock.mockResolvedValue(contextReply(offered, scopedRegistrar));
   resumeTime += 30_000;
   const now = vi.spyOn(performance, "now").mockReturnValue(resumeTime);
   try {
@@ -145,10 +132,7 @@ const freshContext = async (
 const openDraft = async () => {
   const user = userEvent.setup();
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
-  await user.click(await screen.findByRole("checkbox", { name: "Use a custom case reference" }));
-  const reference = await screen.findByRole("textbox", { name: "Case reference" });
-  await user.type(reference, "CURRENT-OFFER");
-  const claimant = screen.getByRole("textbox", { name: "Policy number" });
+  const claimant = await screen.findByRole("textbox", { name: "Policy number" });
   await user.type(claimant, "Owned creation draft");
   const date = screen.getByRole("group", { name: "Incident date" });
   const day = date.querySelector<HTMLElement>('[data-type="day"]');
@@ -157,7 +141,7 @@ const openDraft = async () => {
   }
   await user.click(day);
   await user.keyboard("12");
-  return { user, reference, claimant, day };
+  return { user, claimant, day };
 };
 const completeRegistration = async (user: ReturnType<typeof userEvent.setup>) => {
   for (const [name, value] of Object.entries(registration())) {
@@ -214,7 +198,9 @@ it.each([false, true])(
     expect(preview).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
     await freshContext(context, true);
-    expect(screen.getByRole("textbox", { name: "Case reference" })).toHaveValue("CURRENT-OFFER");
+    expect(await screen.findByRole("textbox", { name: "Policy number" })).toHaveValue(
+      "Owned creation draft",
+    );
     expect(
       screen.getByRole("group", { name: "Incident date" }).querySelector('[data-type="day"]'),
     ).toHaveAttribute("aria-valuenow", "12");
@@ -223,66 +209,6 @@ it.each([false, true])(
     expect(execute).not.toHaveBeenCalled();
   },
 );
-it("preserves a custom draft when the current offer switches to automatic assignment", async () => {
-  const context = mockEndpoint("context").mockResolvedValue(contextReply(true));
-  const preview = vi
-    .spyOn(service, "preview")
-    .mockImplementationOnce((prepared) =>
-      Promise.resolve({
-        kind: "outcome",
-        status: 200,
-        value: {
-          representation: "HUMAN",
-          operationId: prepared.input.operationId,
-          outcome: {
-            kind: "REJECTED",
-            rejection: {
-              kind: "INPUT",
-              advice: {
-                message: {
-                  messageId: "diagnostic.INVALID_INPUT",
-                  arguments: [{ key: "issueCount", value: { kind: "COUNT", value: 1 } }],
-                },
-                action: "CORRECT_INPUT",
-              },
-              issues: [
-                {
-                  input: "field:caseReference",
-                  row: null,
-                  message: { messageId: "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED", arguments: [] },
-                },
-              ],
-            },
-          },
-        },
-      }),
-    )
-    .mockImplementation((prepared) => Promise.resolve(reviewed(prepared)));
-  render(<App />);
-  const { user } = await openDraft();
-  await completeRegistration(user);
-  await freshContext(context, true, false, false);
-  const reference = screen.getByRole("textbox", { name: "Case reference" });
-  expect(reference).toHaveValue("CURRENT-OFFER");
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => {
-    expect(reference).toHaveFocus();
-  });
-  expect(preview.mock.calls[0]?.[0].input.inputs).toHaveProperty(
-    ["field:caseReference"],
-    "CURRENT-OFFER",
-  );
-  await user.click(screen.getByRole("checkbox", { name: "Use a custom case reference" }));
-  expect(screen.queryByRole("checkbox", { name: "Use a custom case reference" })).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitFor(() => {
-    expect(preview).toHaveBeenCalledTimes(2);
-  });
-  expect(preview.mock.calls[1]?.[0].input.inputs).not.toHaveProperty(["field:caseReference"]);
-  expect(preview.mock.calls[1]?.[0].input.operationId).not.toBe(
-    preview.mock.calls[0]?.[0].input.operationId,
-  );
-});
 it("invalidates prepared OPEN consent when disclosure refresh removes the current offer", async () => {
   const context = mockEndpoint("context").mockResolvedValue(contextReply(true));
   const preview = vi
@@ -363,7 +289,6 @@ it("does not restore masked creation entry from a fresh no-OPEN observation, the
   await waitFor(() => {
     expect(date.querySelector('[data-type="day"]')).toHaveAttribute("aria-valuenow", "12");
   });
-  expect(screen.getByRole("textbox", { name: "Case reference" })).toHaveValue("CURRENT-OFFER");
   expect(screen.getByRole("button", { name: "Review changes" })).not.toBeDisabled();
   expect(preview).toHaveBeenCalledOnce();
   expect(execute).not.toHaveBeenCalled();
@@ -392,7 +317,6 @@ it("retains owned local creation fields through Settings while the unavailable O
   await user.click(screen.getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("textbox", { name: "Policy number" })).toBeNull();
   await freshContext(context, true);
-  expect(screen.getByRole("textbox", { name: "Case reference" })).toHaveValue("CURRENT-OFFER");
   expect(screen.getByRole("textbox", { name: "Policy number" })).toHaveValue(
     "Owned creation draft revised",
   );

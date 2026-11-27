@@ -470,7 +470,7 @@ test("revalidates the case once and masks private facts after the attachment lis
   expect(screen.getAllByText(/You are signed out/u)[0]).toBeVisible();
 });
 
-test("a store fault retains the last admitted list only while its disclosure sequence is current", async () => {
+test("a store fault masks attachment names and controls before fresh authorization", async () => {
   const { cache, changed, list } = await setup();
   const fault = {
     representation: "HUMAN",
@@ -488,8 +488,8 @@ test("a store fault retains the last admitted list only while its disclosure seq
     cache.invalidate();
   });
   expect(await screen.findByRole("alert")).toBeVisible();
-  expect(screen.getByText(filename)).toBeVisible();
-  expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
+  expect(screen.queryByText(filename)).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Download" })).not.toBeInTheDocument();
   expect(changed).not.toHaveBeenCalled();
 
   act(() => {
@@ -592,7 +592,7 @@ const mockWithdrawalReview = () =>
                 ...closeReview.document.subject,
                 kind: "REVIEW",
                 consequence: "STEWARDSHIP",
-                confirmation: { kind: "CASE_REFERENCE", reference: "CASE-SERIALIZATION" },
+                confirmation: { kind: "CASE_REFERENCE", reference: "CC-3PBY-1JRP-Z70W-2VXH-71" },
               },
               actions: [withdrawalAction],
             },

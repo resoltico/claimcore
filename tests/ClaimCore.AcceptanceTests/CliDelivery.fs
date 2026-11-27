@@ -33,14 +33,11 @@ let private authored (fixture: PublishedFixture.Fixture) =
 
     let input = source["input"] |> nonNull
     let operationId = id ()
-    let reference = "CLI-DELIVERY-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create operationId
-
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     let values = input["inputs"] |> nonNull
     values["field:claimedAmount"] <- JsonValue.Create "1.0000"
-    Encoding.UTF8.GetBytes(source.ToJsonString()), operationId, reference
+    Encoding.UTF8.GetBytes(source.ToJsonString()), operationId
 
 let private field name (reply: JsonElement) =
     reply.GetProperty(name: string).GetString() |> nonNull
@@ -84,17 +81,13 @@ let private lostFrame (fixture: PublishedFixture.Fixture) source =
     exactBytes fixture "stderr-retry-body" (Frames.inputBytes prepared) (Frames.inputBytes bound)
     reply, retry
 
-let private oneAcceptance fixture reference =
+let private oneAcceptance fixture caseId =
     let page =
         automation
             fixture
             "case.timeline"
             {|
-                target =
-                    {|
-                        kind = "REFERENCE"
-                        caseReference = reference
-                    |}
+                target = {| kind = "ID"; caseId = caseId |}
                 filter = "FACTS"
                 limit = 50
             |}
@@ -108,11 +101,7 @@ let private oneAcceptance fixture reference =
             fixture
             "case.get"
             {|
-                target =
-                    {|
-                        kind = "REFERENCE"
-                        caseReference = reference
-                    |}
+                target = {| kind = "ID"; caseId = caseId |}
             |}
             0
         |> require "SUCCEEDED"
@@ -197,7 +186,7 @@ let private differentContent fixture source =
         "Even a conflict cannot disprove acceptance of an earlier uncertain request"
 
 let private coreUnknown (fixture: PublishedFixture.Fixture) =
-    let source, operationId, reference = authored fixture
+    let source, operationId = authored fixture
     let intercepted = fixture.ArmCommitReplyLoss()
 
     verb fixture (interactiveEnvironment fixture "synthetic-owner" "valid") [ "people"; "list" ] 0
@@ -214,14 +203,14 @@ let private coreUnknown (fixture: PublishedFixture.Fixture) =
     |> require "ALREADY_ACCEPTED"
     |> ignore
 
-    oneAcceptance fixture reference
+    oneAcceptance fixture operationId
 
 let qualify fixture =
-    let source, operationId, reference = authored fixture
+    let source, operationId = authored fixture
     let retained = Array.copy source
     let pending = interruptedRetries fixture source operationId
     exactResolution fixture pending operationId
     differentContent fixture source
-    oneAcceptance fixture reference
+    oneAcceptance fixture operationId
     exactBytes fixture "authored-request" retained source
     coreUnknown fixture

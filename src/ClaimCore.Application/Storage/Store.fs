@@ -44,7 +44,6 @@ type internal ContextFacts =
         CredentialUsable: bool
         AuthorityVersion: int64
         TerminationCutoff: DateTimeOffset option
-        CaseReferencePolicy: CaseReferencePolicy
         ObservedAt: DateTimeOffset
     }
 

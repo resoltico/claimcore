@@ -47,6 +47,7 @@ module internal WebMetrics =
         function
         | ReplyKind.Rejected -> RequestMetricResult.Refused
         | ReplyKind.Failed
+        | ReplyKind.ReceiptUnavailable
         | ReplyKind.OutcomeUnknown -> RequestMetricResult.Failed
         | ReplyKind.Accepted -> RequestMetricResult.Accepted
         | ReplyKind.Succeeded

@@ -129,7 +129,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                         (Binding.CaseNew Revision.zero)
                         (Submissions.fields (RegistrationInput.values DomainInputs.registration)
                          |> Map.add
-                             (Submissions.field BusinessField.CaseReference)
+                             (Submissions.field BusinessField.PolicyNumber)
                              (SubmissionValue.Text reference)))
 
             let caseId = CaseId.ofOperationId (CaseFixtures.operationId opening)
@@ -154,7 +154,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 (Submissions.create
                     "case.close"
                     (operation ())
-                    (Binding.Case(CaseSelector.Reference "RESP-B", Revision.first))
+                    (Binding.Case(CaseSelector.Id created[1], Revision.first))
                     (Map.ofList
                         [ Submissions.field BusinessField.Outcome, SubmissionValue.Text "OTHER" ]))
 
@@ -164,7 +164,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 (Submissions.create
                     "case.void"
                     (operation ())
-                    (Binding.Case(CaseSelector.Reference "RESP-C", Revision.first))
+                    (Binding.Case(CaseSelector.Id created[2], Revision.first))
                     (Map.ofList
                         [
                             Submissions.input InputTarget.Reason,
@@ -178,9 +178,9 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                     "case.erase"
                     (operation ())
                     (Binding.CaseErase(
-                        CaseSelector.Reference "RESP-D",
+                        CaseSelector.Id created[3],
                         Revision.first,
-                        reviewedFamilySequence fixture.Store (CaseSelector.Reference "RESP-D")
+                        reviewedFamilySequence fixture.Store (CaseSelector.Id created[3])
                         |> CaseFixtures.sequence
                     ))
                     Map.empty)
@@ -256,8 +256,15 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
             let! page = cases services filter
 
             Expect.equal
-                (page.Items |> List.map (fun item -> CaseReference.format item.Reference))
-                references
+                (page.Items |> List.map _.CaseId |> Set.ofList)
+                (references
+                 |> List.map (function
+                     | "RESP-A" -> created[0]
+                     | "RESP-B" -> created[1]
+                     | "RESP-C" -> created[2]
+                     | "RESP-D" -> created[3]
+                     | _ -> failtest "Unknown responsibility fixture label")
+                 |> Set.ofList)
                 "The core link selection is executable with the identical visibility boundary"
 
             let! summary =
@@ -306,8 +313,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 }
 
         Expect.equal
-            (closed.Items |> List.map (fun item -> CaseReference.format item.Reference))
-            [ "RESP-B" ]
+            (closed.Items |> List.map _.CaseId)
+            [ created[1] ]
             "Explicit status intersects responsibility"
 
         let! voided =
@@ -318,8 +325,8 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 }
 
         Expect.equal
-            (voided.Items |> List.map (fun item -> CaseReference.format item.Reference))
-            [ "RESP-C" ]
+            (voided.Items |> List.map _.CaseId)
+            [ created[2] ]
             "Explicit view intersects responsibility"
 
         let! incompatible =
@@ -377,11 +384,29 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 }
                 token
 
+        let second = read continued
+        Expect.isSome second.NextCursor "The global viewer can also list the voided case"
+
+        let! final =
+            Service.list
+                globalServices
+                {
+                    Page =
+                        {
+                            AfterCursor = second.NextCursor
+                            Limit = 1
+                        }
+                    Filter = baseFilter
+                }
+                token
+
+        let third = read final
+        Expect.isNone third.NextCursor "The erased case never enters the traversal"
+
         Expect.equal
-            ((read continued).Items
-             |> List.map (fun item -> CaseReference.format item.Reference))
-            [ "RESP-B" ]
-            "Unchanged selection continues"
+            (first.Items @ second.Items @ third.Items |> List.map _.CaseId |> List.sort)
+            ([ created[0]; created[1]; created[2] ] |> List.sort)
+            "Unchanged selection visits each live authorized case exactly once"
 
         for services in
             [

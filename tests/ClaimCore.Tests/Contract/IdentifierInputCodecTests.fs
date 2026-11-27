@@ -20,7 +20,7 @@ let private request task json =
         + operation.ToString("D")
         + "\",\"task\":\""
         + task
-        + "\",\"binding\":{\"kind\":\"CASE\",\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"IDENTIFIERS\"},\"expectedRevision\":1},\"inputs\":"
+        + "\",\"binding\":{\"kind\":\"CASE\",\"target\":{\"kind\":\"REFERENCE\",\"caseReference\":\"CC-55KW-SSJ4-8HMS-G1BH-73\"},\"expectedRevision\":1},\"inputs\":"
         + json
         + "}"
     )
@@ -52,10 +52,7 @@ let tests =
                     "case.open"
                     operation
                     (Binding.CaseNew Revision.zero)
-                    (Submissions.fields (RegistrationInput.values facts)
-                     |> Map.add
-                         (Submissions.field BusinessField.CaseReference)
-                         (SubmissionValue.Text "IDENTIFIERS"))
+                    (Submissions.fields (RegistrationInput.values facts))
 
             let encoded = OperationSubmissionCodecs.submission.Write input
 

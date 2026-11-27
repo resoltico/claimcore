@@ -108,7 +108,7 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
                 target
                 {
                     Role = Role.CaseHandler
-                    Scope = (GrantTarget.CaseReference reference)
+                    Scope = ((caseGrant fixture reference))
                 }
                 true
 
@@ -116,13 +116,13 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
         return target, core fixture target
     }
 
-let internal checkScopedAdvice (actor: ServiceContext) reference =
+let internal checkScopedAdvice fixture (actor: ServiceContext) reference =
     task {
         let! result =
             (Service.get
                 actor
                 ({
-                    Target = CaseSelector.Reference(reference)
+                    Target = (caseTarget fixture reference)
                 })
                 (CancellationToken.None))
 
@@ -207,7 +207,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) reference pending =
             (Service.get
                 actor
                 ({
-                    Target = CaseSelector.Reference(reference)
+                    Target = (caseTarget fixture reference)
                 })
                 (CancellationToken.None))
 
@@ -241,7 +241,7 @@ let internal revokedAdvice fixture =
         let reference = "SCOPED-ADVICE"
         let! admin = advisedCase fixture reference
         let! target, actor = scopedHandler fixture admin reference
-        do! checkScopedAdvice actor reference
+        do! checkScopedAdvice fixture actor reference
 
         let correction =
             Submissions.updates (
@@ -275,7 +275,7 @@ let internal revokedAdvice fixture =
                 target
                 {
                     Role = Role.CaseHandler
-                    Scope = (GrantTarget.CaseReference reference)
+                    Scope = ((caseGrant fixture reference))
                 }
                 false
 
@@ -288,7 +288,7 @@ let internal revokedAdvice fixture =
                 target
                 {
                     Role = Role.CaseReader
-                    Scope = (GrantTarget.CaseReference reference)
+                    Scope = ((caseGrant fixture reference))
                 }
                 true
 
@@ -361,7 +361,7 @@ let internal scopedWorker fixture =
                     principal
                     {
                         Role = Role.CaseReader
-                        Scope = (GrantTarget.CaseReference reference)
+                        Scope = ((caseGrant fixture reference))
                     }
                     true
 
@@ -511,7 +511,7 @@ let internal scopedPeople fixture =
                 service
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                    Scope = (caseGrant fixture "SCOPE-1")
                 }
                 true
 
@@ -560,7 +560,7 @@ let internal scopedPeople fixture =
                 service
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                    Scope = (caseGrant fixture "SCOPE-1")
                 }
                 false
 

@@ -38,10 +38,7 @@ let tests =
                 "case.open"
                 operation
                 (Binding.CaseNew Revision.zero)
-                (Submissions.fields (RegistrationInput.values DomainInputs.registration)
-                 |> Map.add
-                     (Submissions.field BusinessField.CaseReference)
-                     (SubmissionValue.Text "ECHO-1"))
+                (Submissions.fields (RegistrationInput.values DomainInputs.registration))
 
         for echoed, expected in
             [ operation, DeliveryState.Delivered; different, DeliveryState.Uncertain ] do

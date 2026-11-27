@@ -6,7 +6,11 @@ import { current } from "../../../support/operation-form.fixtures";
 import { CaseActions } from "../../../../src/features/case/CaseActions";
 const primary = operationAffordance(
   "case.amendRegistration",
-  { kind: "CASE", target: { kind: "REFERENCE", caseReference: "CASE-1" }, expectedRevision: 4 },
+  {
+    kind: "CASE",
+    target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
+    expectedRevision: 4,
+  },
   {},
   [],
   {},

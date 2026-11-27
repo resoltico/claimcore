@@ -30,7 +30,7 @@ import {
 import { isDisclosureRefused } from "../../api/outcomes";
 import { apiEndpoints, type CurrentCase } from "../../api/service";
 import { DataTable } from "../../ui/DataTable";
-import { useEndpointCache } from "../../hooks/EndpointProvider";
+import { useDisplayGeneration, useEndpointCache } from "../../hooks/EndpointProvider";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { isOperationAffordance, type OperationAffordance } from "../../operation/affordances";
@@ -64,7 +64,13 @@ const suppressTransferActivation = (event: KeyboardEvent<HTMLDivElement>) => {
   }
 };
 
-type Preview = { id: string; generation: number; labelId: string; focusOrigin: Element | null } & (
+type Preview = {
+  display: number;
+  id: string;
+  generation: number;
+  labelId: string;
+  focusOrigin: Element | null;
+} & (
   { kind: "image"; name: string; url: string; error: boolean } | { kind: "pdf"; bytes: ArrayBuffer }
 );
 type Props = {
@@ -126,14 +132,8 @@ const useAttachmentListRefusal = (
   }, [result, onDisclosureChanged]);
 };
 
-const attachmentListDocument = ({ value, previous }: AttachmentListQuery) => {
-  const outcome = value?.outcome;
-  const disclosed =
-    outcome?.kind === "FAILED" && outcome.fault.code === "CORE_STORE_UNAVAILABLE"
-      ? previous?.outcome
-      : outcome;
-  return disclosed?.kind === "SUCCEEDED" ? disclosed.document : null;
-};
+const attachmentListDocument = ({ value }: AttachmentListQuery) =>
+  value?.outcome.kind === "SUCCEEDED" ? value.outcome.document : null;
 
 const useAttachmentList = (target: Target, available: boolean, onDisclosureChanged: () => void) => {
   const requester = useRequesterContext();
@@ -224,13 +224,16 @@ const useAttachmentInteraction = (
   clearRefusal: () => void,
 ) => {
   const cache = useEndpointCache()!;
+  const display = useDisplayGeneration();
   const alive = useRef(true);
   const active = useRef<AbortController | null>(null);
   const picking = useRef<AbortController | null>(null);
   const url = useRef<string | null>(null);
   const generation = useRef(0);
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [retainedPreview, setRetainedPreview] = useState<Preview | null>(null);
+  const preview = retainedPreview?.display === display ? retainedPreview : null;
+  const [busyDisplay, setBusyDisplay] = useState<number | null>(null);
+  const busy = busyDisplay === display;
   const [pickerBusy, setPickerBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const trigger = useRef<HTMLElement | null>(null);
@@ -242,23 +245,24 @@ const useAttachmentInteraction = (
     }
   }, []);
   useLayoutEffect(() => {
-    alive.current = true;
+    alive.current = cache.admitsDisplay(display);
     return () => {
       alive.current = false;
       active.current?.abort();
       active.current = null;
       releaseUrl();
     };
-  }, [releaseUrl]);
+  }, [cache, releaseUrl, display]);
   const close = (restoreFocus = false) => {
     releaseUrl();
-    setPreview(null);
+    setRetainedPreview(null);
     if (restoreFocus) {
       trigger.current?.focus();
     }
   };
   const currentOwner = () =>
     alive.current &&
+    cache.admitsDisplay(display) &&
     !cache.attachmentsErased(target.caseId) &&
     (cache.attachmentDisclosure(target.caseId) ?? sequence) === sequence
       ? owner
@@ -275,7 +279,7 @@ const useAttachmentInteraction = (
     active.current = controller;
     picking.current = intake ? controller : null;
     setPickerBusy(!intake);
-    setBusy(true);
+    setBusyDisplay(display);
     setNotice(null);
     clearRefusal();
     close();
@@ -288,7 +292,7 @@ const useAttachmentInteraction = (
     active.current = null;
     picking.current = null;
     setPickerBusy(false);
-    setBusy(false);
+    setBusyDisplay(null);
     return true;
   };
   const deliver = (
@@ -307,14 +311,14 @@ const useAttachmentInteraction = (
       downloadFile(bytes, mediaType, name);
       return;
     }
-    const presentation = { id, labelId, generation: ++generation.current, focusOrigin };
+    const presentation = { id, labelId, display, generation: ++generation.current, focusOrigin };
     if (mediaType === attachmentTransport.pdfMediaType) {
-      setPreview({ ...presentation, kind: "pdf", bytes: bytes.buffer });
+      setRetainedPreview({ ...presentation, kind: "pdf", bytes: bytes.buffer });
       return;
     }
     const next = URL.createObjectURL(new Blob([bytes], { type: mediaType }));
     url.current = next;
-    setPreview({ ...presentation, kind: "image", name, url: next, error: false });
+    setRetainedPreview({ ...presentation, kind: "image", name, url: next, error: false });
   };
   const receive = async (control: AttachmentTransferControl, element: Element) => {
     const request = begin();
@@ -409,7 +413,7 @@ const useAttachmentInteraction = (
   const decodeError = (value: Extract<Preview, { kind: "image" }>) => {
     if (url.current === value.url) {
       releaseUrl();
-      setPreview({ ...value, error: true });
+      setRetainedPreview({ ...value, error: true });
     }
   };
   return { preview, busy, pickerBusy, notice, receive, choose, close, decodeError };

@@ -44,7 +44,6 @@ let internal genesis fixture =
                                         (id fixture 1)
                                         DomainInputs.ownerProfile
                                         []
-                                        CaseReferencePolicy.CustomAllowed
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -129,7 +128,7 @@ let internal replayAndRefusal fixture =
         let! view =
             fixture.Store.Read
                 {
-                    Work = fun tx -> FamilyReads.findCaseByReference tx "CONTRACT-001"
+                    Work = fun tx -> FamilyReads.findCase tx (CaseFixtures.caseId (id fixture 10))
                     CancellationToken = CancellationToken.None
                 }
 
@@ -199,7 +198,8 @@ let internal lockedView fixture =
                                     first.Position.EntryHash
                                     "Previous accepted link"
 
-                                let! current = FamilyReads.findCaseByReference tx "CONTRACT-001"
+                                let! current =
+                                    FamilyReads.findCase tx (CaseFixtures.caseId (id fixture 10))
 
                                 Expect.equal
                                     (current |> Option.map _.Snapshot.Revision)
@@ -407,7 +407,10 @@ let internal caseUpdate fixture =
                         fun tx ->
                             task {
                                 let! entry = LedgerReads.findOperation tx receipt.OperationId
-                                let! record = FamilyReads.findCaseByReference tx "CONTRACT-001"
+
+                                let! record =
+                                    FamilyReads.findCase tx (CaseFixtures.caseId (id fixture 10))
+
                                 return entry, record
                             }
                     CancellationToken = CancellationToken.None

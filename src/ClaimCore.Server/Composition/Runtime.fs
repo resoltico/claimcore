@@ -23,7 +23,9 @@ type internal IRuntime =
 
     abstract RunDigests:
         WorkDateBasis *
-        (EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<DigestRelayResult>) *
+        (Released<EmailAddress * Map<DigestCountKind, int64>>
+            -> CancellationToken
+            -> Task<DigestRelayResult>) *
         (ActorId -> DigestOutcome -> unit) *
         CancellationToken ->
             Task<DigestRunSummary>

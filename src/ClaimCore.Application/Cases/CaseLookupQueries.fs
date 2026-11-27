@@ -18,13 +18,20 @@ module internal CaseLookupQueries =
     let assignees (services: ServiceContext) (request: CaseLookupRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! RequestRefusals.protectedLimit services token
             else
                 match CaseRecords.validateSelector request.Target with
-                | Error refusal -> return! RequestRefusals.read services token refusal
+                | Error refusal -> return! RequestRefusals.protectedRead services token refusal
                 | Ok() ->
                     let! result =
-                        services.Store.Read
+                        DisclosureReads.pageRead
+                            services
+                            DisclosureKind.CaseAssignees
+                            (fun (page: AssigneePage) -> Some page.CaseId)
+                            (fun (page: AssigneePage) ->
+                                DisclosureReads.people
+                                    (fun (item: ActorRef) -> item.ActorId)
+                                    page.Items)
                             {
                                 Work =
                                     fun tx ->
@@ -113,19 +120,23 @@ module internal CaseLookupQueries =
                                 CancellationToken = token
                             }
 
-                    return readResult result
+                    return result
         }
 
     let parties (services: ServiceContext) (request: CaseLookupRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! RequestRefusals.protectedLimit services token
             else
                 match CaseRecords.validateSelector request.Target with
-                | Error refusal -> return! RequestRefusals.read services token refusal
+                | Error refusal -> return! RequestRefusals.protectedRead services token refusal
                 | Ok() ->
                     let! result =
-                        services.Store.Read
+                        DisclosureReads.pageRead
+                            services
+                            DisclosureKind.CaseParties
+                            (fun _ -> None)
+                            (fun (page: PartyChoicePage) -> DisclosureReads.rows page.Items)
                             {
                                 CancellationToken = token
                                 Work =
@@ -187,5 +198,5 @@ module internal CaseLookupQueries =
                                         }
                             }
 
-                    return readResult result
+                    return result
         }

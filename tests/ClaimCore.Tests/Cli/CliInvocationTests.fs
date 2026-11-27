@@ -152,7 +152,7 @@ let private verbPreparation () =
             "close"
             "--outcome"
             "other"
-            "SYNTHETIC"
+            "CC-DZXV-W4P3-TR4W-QN99-83"
             "--expected-revision"
             "1"
         ]
@@ -190,7 +190,7 @@ let private verbPreparation () =
             JsonValue.Object
                 [
                     "kind", JsonValue.String "REFERENCE"
-                    "caseReference", JsonValue.String "SYNTHETIC"
+                    "caseReference", JsonValue.String "CC-DZXV-W4P3-TR4W-QN99-83"
                 ]
         ))
         "Authored target is retained"
@@ -219,7 +219,7 @@ let private verbPreparation () =
 
     for rejected in
         [
-            [ "case"; "close"; "--outcome"; "other"; "SYNTHETIC" ]
+            [ "case"; "close"; "--outcome"; "other"; "CC-DZXV-W4P3-TR4W-QN99-83" ]
             args @ [ "--expected-revision"; "2" ]
             args @ [ "--unknown"; "x" ]
             args @ [ "extra" ]
@@ -752,7 +752,7 @@ let recoveryCommands =
                                     "close"
                                     "--outcome"
                                     "other"
-                                    "SYNTHETIC"
+                                    "CC-DZXV-W4P3-TR4W-QN99-83"
                                     "--expected-revision"
                                     "1"
                                 ])

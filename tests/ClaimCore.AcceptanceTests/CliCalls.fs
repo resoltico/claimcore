@@ -27,15 +27,6 @@ let caseSubmission (operation: string) reference revision task values =
         else
             Binding.Case(CaseSelector.Reference reference, expected)
 
-    let values =
-        if declaration.Creates then
-            Map.add
-                (Submissions.field BusinessField.CaseReference)
-                (SubmissionValue.Text reference)
-                values
-        else
-            values
-
     let submission = Submissions.create task (Guid.Parse operation) binding values
 
     let bytes =

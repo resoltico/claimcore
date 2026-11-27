@@ -94,7 +94,7 @@ let private summaries () =
                     reader
                     {
                         Role = Role.CaseReader
-                        Scope = GrantTarget.CaseReference "VISIBLE"
+                        Scope = GrantTarget.CaseId(CaseFixtures.caseId (id fixture 100))
                     }
                     true
                 |> Async.AwaitTask
@@ -112,8 +112,8 @@ let private summaries () =
                 | _ -> failtest "Scoped reader can list assigned cases"
 
             Expect.equal
-                (rows |> List.map (fun row -> CaseReference.format row.Reference))
-                [ "VISIBLE" ]
+                (rows |> List.map _.CaseId)
+                [ CaseFixtures.caseId (id fixture 100) ]
                 "Summary rows preserve case-scoped disclosure"
 
             for row in rows do

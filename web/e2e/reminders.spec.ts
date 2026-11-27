@@ -64,12 +64,12 @@ test("stores exact optional LF incident text and clears it without a financial a
   await expect(page.locator('textarea[data-field-name="incidentDescription"]')).not.toHaveAttribute(
     "maxlength",
   );
-  await reviewDraft(page);
+  const { operationId: caseId } = await reviewDraft(page);
   await recordReviewed(page);
   const recorded = await workRequest(page, "case.get", {
     target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+      kind: "ID",
+      caseId,
     },
   });
   if (recorded.outcome.kind !== "SUCCEEDED" || recorded.outcome.data.state.kind === "ERASED") {
@@ -96,8 +96,8 @@ test("stores exact optional LF incident text and clears it without a financial a
   await recordReviewed(page);
   const cleared = await workRequest(page, "case.get", {
     target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+      kind: "ID",
+      caseId,
     },
   });
   if (cleared.outcome.kind !== "SUCCEEDED" || cleared.outcome.data.state.kind === "ERASED") {
@@ -116,8 +116,10 @@ test("supports multiple independently revised reminders, terminal records, reope
   // This complete lifecycle includes multiple writes, independent DATA reads and an accessibility scan.
   test.slow();
   await openAuthenticated(page);
-  const reference = `REMINDERS-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `REMINDERS-${randomUUID().slice(0, 8)}`,
+  );
   const first = await plan(page, "Call claimant", "0001-01-01");
   const second = await plan(page, "Ask insurer", "9999-12-31");
   expect(first.operationId).not.toBe(second.operationId);
@@ -185,8 +187,7 @@ test("a compound action has one correlated accepting operation and a new reminde
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `COMPOUND-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `COMPOUND-${randomUUID().slice(0, 8)}`);
   await plan(page, "First action", "2026-01-01");
   await selectReminderAction(reminderRows(page), "reminder.completeAndPlanNext");
   await fillBusinessField(page, "reminderAction", "   ");
@@ -259,8 +260,10 @@ test("a lost compound acknowledgement retries the identical pair without another
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `LOST-COMPOUND-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `LOST-COMPOUND-${randomUUID().slice(0, 8)}`,
+  );
   await plan(page, "Current action", "2026-01-01");
   await selectReminderAction(reminderRows(page), "reminder.completeAndPlanNext");
   await fillBusinessField(page, "reminderAction", "Replacement after uncertainty");
@@ -354,7 +357,7 @@ for (const language of ["en", "lv", "ar"] as const) {
           expectedRevision: 0,
         },
         inputs: {
-          "field:caseReference": reference,
+          "field:policyNumber": reference,
           ...prefixedInputs(
             "field:",
             registration({
@@ -363,7 +366,10 @@ for (const language of ["en", "lv", "ar"] as const) {
           ),
         },
       });
-      expect(opened.outcome.kind).toBe("ACCEPTED");
+      if (opened.outcome.kind !== "ACCEPTED" || opened.outcome.data.subject.kind !== "CASE") {
+        throw new Error("Expected issued case receipt.");
+      }
+      const issued = opened.outcome.data.subject.caseReference;
       await page.goto(casePath(caseId));
       if (mode === "zoom-dark") {
         await page.evaluate(() => {
@@ -412,9 +418,9 @@ for (const language of ["en", "lv", "ar"] as const) {
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
       const title = page.locator("#case-detail-title");
-      await expect(title).toHaveText(reference);
+      await expect(title).toHaveText(issued);
       if (mode === "narrow-dark") {
-        await expect(page.locator(".phone-app-bar")).toContainText(reference);
+        await expect(page.locator(".phone-app-bar")).toContainText(issued);
       } else {
         await expect(title).toBeVisible();
       }
@@ -434,8 +440,10 @@ test("paid description correction preserves payment, then a closed case accepts 
 }) => {
   await seedPresentation(page, "en", "en-GB");
   await openAuthenticated(page);
-  const reference = `PAID-WORK-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `PAID-WORK-${randomUUID().slice(0, 8)}`,
+  );
   await plan(page, "Finish existing action", "2026-01-01");
   for (const [revision, act] of [
     [
@@ -581,8 +589,10 @@ test("a single-line action retains raw linebreaks for core refusal instead of si
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `ACTION-LF-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `ACTION-LF-${randomUUID().slice(0, 8)}`,
+  );
   await page
     .getByRole("button", {
       name: "Add reminder",
@@ -646,8 +656,10 @@ test("a reminder revision change after compound preview refuses both effects wit
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `STALE-COMPOUND-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `STALE-COMPOUND-${randomUUID().slice(0, 8)}`,
+  );
   const initial = await plan(page, "Original action", "2026-01-01");
   await selectReminderAction(reminderRows(page), "reminder.completeAndPlanNext");
   await fillBusinessField(page, "reminderAction", "Planned replacement");
@@ -774,8 +786,7 @@ test("published reminder rows show server timing in case and queue views across 
   browser,
 }) => {
   await openAuthenticated(page);
-  const reference = `TIMING-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `TIMING-${randomUUID().slice(0, 8)}`);
   const observed = await workRequest(page, "work.views", {});
   if (observed.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected server date basis");
@@ -928,8 +939,7 @@ test("@engine exact reminder URLs retain completed selection and the case refere
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `EXACT-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `EXACT-${randomUUID().slice(0, 8)}`);
   const first = await seedReminder(page, reference, "Exact completed reminder", "2026-01-01");
   const second = await seedReminder(page, reference, "Another pending reminder", "2026-01-02");
   const target = { kind: "REFERENCE" as const, caseReference: reference };
@@ -1022,8 +1032,10 @@ test("@engine returns from an exact reminder to its filtered queue scroll and cl
 }) => {
   await page.setViewportSize({ width: 640, height: 500 });
   await openAuthenticated(page);
-  const reference = `QUEUE-RETURN-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `QUEUE-RETURN-${randomUUID().slice(0, 8)}`,
+  );
   let last = "";
   for (let index = 0; index < 12; index += 1) {
     last = mintOperationId();
@@ -1060,12 +1072,10 @@ test("@engine exact missing and wrong-parent reminders settle without parent ref
   page,
 }) => {
   await openAuthenticated(page);
-  const first = `FOREIGN-${randomUUID().slice(0, 8)}`;
-  await openCase(page, first);
+  const { caseReference: first } = await openCase(page, `FOREIGN-${randomUUID().slice(0, 8)}`);
   const foreign = await seedReminder(page, first, "Private foreign reminder", "2026-01-01");
-  const parent = `READABLE-${randomUUID().slice(0, 8)}`;
   await page.goto("/cases");
-  await openCase(page, parent);
+  const { caseReference: parent } = await openCase(page, `READABLE-${randomUUID().slice(0, 8)}`);
   for (const id of [foreign.operationId, randomUUID()]) {
     const calls = { parent: 0, reminder: 0 };
     const count = (request: Request) => {
@@ -1093,8 +1103,7 @@ test("@engine exact missing and wrong-parent reminders settle without parent ref
 
 test("completing a list reminder focuses its receipt banner", async ({ page }) => {
   await openAuthenticated(page);
-  const reference = `FEEDBACK-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `FEEDBACK-${randomUUID().slice(0, 8)}`);
   const action = `Confirm the synthetic delivery ${reference}`;
   const operationId = mintOperationId();
   const reply = await workRequest(page, "operation.execute", {

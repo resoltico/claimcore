@@ -24,7 +24,7 @@ import { configureRole, type RoleFixture } from "../../e2e/narrow-role-fixture";
 import type { Page } from "@playwright/test";
 
 const fixture: RoleFixture = {
-  reference: "SYNTHETIC-NARROW",
+  reference: "CC-QDDA-BDFE-G9PJ-K66G-41",
   unrelated: "SYNTHETIC-UNRELATED",
   principal: {
     kind: "HUMAN",

@@ -88,14 +88,18 @@ it.each([undefined, false, true] as const)(
       includeInactive === undefined ? null : String(includeInactive),
     );
     const manual = reminderPagePath(
-      { ...selected, state: "ANY", target: { kind: "REFERENCE", caseReference: "EXACT-TARGET" } },
+      {
+        ...selected,
+        state: "ANY",
+        target: { kind: "REFERENCE", caseReference: "CC-TKZF-ZG6A-2ZGN-088Z-44" },
+      },
       true,
     );
     expect(parseReminderPageQuery(new URL(manual, location.origin).search)).toEqual({
       manual: true,
       query: {
         state: "ANY",
-        target: { kind: "REFERENCE", caseReference: "EXACT-TARGET" },
+        target: { kind: "REFERENCE", caseReference: "CC-TKZF-ZG6A-2ZGN-088Z-44" },
         ...(includeInactive === undefined ? {} : { includeInactive }),
       },
     });

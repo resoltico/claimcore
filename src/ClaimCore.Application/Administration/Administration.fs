@@ -44,7 +44,6 @@ module internal LedgerAdministration =
         masterKey
         productVersion
         timeZone
-        requestedPolicy
         (owner: InitialOwner)
         initialized
         existing
@@ -66,7 +65,6 @@ module internal LedgerAdministration =
             source
             masterKey
             timeZone
-            requestedPolicy
             (fun connection (installation: Installation) cipher ->
                 task {
                     let! _ = Transactions.configure connection Transactions.timeouts token
@@ -102,7 +100,6 @@ module internal LedgerAdministration =
                             (Transactions.operationId observed)
                             owner.Profile
                             owner.Roles
-                            installation.CaseReferencePolicy
 
                     match result with
                     | Verdict.Proceed _ -> return ()
@@ -346,33 +343,28 @@ type Administration(connectionString: string, productVersion: string, masterKey:
                 raise (OperatorFaultException OperatorFault.ConnectionFileInvalid)
         }
 
-    member _.Initialize(timeZone, owner, requestedPolicy, cancellationToken) =
+    member _.Initialize(timeZone, owner, cancellationToken) =
         LedgerAdministration.initialize
             source
             masterKey
             productVersion
             timeZone
-            requestedPolicy
             owner
             id
             Baseline.refuseExisting
             cancellationToken
 
-    member _.InitializeIfMissing(timeZone, owner, requestedPolicy, cancellationToken) =
+    member _.InitializeIfMissing(timeZone, owner, cancellationToken) =
         LedgerAdministration.initialize
             source
             masterKey
             productVersion
             timeZone
-            requestedPolicy
             owner
             InitializationResult.Initialized
             (fun connection installation token ->
                 task {
                     do! Baseline.requireBootstrap installation connection token
-
-                    if Option.exists ((<>) installation.CaseReferencePolicy) requestedPolicy then
-                        raise (OperatorFaultException OperatorFault.CaseReferencePolicyMismatch)
 
                     return InitializationResult.ExistingInstallation installation
                 })

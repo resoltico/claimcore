@@ -145,10 +145,7 @@ let tests =
                         "Case-scoped registration rights still permit edits to that existing case"
 
                     Expect.isFalse
-                        (Advice.installationOffers
-                            CaseReferencePolicy.CustomAllowed
-                            principal
-                            scoped
+                        (Advice.installationOffers principal scoped
                          |> List.exists (function
                              | InstallationOffer.Open _ -> true
                              | _ -> false))

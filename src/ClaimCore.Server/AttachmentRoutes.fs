@@ -28,7 +28,9 @@ module internal AttachmentRoutes =
 
         reply classification (AttachmentTransport.failure.Write value)
 
-    let private uploadReply selection (outcome: ExecuteReply) =
+    let private uploadReply selection (released: Released<ExecuteReply>) =
+        let outcome = released.Value
+
         let represented =
             match selection with
             | Representation.Human -> RepresentationReply.Human(HumanReplies.execute outcome)
@@ -111,7 +113,9 @@ module internal AttachmentRoutes =
                 RouteSupport.markDispatched context
 
                 try
-                    let! outcome = Service.executeAttachmentUpload services submission bytes token
+                    let! outcome =
+                        Service.Disclosure.executeAttachmentUpload services submission bytes token
+
                     RouteSupport.markCompleted context
                     return Ok(uploadReply selection outcome)
                 with :? WorkloadAdmissionRejectedException ->
@@ -136,8 +140,8 @@ module internal AttachmentRoutes =
                 | Ok request ->
                     let action =
                         match transfer with
-                        | AttachmentTransfer.Download -> Service.downloadAttachment
-                        | AttachmentTransfer.Preview -> Service.previewAttachment
+                        | AttachmentTransfer.Download -> Service.Disclosure.downloadAttachment
+                        | AttachmentTransfer.Preview -> Service.Disclosure.previewAttachment
                         | AttachmentTransfer.Upload ->
                             invalidArg (nameof transfer) "Upload uses a manifest."
 

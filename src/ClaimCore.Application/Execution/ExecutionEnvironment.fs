@@ -61,8 +61,7 @@ module internal ExecutionEnvironment =
 
                 let environment =
                     {
-                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
-                        Requester = access
+                        FamilyEnvironment.Requester = access
                         RequesterPrincipal = principal
                         Maintenance = maintenance
                         ReferenceOwner =
@@ -119,26 +118,13 @@ module internal ExecutionEnvironment =
                         | _ -> return None
                     }
 
-                let authoredReference =
-                    InputSelection.target InputTarget.NewCaseReference inputs
-                    |> Option.bind (CaseReference.parseCustom >> Result.toOption)
-
-                let! referenceOwner =
-                    match authoredReference with
-                    | Some reference -> CaseIdentityReads.referenceOwner tx reference
-                    | None -> System.Threading.Tasks.Task.FromResult None
-
                 let relatedSelector =
-                    match binding, family with
-                    | Binding.LinkNew _, _ ->
+                    match binding with
+                    | Binding.LinkNew _ ->
                         inputs
                         |> Option.bind (
                             ClaimCore.Domain.Inputs.RelatedCaseInput.selector >> Result.toOption
                         )
-                    | Binding.Link(_, id), Some acquired ->
-                        Map.tryFind id acquired.Facts.Links
-                        |> Option.bind _.Value.Content
-                        |> Option.map (_.Target >> CaseSelector.Id)
                     | _ -> None
 
                 let! related =
@@ -163,16 +149,10 @@ module internal ExecutionEnvironment =
 
                 let environment =
                     {
-                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
-                        Requester = access
+                        FamilyEnvironment.Requester = access
                         RequesterPrincipal = principal
                         Maintenance = maintenance
-                        ReferenceOwner =
-                            fun reference ->
-                                if authoredReference = Some reference then
-                                    referenceOwner
-                                else
-                                    None
+                        ReferenceOwner = fun _ -> None
                         RelatedCase =
                             fun selector ->
                                 if relatedSelector = Some selector then related else None

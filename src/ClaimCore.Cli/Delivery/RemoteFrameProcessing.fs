@@ -440,6 +440,75 @@ module private FrameInvocation =
                                 return if current () then result else local ClientFailure.Cancelled
             })
 
+    let export holder frame selection window publish (cancelled: CancellationToken) =
+        let local = ExportDownloadFailure.Local >> Error
+
+        authenticated holder cancelled local (fun access token ->
+            task {
+                let target: RemoteServiceCall.Access =
+                    {
+                        Service = access.Configuration.Service
+                        InstallationId = None
+                        Authorization = token.Authorization
+                    }
+
+                let current () =
+                    not cancelled.IsCancellationRequested && access.IsCurrent token
+
+                match! RemoteServiceCall.context access.Client target cancelled with
+                | Error reply ->
+                    if current () && RemoteServiceCall.signInRequired reply then
+                        do! access.DiscardTokens cancelled
+
+                    return Error(ExportDownloadFailure.Service reply)
+                | Ok _ when not (current ()) -> return local ClientFailure.Cancelled
+                | Ok context when
+                    Frames.installationId frame |> Option.exists ((<>) context.InstallationId)
+                    ->
+                    return local ClientFailure.InstallationMismatch
+                | Ok context ->
+                    let target =
+                        { target with
+                            InstallationId = Some context.InstallationId
+                        }
+
+                    let seen = Collections.Generic.HashSet<string>(StringComparer.Ordinal)
+
+                    let mutable currentWindow = window
+                    let mutable complete = false
+                    let mutable result = Ok()
+
+                    while not complete do
+                        match!
+                            ExportBinaryCall.download
+                                access.TransferClient
+                                target
+                                frame
+                                selection
+                                currentWindow
+                                cancelled
+                        with
+                        | _ when not (current ()) ->
+                            result <- local ClientFailure.Cancelled
+                            complete <- true
+                        | Error refusal ->
+                            result <- Error refusal
+                            complete <- true
+                        | Ok(bytes, None) ->
+                            publish bytes
+                            complete <- true
+                        | Ok(bytes, Some cursor) ->
+                            match currentWindow with
+                            | Some page when seen.Add cursor ->
+                                publish bytes
+                                currentWindow <- Some { page with After = Some cursor }
+                            | _ ->
+                                result <- local ClientFailure.InvalidResponse
+                                complete <- true
+
+                    return result
+            })
+
 [<NoEquality; NoComparison>]
 type internal RemoteStreams =
     {
@@ -461,6 +530,13 @@ type private RemoteTransport =
             AttachmentReadRequest
                 -> CancellationToken
                 -> Task<Result<byte array, AttachmentDownloadFailure>>
+        Export:
+            Invocation
+                -> ExportSelection
+                -> ExportPageWindow option
+                -> (byte array -> unit)
+                -> CancellationToken
+                -> Task<Result<unit, ExportDownloadFailure>>
         Discard: CancellationToken -> Task<unit>
         Owned: IDisposable
     }
@@ -472,6 +548,7 @@ module private RemoteTransport =
         {
             Invoke = FrameInvocation.invoke holder
             Download = FrameInvocation.download holder
+            Export = FrameInvocation.export holder
             Discard = holder.Discard
             Owned = holder
         }
@@ -578,6 +655,11 @@ type RemoteFrameProcessor
                         Task.FromResult(
                             Error(AttachmentDownloadFailure.Local ClientFailure.Configuration)
                         ))
+                Export =
+                    fun _ _ _ _ _ ->
+                        Task.FromResult(
+                            Error(ExportDownloadFailure.Local ClientFailure.Configuration)
+                        )
                 Discard = discard
                 Owned =
                     { new IDisposable with
@@ -609,6 +691,11 @@ type RemoteFrameProcessor
                         Task.FromResult(
                             Error(AttachmentDownloadFailure.Local ClientFailure.Configuration)
                         )
+                Export =
+                    fun _ _ _ _ _ ->
+                        Task.FromResult(
+                            Error(ExportDownloadFailure.Local ClientFailure.Configuration)
+                        )
                 Discard = fun _ -> Task.FromResult()
                 Owned =
                     { new IDisposable with
@@ -630,6 +717,9 @@ type RemoteFrameProcessor
         exchangePrepared frame None stopped
 
     member internal _.Download(selection, cancelled) = transport.Download selection cancelled
+
+    member internal _.Export(frame, selection, window, publish, cancelled) =
+        transport.Export frame selection window publish cancelled
 
     member internal _.Deliver(renderReply, reply) = delivery.WriteWith(renderReply, reply)
     member internal _.Failure(error) = delivery.Failure error

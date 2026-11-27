@@ -46,7 +46,7 @@ let private variedCase =
             }
 
         let changes =
-            Tasks.openCustom context Tasks.environment None (Binding.CaseNew Revision.zero) input
+            Tasks.openCase context Tasks.environment None (Binding.CaseNew Revision.zero) input
             |> required
 
         let record = create "case.open" (Binding.CaseNew Revision.zero) input changes

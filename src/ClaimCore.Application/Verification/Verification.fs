@@ -81,14 +81,13 @@ module internal Verification =
                                         do!
                                             require
                                                 (Some sequence)
-                                                VerificationFinding.BootstrapPolicy
+                                                VerificationFinding.Bootstrap
                                                 (sequence <> Sequence.first
                                                  || Baseline.matchesBootstrap installation root)
 
                                         return!
                                             Replay.append
                                                 installation.InstallationId
-                                                installation.CaseReferencePolicy
                                                 expected
                                                 state
                                                 root
@@ -150,10 +149,31 @@ module internal Verification =
                     Error(if order link <= order blob then link else blob)
         }
 
+    let private erasureWithLinkCoverage connection state token =
+        task {
+            match Replay.erasure state with
+            | Error error -> return Error error
+            | Ok() ->
+                let! covered = OperationStorage.linkCoverageIsComplete connection token
+
+                if covered then
+                    return Ok()
+                else
+                    return
+                        Error
+                            {
+                                Sequence = None
+                                Finding = VerificationFinding.ErasureIncomplete
+                                Attachment = None
+                            }
+        }
+
     let private erasureAndAttachments connection cipher state token =
-        match Replay.erasure state with
-        | Error error -> System.Threading.Tasks.Task.FromResult(Error error)
-        | Ok() -> attachments connection cipher state token
+        task {
+            match! erasureWithLinkCoverage connection state token with
+            | Error error -> return Error error
+            | Ok() -> return! attachments connection cipher state token
+        }
 
     let history connection installation cipher expected token =
         task {
@@ -162,7 +182,7 @@ module internal Verification =
             match scanned with
             | Error finding -> return Error finding
             | Ok state ->
-                match Replay.erasure state with
+                match! erasureWithLinkCoverage connection state token with
                 | Error finding -> return Error finding
                 | Ok() ->
                     let! checkedHead = head connection state token

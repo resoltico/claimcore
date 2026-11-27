@@ -49,9 +49,6 @@ let private malformedIdentity () =
                 (Binding.CaseNew Revision.zero)
                 (Submissions.fields (RegistrationInput.values DomainInputs.registration)
                  |> Map.add
-                     (Submissions.field BusinessField.CaseReference)
-                     (ClaimCore.Application.Contracts.SubmissionValue.Text "IDENTITY-1")
-                 |> Map.add
                      (Submissions.field BusinessField.ClaimedAmount)
                      (ClaimCore.Application.Contracts.SubmissionValue.Text amount))
 

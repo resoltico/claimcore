@@ -37,7 +37,7 @@ type internal WriteTx
                     match attachment with
                     | Some payload ->
                         OperationStorage.appendWithAttachment connection cipher entry payload token
-                    | None -> OperationStorage.append connection cipher entry.Root token
+                    | None -> OperationStorage.append connection cipher entry token
 
                 return ()
             finally

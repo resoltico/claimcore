@@ -45,7 +45,7 @@ run `claimcore work views` to inspect work queues or `claimcore operation get OP
 
 | Need | ClaimCore provides | Operator or external responsibility |
 | --- | --- | --- |
-| Record case handling | Generated or policy-permitted custom case references, claim facts, parties, related cases, notes, assignments, reminders and deadlines | Coverage adjudication, fact checking and handling decisions |
+| Record case handling | Permanent server-issued case references, claim facts, parties, related cases, notes, assignments, reminders and deadlines | Coverage adjudication, fact checking and handling decisions |
 | Handle evidence files | Case-scoped attachments, verified PDF and image previews where eligible, exact downloads and withdrawal | Evidence collection, classification and control of exported copies |
 | Handle money | Recorded payment decisions, payments and returns, with net totals by currency | Transfers, refunds, banking and accounting |
 | Find and report on work | Authorized case and reminder queues, grouped case summaries, bounded CSV downloads and an optional daily count-only reminder digest | Configuring the mail relay and controlling the use, retention and disposal of exported copies |

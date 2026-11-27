@@ -90,7 +90,7 @@ it("revalidates selected disclosure with its parent and bounds repeated refusal 
     .mockImplementation(() => Promise.resolve(refusal()));
   vi.stubGlobal("fetch", fetch);
   const onRefused = vi.fn();
-  const target = { kind: "REFERENCE" as const, caseReference: "CASE-1" };
+  const target = { kind: "REFERENCE" as const, caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" };
   const view = render(
     <SelectedReminder
       target={target}
@@ -161,7 +161,7 @@ it("masks an old selected observation until the refreshed parent-bound read comp
     .mockReturnValueOnce(pending.promise);
   vi.stubGlobal("fetch", fetch);
   const props = {
-    target: { kind: "REFERENCE" as const, caseReference: "CASE-1" },
+    target: { kind: "REFERENCE" as const, caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
     reminderId: "00000000-0000-4000-8000-000000000099",
     onAct: vi.fn(),
     onDisclosureRefused: vi.fn(),
@@ -206,7 +206,7 @@ it("offers explicit retry for a busy exact read without dispatching an operation
     )
     .mockResolvedValueOnce(humanReadHttpReply("reminder.get", document));
   vi.stubGlobal("fetch", fetch);
-  const target = { kind: "REFERENCE" as const, caseReference: "RETRY-EXACT" };
+  const target = { kind: "REFERENCE" as const, caseReference: "CC-8DST-MHVK-1G6A-X08R-89" };
   const reminderId = "00000000-0000-4000-8000-000000000099";
   const onAct = vi.fn();
   const onDisclosureRefused = vi.fn();

@@ -30,7 +30,7 @@ let tests =
         (run (fun _ fixture ->
             task {
                 let! owner = caseWorker fixture
-                let target = CaseSelector.Reference "TIMELINE-API"
+                let target = CaseSelector.Id(CaseFixtures.caseId (id fixture 99200))
 
                 let request =
                     {
@@ -162,7 +162,7 @@ let tests =
                     Service.timeline
                         owner
                         { request with
-                            Target = CaseSelector.Reference "NOT-THERE"
+                            Target = caseTarget fixture "NOT-THERE"
                             AfterCursor = Some cursor
                         }
                         token
@@ -190,7 +190,7 @@ let tests =
                 let grantValue =
                     {
                         Role = Role.CaseReader
-                        Scope = GrantTarget.CaseReference "TIMELINE-API"
+                        Scope = caseGrant fixture "TIMELINE-API"
                     }
 
                 let! granted = grant owner (id fixture 99211) principal grantValue true

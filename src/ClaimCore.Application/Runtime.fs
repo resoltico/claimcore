@@ -24,7 +24,9 @@ type IRuntime =
 
     abstract RunDigests:
         WorkDateBasis *
-        (EmailAddress -> Map<DigestCountKind, int64> -> CancellationToken -> Task<DigestRelayResult>) *
+        (Released<EmailAddress * Map<DigestCountKind, int64>>
+            -> CancellationToken
+            -> Task<DigestRelayResult>) *
         (ActorId -> DigestOutcome -> unit) *
         CancellationToken ->
             Task<DigestRunSummary>
@@ -64,7 +66,7 @@ type private RuntimeResource
                     Housekeeping.prune source installation Housekeeping.DefaultBatch dateAt token
             }
 
-        member _.RunDigests(basis, send, record, token) =
+        member this.RunDigests(basis, send, record, token) =
             let admit ct =
                 task {
                     let! openForDispatch =
@@ -85,17 +87,27 @@ type private RuntimeResource
                 let! admitted = admit token
 
                 if admitted then
-                    let guardedSend recipient counts ct =
+                    let guardedSend released ct =
                         task {
                             let! admitted = admit ct
 
                             if admitted then
-                                return! send recipient counts ct
+                                return! send released ct
                             else
                                 return DigestRelayResult.Refused
                         }
 
-                    return! DigestDispatch.run source installation basis guardedSend record token
+                    let authorizeRelease = DisclosureReads.digest this.Store
+
+                    return!
+                        DigestDispatch.run
+                            source
+                            installation
+                            basis
+                            guardedSend
+                            authorizeRelease
+                            record
+                            token
                 else
                     // Fencing dispatch cannot erase what is already known about intake by the relay.
                     do! DigestStorage.reconcile source installation token

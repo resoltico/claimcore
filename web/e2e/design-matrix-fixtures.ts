@@ -56,6 +56,12 @@ const execute = async (page: Page, body: RequestByEndpoint["operation.execute"])
   }
   return reply.outcome.data;
 };
+const issued = (receipt: Awaited<ReturnType<typeof execute>>) => {
+  if (receipt.subject.kind !== "CASE") {
+    throw new Error("Expected an issued case reference.");
+  }
+  return receipt.subject.caseReference;
+};
 type CaseSubmission = Extract<
   RequestByEndpoint["operation.execute"],
   { binding: { kind: "CASE" } }
@@ -80,7 +86,7 @@ const caseAct = async (
     operationId: mintOperationId(),
     inputs:
       authored.task === "case.open"
-        ? { ...authored.inputs, "field:caseReference": reference }
+        ? { "field:policyNumber": reference, ...authored.inputs }
         : authored.inputs,
     binding:
       authored.task === "case.open"
@@ -534,11 +540,12 @@ const seedCases = async (page: Page, marker: string, date: string) => {
   });
   let operationId = "";
   for (const state of states) {
-    const reference = references[state];
-    await caseAct(page, reference, 0, {
+    const opened = await caseAct(page, references[state], 0, {
       task: "case.open",
       inputs: { ...prefixedInputs("field:", registration, true) },
     });
+    const reference = issued(opened);
+    references[state] = reference;
     const acceptedId = await advanceCase(page, reference, state, date);
     if (acceptedId !== null) {
       operationId = acceptedId;
@@ -722,12 +729,7 @@ const maximumLength = (input: TaskInputId): number => {
 };
 
 const seedLimits = async (page: Page, marker: string, date: string, issuer: string) => {
-  const referenceLimit = maximumLength("field:caseReference");
   const prefix = marker.replaceAll("-", "");
-  const first = `${prefix}-A`.padEnd(referenceLimit, "A");
-  const second = prefix.padEnd(referenceLimit, "B");
-  expect(first).toHaveLength(referenceLimit);
-  expect(second).toHaveLength(referenceLimit);
   const amount = taskScalar("field:claimedAmount")?.scalar;
   if (amount?.kind !== "AMOUNT") {
     throw new Error("No declared claimed amount limits.");
@@ -742,15 +744,16 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
     incidentDate: date,
     receivedDate: date,
     incidentCountry: "LV",
-    policyNumber: "X".repeat(maximumLength("field:policyNumber")),
+    policyNumber: prefix.padEnd(maximumLength("field:policyNumber"), "X"),
     insurerClaimReference: repeated("field:insurerClaimReference", "LIM/"),
     claimedAmount: `${"9".repeat(amount.maximumIntegerDigits)}.${"9".repeat(amount.maximumFractionalDigits)}`,
     claimedCurrency: "EUR",
     incidentDescription: repeated("field:incidentDescription", "Synthetic incident narrative. "),
   });
 
-  for (const [index, caseReference] of [first, second].entries()) {
-    await caseAct(page, caseReference, 0, {
+  const references: string[] = [];
+  for (const index of [0, 1]) {
+    const opened = await caseAct(page, `${prefix}-${index}`, 0, {
       task: "case.open",
       inputs: {
         ...prefixedInputs("field:", fields, true),
@@ -763,6 +766,8 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
         ],
       },
     });
+    const caseReference = issued(opened);
+    references.push(caseReference);
     const binding = { target: { kind: "REFERENCE" as const, caseReference } };
     await execute(page, {
       operationId: mintOperationId(),
@@ -794,6 +799,10 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
       ...prefixedInputs("input:principal.", target),
     },
   });
+  const [first, second] = references;
+  if (first === undefined || second === undefined) {
+    throw new Error("Expected two issued case references.");
+  }
   const selection = { kind: "REFERENCE", caseReference: first } as const;
   return [
     {
@@ -834,7 +843,7 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
   ] satisfies MatrixRoute[];
 };
 export type DesignDataset = {
-  caseMarker: string;
+  caseReferences?: ReadonlyArray<string>;
   routes: ReadonlyArray<MatrixRoute>;
   businessDate: string;
   cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
@@ -871,7 +880,6 @@ export const prepareDesignDataset = async (
     if (fixture === "limits") {
       const limitRoutes = await seedLimits(page, marker, date, stewardship.inventory.issuer);
       return {
-        caseMarker: marker,
         routes: limitRoutes,
         businessDate: date,
         cookies: await context.cookies(),
@@ -904,7 +912,7 @@ export const prepareDesignDataset = async (
       cases.references.undecided,
     );
     return {
-      caseMarker: marker,
+      caseReferences: Object.values(cases.references),
       routes: routes({
         ...cases,
         marker,
@@ -952,20 +960,27 @@ export const prepareWorklistDensity = async (browser: Browser, baseURL: string) 
       incidentDate: businessDate,
       receivedDate: businessDate,
       incidentCountry: "LV",
+      policyNumber: marker,
       claimedAmount: "1234.56",
       claimedCurrency: "EUR",
     });
+    const references: string[] = [];
     for (const number of [1, 2, 3, 4, 5, 6]) {
-      await caseAct(page, `${marker}-${number}`, 0, {
+      const opened = await caseAct(page, `${marker}-${number}`, 0, {
         task: "case.open",
         inputs: prefixedInputs("field:", registration, true),
       });
+      references.push(issued(opened));
     }
-    await workAct(page, `${marker}-1`, 0, { "field:responsibleActor": actorId });
-    await planReminder(page, `${marker}-1`, businessDate, `Review ${marker}`);
-    await planReminder(page, `${marker}-2`, businessDate, `Review ${marker}`);
-    await registerActor(page, issuer, `${marker}-1`, `Analyst ${marker}`);
-    return { marker, cookies: await context.cookies() };
+    const [first, second] = references;
+    if (first === undefined || second === undefined) {
+      throw new Error("Expected issued reports for the density fixture.");
+    }
+    await workAct(page, first, 0, { "field:responsibleActor": actorId });
+    await planReminder(page, first, businessDate, `Review ${marker}`);
+    await planReminder(page, second, businessDate, `Review ${marker}`);
+    await registerActor(page, issuer, first, `Analyst ${marker}`);
+    return { marker, references, cookies: await context.cookies() };
   } finally {
     await context.close();
   }

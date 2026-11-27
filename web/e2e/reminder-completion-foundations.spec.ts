@@ -4,6 +4,7 @@ import {
   activeRequester,
 } from "../tests/support/human-requester.fixtures";
 import type { OperationTaskDefinition, RequestByEndpoint, Region } from "@contracts/client";
+import { caseFields } from "../tests/support/service-foundation.fixtures";
 import { caseSubject, caseDocumentInput } from "../tests/support/case-document.fixtures";
 import { operationAffordance } from "../tests/support/affordances.fixtures";
 
@@ -230,7 +231,7 @@ const current = {
                 prominence: "PRIMARY",
                 value: {
                   kind: "REFERENCE",
-                  value: "CASE-1",
+                  value: caseFields.caseReference,
                 },
               },
               {
@@ -541,7 +542,7 @@ for (const { language, accent, mode, mobile } of contexts) {
           },
           confirmation: {
             kind: "CASE_REFERENCE",
-            reference: "CASE-1",
+            reference: caseFields.caseReference,
           },
         },
         basis,
@@ -558,7 +559,7 @@ for (const { language, accent, mode, mobile } of contexts) {
                     prominence: "PRIMARY",
                     value: {
                       kind: "REFERENCE",
-                      value: "CASE-1",
+                      value: caseFields.caseReference,
                     },
                   },
                   {

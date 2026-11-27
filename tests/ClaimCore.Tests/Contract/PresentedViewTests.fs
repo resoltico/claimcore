@@ -38,7 +38,7 @@ let tests =
                 "entries admit server-defined keys and roles without a business-field lookup"
                 (fun () ->
                     let literal =
-                        """{"regions":[{"role":"FACTS","titleId":"subject.CASE.label","content":{"kind":"ENTRIES","entries":[{"key":"future-field","labelId":"field.caseReference.label","prominence":"PRIMARY","value":{"kind":"REFERENCE","value":"CASE-1"}}]}}]}"""
+                        """{"regions":[{"role":"FACTS","titleId":"subject.CASE.label","content":{"kind":"ENTRIES","entries":[{"key":"future-field","labelId":"field.caseReference.label","prominence":"PRIMARY","value":{"kind":"REFERENCE","value":"CC-55KW-SSJ4-8HMS-G1BH-73"}}]}}]}"""
 
                     let expected =
                         Screen.create
@@ -60,7 +60,8 @@ let tests =
                                                     Prominence = Prominence.Primary
                                                     Value =
                                                         PresentedValue.Reference(
-                                                            CaseReference.parse "CASE-1"
+                                                            CaseReference.parse
+                                                                "CC-55KW-SSJ4-8HMS-G1BH-73"
                                                             |> Result.defaultWith (
                                                                 string >> failtest
                                                             )
@@ -78,7 +79,7 @@ let tests =
                     Expect.stringContains
                         (ViewText.render (RenderingContext.forLanguage "en") expected
                          |> String.concat "\n")
-                        "CASE-1"
+                        "CC-55KW-SSJ4-8HMS-G1BH-73"
                         "CLI consumes the supplied value"
 
                     Expect.isError
@@ -233,7 +234,9 @@ let tests =
                                                     Key = "case"
                                                     LabelId = "field.caseReference.label"
                                                     Prominence = Prominence.Primary
-                                                    Value = PresentedValue.Text "CASE-1"
+                                                    Value =
+                                                        PresentedValue.Text
+                                                            "CC-55KW-SSJ4-8HMS-G1BH-73"
                                                 }
                                             ]
                                 }

@@ -385,10 +385,6 @@
     "text": "Detente y pide a un administrador que investigue la causa.",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "Elige otra referencia.",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "Pide a un propietario que compruebe tu acceso.",
     "source": "a18257b39d89"

@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Neatgriezeniski noņemiet šīs lietas pašreizējos un glabātos datus, maksājumus, darbu, atgādinājumus, piezīmes un pielikumus. Atsauce un izmaiņu ieraksti paliek. Citur glabātās kopijas netiek ietekmētas.",
-    "source": "8bf54b53220a"
+    "text": "Dzēst privātos lietas datus un saistīto lietu piezīmes un atsauces no aktīvā reģistra. Lietas ID, atsauce un izmaiņu ieraksti paliek. Citur glabātās kopijas šī darbība neietekmē.",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "Dzēst profilu",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Atveriet lietu ar zināmajiem reģistrācijas datiem. Atstājiet lietas atsauces lauku tukšu, lai atsauci piešķirtu automātiski. Ja reģistrs to atļauj, varat norādīt pielāgotu lietas atsauci.",
-    "source": "debda0b6773d",
+    "text": "Atveriet lietu ar jums zināmajiem reģistrācijas datiem. ClaimCore piešķir lietai pastāvīgu atsauci.",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "Izmantojiet derīgu lietas atsauci. Pielāgota atsauce sākas ar ASCII burtu un ietver līdz 32 burtiem, cipariem un atsevišķām defisēm starp grupām. Prefikss CC- ir rezervēts sistēmas piešķirtām atsaucēm.",
-    "source": "f856f6f13ef0",
+    "text": "Izmantojiet pilnu ClaimCore piešķirto lietas atsauci ar kontrolcipariem.",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -1086,8 +1087,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "Dzēsta. Palikusi tikai lietas atsauce.",
-    "source": "e63410fae906"
+    "text": "Lieta ir dzēsta. Lietas ID, atsauce un izmaiņu ieraksti paliek.",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "Anulēta",
@@ -1140,6 +1142,16 @@
   "notice.notAccepted": {
     "text": "Šī izmaiņa pašreizējā vēsturē nav reģistrēta. Pēc atjaunošanas pirms izmaiņas atkārtošanas lūdziet operatoram apstiprināt, ka atjaunotā vēsture aptver iepriekšējo iznākumu.",
     "source": "a91c7c51f54b",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "CSV eksportēšana beidzās, pirms tika saņemtas visas rindas.",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "Apliecinājums nav pieejams. Atrodiet darbību, izmantojot tās sākotnējo darbības ID.",
+    "source": "f23e5cdf6158",
     "machineMade": true
   },
   "notice.outcomeUnknown": {
@@ -1404,17 +1416,129 @@
     "text": "Skatīt piekļuves un eksporta žurnālu",
     "source": "637731605ab4"
   },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "Darbības priekšskatījums",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "Pieprasītāja konteksts",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "Sesiju izbeigšana",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "Darbības meklēšana",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "Darbības apliecinājums",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "Lietu saraksts",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "Lietu kopsavilkums",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "Atbildīgie par lietu",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "Lietas dalībnieki",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "Lietas piezīmes",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "Lietas maksājumi",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "Pielikumu saraksts",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "Atgādinājuma skatīšana",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "Atgādinājumu saraksts",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "Darba skatu kopsavilkumi",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "Personu saraksts",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "Personu piekļuves tiesības",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "Personu vēsture",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "Piekļuves pieprasījumi",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "Lietas vēstures lasījums",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "Lietas izmaiņas kopš pārskatīšanas",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
   "disclosureKind.CASE_READ.label": {
     "text": "Lietas skatīšana",
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "Pielikuma lejupielāde",
-    "source": "ba23685b28f6"
+    "text": "Atļauta pielikuma lejupielāde",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "Pielikuma priekšskatīšana",
-    "source": "01b3a2e62a0d"
+    "text": "Atļauts pielikuma priekšskatījums",
+    "source": "5e82512366e5",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "Atgādinājumu apkopojums",
+    "source": "b0c80c0e513f",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "Eksports",
@@ -1423,10 +1547,6 @@
   "disclosureKind.TRAIL_READ.label": {
     "text": "Piekļuves un eksporta žurnāla skatīšana",
     "source": "42bd45e7fe95"
-  },
-  "disclosureKind.ACCESS_REFUSED.label": {
-    "text": "Piekļuve atteikta",
-    "source": "07edbc210200"
   },
   "disclosureOutcome.SUCCEEDED.label": {
     "text": "Izdevās",
@@ -1499,6 +1619,21 @@
   "label.disclosureExportSelection": {
     "text": "Eksporta atlase",
     "source": "c015ee6b5e6e"
+  },
+  "label.disclosureRowCount": {
+    "text": "Atgrieztās rindas",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "Parādītās lietas",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "Parādītie konti",
+    "source": "5b856c5553bc",
+    "machineMade": true
   },
   "label.disclosureExportRowCount": {
     "text": "Eksportētās rindas",
@@ -1681,13 +1816,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "Izmantojiet no 1 līdz {maximumCharacters} ASCII rakstzīmēm. Pielāgota atsauce sākas ar burtu un ietver burtus, ciparus un atsevišķas defises starp grupām. Prefikss CC- ir rezervēts sistēmas piešķirtām atsaucēm.",
-    "source": "e7fc63264856",
+    "text": "Izmantojiet pilnu piešķirto lietas atsauci ar ne vairāk kā {maximumCharacters} ASCII rakstzīmēm un abiem kontrolcipariem.",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Pielāgota atsauce paliek rezervēta arī pēc labošanas vai dzēšanas. Neiekļaujiet tajā personas informāciju.",
-    "source": "4936b3dc4560",
+    "text": "Ievadiet lietas atvēršanas brīdī piešķirto atsauci.",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1992,8 +2127,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "Pārbaudiet lietas atsauci un defises. Pielāgotu atsauci sāciet ar burtu un izmantojiet ne vairāk kā 32 burtus, ciparus un defises. Prefikss CC- ir rezervēts.",
-    "source": "00e1c36eb2e1",
+    "text": "Pārbaudiet pilnu lietas atsauci, tostarp defises un kontrolciparus.",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2057,8 +2192,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "Tiks neatgriezeniski dzēsti lietas pašreizējie un saglabātie dati, maksājumi, darbs, atgādinājumi un piezīmes. Atsauce un izmaiņu reģistrs paliek. Citur glabātās kopijas netiek skartas.",
-    "source": "0e447a932597"
+    "text": "No aktīvā reģistra neatgriezeniski dzēsīs privātos datus, pielikumus un saistīto lietu piezīmes un atsauces. Lietas ID, atsauce un izmaiņu ieraksti paliek. Citur glabātās kopijas šī darbība neietekmē.",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "Konts reģistrēts.",
@@ -3418,39 +3554,6 @@
     "text": "Izvēlieties vienu no norādītajiem slēgšanas iznākumiem.",
     "source": "ed45fada7999"
   },
-  "task.case.changeReference.label": {
-    "text": "Mainīt lietas atsauci",
-    "source": "c48c7e896bb5"
-  },
-  "task.case.changeReference.meaning": {
-    "text": "Aizstājiet pašreizējo lietas atsauci. Ar agrākajām atsaucēm joprojām var atrast to pašu lietu.",
-    "source": "1065858202dd"
-  },
-  "task.case.changeReference.done": {
-    "text": "Lietas atsauce mainīta.",
-    "source": "58241a331134"
-  },
-  "task.case.changeReference.consequence": {
-    "text": "Izvēlieties jaunu atsauci šai lietai.",
-    "source": "73700635d1ab"
-  },
-  "field.newReference.label": {
-    "text": "Jaunā atsauce",
-    "source": "42906b7cf062"
-  },
-  "field.newReference.rule": {
-    "text": "Izmantojiet lietas atsauces formātu.",
-    "source": "b905bbf44b8b"
-  },
-  "field.newReference.hint": {
-    "text": "Lietu joprojām var atrast ar iepriekšējo atsauci. Neiekļaujiet jaunajā atsaucē personas datus.",
-    "source": "2712ad08d240",
-    "machineMade": true
-  },
-  "label.referenceChangedFrom": {
-    "text": "Iepriekšējā atsauce",
-    "source": "0f0590159e51"
-  },
   "field.reopenReason.hint": {
     "text": "Kāpēc izskatīšana atsākās.",
     "source": "52db5e07d84d"
@@ -4628,54 +4731,9 @@
     "text": "Ievadiet gan summu, gan valūtu.",
     "source": "11da00ab5ba1"
   },
-  "diagnostic.REFERENCE_UNAVAILABLE": {
-    "text": "Lietas atsauce nav pieejama.",
-    "source": "233033263ef9",
-    "machineMade": true
-  },
-  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
-    "text": "Šis reģistrs visas lietu atsauces piešķir automātiski. Lai turpinātu, noņemiet pielāgoto atsauci.",
-    "source": "072632d9c59c",
-    "machineMade": true
-  },
   "label.caseReferencePending": {
     "text": "Atsauci piešķirs, atverot lietu.",
     "source": "9fcad855f05a",
-    "machineMade": true
-  },
-  "label.useCustomCaseReference": {
-    "text": "Izmantot pielāgotu lietas atsauci",
-    "source": "3796d7f0af59",
-    "machineMade": true
-  },
-  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
-    "source": "22c0bf147040",
-    "text": "Piešķir tikai sistēma",
-    "machineMade": true
-  },
-  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
-    "source": "2126c4e1b515",
-    "text": "Atļautas pielāgotas lietas atsauces",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.label": {
-    "source": "00276badc096",
-    "text": "Lietas atsauču politika",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.rule": {
-    "source": "d15f3878c38a",
-    "text": "Iestatīšanas laikā izvēlētā atsauču piešķiršanas politika.",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.hint": {
-    "source": "8e971dfd9ae8",
-    "text": "Izvēlieties, vai drīkst ievadīt pielāgotu lietas atsauci.",
-    "machineMade": true
-  },
-  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
-    "source": "a743fa65aff6",
-    "text": "Izvēlieties atbalstītu lietas atsauču politiku.",
     "machineMade": true
   },
   "diagnostic.TRAVERSAL_CHANGED": {

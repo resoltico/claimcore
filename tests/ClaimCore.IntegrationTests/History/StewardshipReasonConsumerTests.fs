@@ -83,7 +83,7 @@ let private scenario database =
 
         acceptedPeople granted
         let reader = core fixture principal
-        let target = CaseSelector.Reference "synthetic-a"
+        let target = CaseSelector.Reference populatedReference
 
         let reasons =
             [ "Void A 1.0000 العربية <tag>"; "Reinstate B 2.0000 日本語"; "Void C 3.0000 Ā" ]

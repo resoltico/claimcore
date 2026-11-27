@@ -44,7 +44,6 @@ let private current =
 
 let private caseReply =
     {
-        MatchedReference = None
         Parties = []
         PartyOffers = []
         RelatedCases = RelatedCaseLinks.empty
@@ -247,7 +246,9 @@ let private harness language answer scenario =
                                                                 CaseFixtures.operationId
                                                                     request.OperationId
                                                             )
-                                                        Reference = CaseFixtures.reference "x"
+                                                        Reference =
+                                                            CaseFixtures.reference
+                                                                "CC-5NRH-CGNQ-4TR4-80B2-30"
                                                         Revision = Revision.first
                                                     }
 
@@ -440,7 +441,7 @@ let tests =
                             harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
 
                         let arguments =
-                            [ "case"; "open"; "--case-reference"; "x" ]
+                            [ "case"; "open" ]
                             @ CliExamples.registrationArguments DomainInputs.registration
 
                         Expect.equal (run arguments h) 0 "Human completion"
@@ -457,14 +458,11 @@ let tests =
                         let input = caseInput h.Calls[1]
                         Expect.equal (reviewedRevision input) 0L "Zero is the actual OPEN contract"
 
-                        Expect.equal
-                            (Submissions.command input).Inputs.Values[TaskInputId.Target(
-                                                                          InputTarget.Field
-                                                                              BusinessField
-                                                                                  .CaseReference
-                                                                      )]
-                            (InputValue.Text "x")
-                            "Preview binds the authored reference"
+                        Expect.isFalse
+                            (Map.containsKey
+                                (Submissions.field BusinessField.CaseReference)
+                                (Submissions.command input).Inputs.Values)
+                            "The review allocates no permanent reference"
 
                         Expect.equal
                             (h.Generated())
@@ -488,7 +486,9 @@ let tests =
                         harness (RenderingContext.forLanguage "en") (Some "yes") Scenario.Accepted
 
                     Expect.equal
-                        (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                        (run
+                            [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ]
+                            h)
                         0
                         "Accepted execution"
 
@@ -515,11 +515,20 @@ let tests =
                         (Frames.inputBytes h.Calls[2])
                         (Frames.inputBytes h.Calls[3])
                         "Confirmation executes exactly the reviewed input")
-            testCase "erasure requires the authored reference rather than yes" (fun () ->
+            testCase "erasure requires the issued reference rather than yes" (fun () ->
                 for answer, executed in
-                    [ Some "yes", false; Some "x ", false; None, false; Some "x", true ] do
+                    [
+                        Some "yes", false
+                        Some "CC-5NRH-CGNQ-4TR4-80B2-30 ", false
+                        None, false
+                        Some "CC-5NRH-CGNQ-4TR4-80B2-30", true
+                    ] do
                     let h = harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
-                    Expect.equal (run [ "case"; "erase"; "x" ] h) 0 "Human completion"
+
+                    Expect.equal
+                        (run [ "case"; "erase"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h)
+                        0
+                        "Human completion"
 
                     Expect.equal
                         (endpoints h |> List.contains "operation.execute")
@@ -528,13 +537,13 @@ let tests =
 
                     Expect.stringContains
                         (String.concat "" h.Prompts)
-                        "Type x to confirm: "
+                        "Type CC-5NRH-CGNQ-4TR4-80B2-30 to confirm: "
                         "Typed target prompt")
             testCase "decline never dispatches execute" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
 
                 Expect.equal
-                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                    (run [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h)
                     0
                     "Decline is a completed human choice"
 
@@ -554,13 +563,16 @@ let tests =
             testCase "empty or closed confirmation input defaults to no" (fun () ->
                 for answer in [ None; Some ""; Some "unexpected" ] do
                     let h = harness (RenderingContext.forLanguage "en") answer Scenario.Accepted
-                    run [ "case"; "close"; "--outcome"; "other"; "x" ] h |> ignore
+
+                    run [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h
+                    |> ignore
+
                     Expect.equal h.Calls.Count 3 "Only an explicit affirmative answer can execute")
             testCase "a stale revision stays a definite refusal without retry" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Stale
 
                 Expect.equal
-                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                    (run [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h)
                     2
                     "The service still enforces its locked revision"
 
@@ -577,7 +589,7 @@ let tests =
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.ReadRefused
 
                 Expect.equal
-                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                    (run [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h)
                     2
                     "Read refusal is preserved"
 
@@ -593,7 +605,7 @@ let tests =
                     harness (RenderingContext.forLanguage "en") (Some "y") Scenario.PreviewRefused
 
                 Expect.equal
-                    (run [ "case"; "close"; "--outcome"; "other"; "x" ] h)
+                    (run [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h)
                     2
                     "Preview refusal is preserved"
 
@@ -604,12 +616,12 @@ let tests =
 
                 unavailable
                     { h.Console with IsInteractive = false }
-                    [ "case"; "close"; "--outcome"; "other"; "x" ]
+                    [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ]
 
                 match
                     Grammar.prepare
                         (fun () -> string identity)
-                        [ "case"; "close"; "--outcome"; "other"; "x" ]
+                        [ "case"; "close"; "--outcome"; "other"; "CC-5NRH-CGNQ-4TR4-80B2-30" ]
                 with
                 | Error issues ->
                     Expect.contains
@@ -625,23 +637,46 @@ let tests =
                 for format in [ "json"; "csv" ] do
                     unavailable
                         h.Console
-                        [ "case"; "close"; "--outcome"; "other"; "x"; "--format"; format ]
+                        [
+                            "case"
+                            "close"
+                            "--outcome"
+                            "other"
+                            "CC-5NRH-CGNQ-4TR4-80B2-30"
+                            "--format"
+                            format
+                        ]
 
                     unavailable
                         h.Console
-                        [ "case"; "close"; "--outcome"; "other"; "x"; "--format=" + format ]
+                        [
+                            "case"
+                            "close"
+                            "--outcome"
+                            "other"
+                            "CC-5NRH-CGNQ-4TR4-80B2-30"
+                            "--format=" + format
+                        ]
 
                 Expect.isError
                     (Grammar.prepare
                         (fun () -> string identity)
-                        [ "case"; "close"; "--outcome"; "other"; "x"; "--format"; "json" ])
+                        [
+                            "case"
+                            "close"
+                            "--outcome"
+                            "other"
+                            "CC-5NRH-CGNQ-4TR4-80B2-30"
+                            "--format"
+                            "json"
+                        ])
                     "JSON omission remains usage-invalid"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "omitted correction groups mean KEEP and stay out of the review" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "n") Scenario.Accepted
 
-                run [ "case"; "correct"; "x" ] h |> ignore
+                run [ "case"; "correct"; "CC-5NRH-CGNQ-4TR4-80B2-30" ] h |> ignore
 
                 let values = (caseInput h.Calls[2] |> Submissions.command).Inputs.Values
 
@@ -683,7 +718,7 @@ let tests =
                                 "close"
                                 "--outcome"
                                 "other"
-                                "x"
+                                "CC-5NRH-CGNQ-4TR4-80B2-30"
                                 "--language=" + language
                             ]
                             h)
@@ -722,7 +757,16 @@ let tests =
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
 
                 Expect.equal
-                    (run [ "case"; "close"; "--outcome"; "other"; "x"; "--preview" ] h)
+                    (run
+                        [
+                            "case"
+                            "close"
+                            "--outcome"
+                            "other"
+                            "CC-5NRH-CGNQ-4TR4-80B2-30"
+                            "--preview"
+                        ]
+                        h)
                     0
                     "Preview completed"
 
@@ -730,15 +774,40 @@ let tests =
                 Expect.equal (h.ReadCount()) 0 "Preview does not request mutation consent")
             testCase "offline dry-run and explicit revisions keep their normal paths" (fun () ->
                 let h = harness (RenderingContext.forLanguage "en") (Some "y") Scenario.Accepted
-                unavailable h.Console [ "case"; "close"; "--outcome"; "other"; "x"; "--dry-run" ]
 
                 unavailable
                     h.Console
-                    [ "case"; "close"; "--outcome"; "other"; "x"; "--expected-revision"; "7" ]
+                    [
+                        "case"
+                        "close"
+                        "--outcome"
+                        "other"
+                        "CC-5NRH-CGNQ-4TR4-80B2-30"
+                        "--dry-run"
+                    ]
+
+                unavailable
+                    h.Console
+                    [
+                        "case"
+                        "close"
+                        "--outcome"
+                        "other"
+                        "CC-5NRH-CGNQ-4TR4-80B2-30"
+                        "--expected-revision"
+                        "7"
+                    ]
 
                 let draft =
                     Grammar.prepareOffline
-                        [ "case"; "close"; "--outcome"; "other"; "x"; "--dry-run" ]
+                        [
+                            "case"
+                            "close"
+                            "--outcome"
+                            "other"
+                            "CC-5NRH-CGNQ-4TR4-80B2-30"
+                            "--dry-run"
+                        ]
                     |> CaseBuilders.accepted
                     |> Option.get
 
@@ -759,7 +828,7 @@ let tests =
                         "close"
                         "--outcome"
                         "other"
-                        "x"
+                        "CC-5NRH-CGNQ-4TR4-80B2-30"
                         "--operation-id"
                         string supplied
                     ]
@@ -1052,7 +1121,7 @@ let reminderReviewDetails =
                                 [
                                     "reminder"
                                     (if compound then "complete-and-plan-next" else "create")
-                                    "x"
+                                    "CC-5NRH-CGNQ-4TR4-80B2-30"
                                 ]
                                 @ (if compound then
                                        [ "--reminder-id"; ReminderId.format (reminderId 1) ]

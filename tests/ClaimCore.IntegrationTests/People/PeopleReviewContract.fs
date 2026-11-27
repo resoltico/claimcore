@@ -306,7 +306,7 @@ let internal grantReviewTarget fixture =
                 target
                 {
                     Role = Role.CaseReader
-                    Scope = (GrantTarget.CaseReference "REVIEW-CASE")
+                    Scope = ((caseGrant fixture "REVIEW-CASE"))
                 }
                 true
 
@@ -322,7 +322,7 @@ let internal grantReviewTarget fixture =
                 (Submissions.grant
                     {
                         Role = Role.CaseReader
-                        Scope = GrantTarget.CaseReference "review-case"
+                        Scope = (caseGrant fixture "review-case")
                     })
 
         return target, input
@@ -539,7 +539,7 @@ let internal meaningfulScopeAdmission fixture =
                 target
                 {
                     Role = Role.Owner
-                    Scope = GrantTarget.CaseReference "SCOPE-ADMISSION"
+                    Scope = (caseGrant fixture "SCOPE-ADMISSION")
                 }
                 true
 
@@ -588,7 +588,7 @@ let internal meaningfulScopeAdmission fixture =
                     target
                     {
                         Role = role
-                        Scope = GrantTarget.CaseReference "SCOPE-ADMISSION"
+                        Scope = (caseGrant fixture "SCOPE-ADMISSION")
                     }
                     true
 

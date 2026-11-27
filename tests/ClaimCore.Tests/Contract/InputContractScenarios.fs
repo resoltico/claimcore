@@ -62,7 +62,7 @@ let internal integerLexemes () =
             (Submissions.create
                 "work.update"
                 id
-                (Binding.Work(CaseSelector.Reference "INTEGER-LEXEMES", Revision.zero))
+                (Binding.Work(CaseSelector.Reference "CC-GZ69-F5VA-HG5Q-HD73-30", Revision.zero))
                 (Submissions.fields [ BusinessField.HandlingSummary, "Wire integer boundaries" ]))
         |> Encoding.UTF8.GetString
 
@@ -130,7 +130,6 @@ let internal retainedText () =
             (RepresentationReply.Data(
                 Outcome.Succeeded
                     {
-                        MatchedReference = None
                         Parties = []
                         PartyOffers = []
                         RelatedCases = RelatedCaseLinks.empty

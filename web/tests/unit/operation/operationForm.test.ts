@@ -19,7 +19,7 @@ const correction = (registrationChoice: string, decisionChoice: string) => {
     ...initialOperationValues(
       operationAffordance("case.correct", {
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         expectedRevision: 0,
       }),
     ),
@@ -86,7 +86,7 @@ it("takes the selected entry from identity while request constants derive from t
     ...initialOperationValues(
       operationAffordance("case.close", {
         kind: "CASE",
-        target: { kind: "REFERENCE", caseReference: "CASE-1" },
+        target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         expectedRevision: 0,
       }),
     ),
@@ -99,7 +99,7 @@ it("takes the selected entry from identity while request constants derive from t
     task: "case.close",
     binding: {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "CASE-SERIALIZATION" },
+      target: { kind: "REFERENCE", caseReference: "CC-3PBY-1JRP-Z70W-2VXH-71" },
       expectedRevision: 4,
     },
     inputs: { "field:outcome": "OTHER" },

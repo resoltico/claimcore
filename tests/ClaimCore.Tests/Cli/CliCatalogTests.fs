@@ -102,7 +102,7 @@ let private replacement () =
             [
                 "case"
                 "correct"
-                "SYNTHETIC"
+                "CC-DZXV-W4P3-TR4W-QN99-83"
                 "--operation-id"
                 operationId
                 "--expected-revision"
@@ -142,52 +142,51 @@ let tests =
         [
             testCase "typed CLI admits every authored command example" commandExamples
             testCase
-                "opening accepts named custom input and leaves automatic assignment absent"
+                "opening accepts erasable identifiers and refuses an authored permanent reference"
                 (fun () ->
-                    let dryRun operands =
+                    let prepare operands =
                         Grammar.prepareOffline ([ "case"; "open"; "--dry-run" ] @ operands)
 
-                    for args, expected in
-                        [ [], None; [ "--case-reference"; "Case-A" ], Some "Case-A" ] do
-                        let prepared = dryRun args |> CaseBuilders.accepted |> Option.get
-                        use document = System.Text.Json.JsonDocument.Parse prepared.Bytes
-                        let input = document.RootElement.GetProperty "input"
-                        let values = input.GetProperty "inputs"
-
-                        let actual =
-                            match values.TryGetProperty "field:caseReference" with
-                            | true, value -> Some(value.GetString() |> nonNull)
-                            | _ -> None
-
-                        Expect.isNone prepared.Issues "No business input issues"
-
-                        Expect.isFalse
-                            (fst (input.TryGetProperty "operationId"))
-                            "Dry-run does not mint an ID"
-
-                        Expect.equal
-                            (input
-                                .GetProperty("binding")
-                                .GetProperty("expectedRevision")
-                                .GetInt64())
-                            0L
-                            "Initial binding"
-
-                        Expect.equal actual expected "Exact authored intent"
-
-                    Expect.isError (dryRun [ "Case-A" ]) "Former positional form refuses"
-
-                    let reserved =
-                        dryRun [ "--case-reference"; "CC-0000-0000-0000-0000-98" ]
+                    let prepared =
+                        prepare [ "--policy-number"; "SYNTHETIC-EXTERNAL" ]
                         |> CaseBuilders.accepted
                         |> Option.get
 
-                    Expect.isSome
-                        reserved.Issues
-                        "A generated spelling cannot be authored as a custom reference")
+                    use frame = System.Text.Json.JsonDocument.Parse prepared.Bytes
+                    let input = frame.RootElement.GetProperty "input"
+                    let values = input.GetProperty "inputs"
+
+                    Expect.equal
+                        (values.GetProperty("field:policyNumber").GetString())
+                        "SYNTHETIC-EXTERNAL"
+                        "Preserve the business identifier"
+
+                    Expect.isFalse
+                        (fst (values.TryGetProperty "field:caseReference"))
+                        "The server allocates the reference"
+
+                    Expect.isFalse
+                        (fst (input.TryGetProperty "operationId"))
+                        "Dry-run allocates no operation ID"
+
+                    Expect.isError
+                        (prepare [ "--case-reference"; "CC-0000-0000-0000-0000-98" ])
+                        "The retired flag is refused"
+
+                    Expect.isError
+                        (prepare [ "CC-0000-0000-0000-0000-98" ])
+                        "The retired operand is refused")
             testCase "case parties is available as a paged CLI query" (fun () ->
                 let prepared =
-                    prepare [ "case"; "parties"; "SYNTHETIC"; "--limit"; "2"; "--dry-run" ]
+                    prepare
+                        [
+                            "case"
+                            "parties"
+                            "CC-DZXV-W4P3-TR4W-QN99-83"
+                            "--limit"
+                            "2"
+                            "--dry-run"
+                        ]
                     |> CaseBuilders.accepted
 
                 let frame = Frames.admit prepared.Bytes |> CaseBuilders.accepted
@@ -196,14 +195,22 @@ let tests =
                     (Frames.value Api.caseParties frame)
                     (Some
                         {
-                            Target = CaseSelector.Reference "SYNTHETIC"
+                            Target = CaseSelector.Reference "CC-DZXV-W4P3-TR4W-QN99-83"
                             Limit = 2
                             AfterCursor = None
                         })
                     "The CLI uses the case party lookup contract")
             testCase "case assignees is available as a paged CLI query" (fun () ->
                 let prepared =
-                    prepare [ "case"; "assignees"; "SYNTHETIC"; "--limit"; "2"; "--dry-run" ]
+                    prepare
+                        [
+                            "case"
+                            "assignees"
+                            "CC-DZXV-W4P3-TR4W-QN99-83"
+                            "--limit"
+                            "2"
+                            "--dry-run"
+                        ]
                     |> CaseBuilders.accepted
 
                 let frame = Frames.admit prepared.Bytes |> CaseBuilders.accepted
@@ -212,7 +219,7 @@ let tests =
                     (Frames.value Api.caseAssignees frame)
                     (Some
                         {
-                            Target = CaseSelector.Reference "SYNTHETIC"
+                            Target = CaseSelector.Reference "CC-DZXV-W4P3-TR4W-QN99-83"
                             Limit = 2
                             AfterCursor = None
                         })
@@ -221,7 +228,10 @@ let tests =
             testCase "correction replacement retains authored values" replacement
             testCase "a dotted unknown verb cannot alias a known verb" (fun () ->
                 Expect.isError
-                    (prepare ([ "case"; "open.extra"; "SYNTHETIC"; "--dry-run" ] @ registration))
+                    (prepare (
+                        [ "case"; "open.extra"; "CC-DZXV-W4P3-TR4W-QN99-83"; "--dry-run" ]
+                        @ registration
+                    ))
                     "Only declared verbs are admitted")
             testCase "lookup reports its unsupported preview command" (fun () ->
                 let arguments =

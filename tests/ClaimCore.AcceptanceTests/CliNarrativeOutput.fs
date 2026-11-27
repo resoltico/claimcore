@@ -9,9 +9,13 @@ open System.Text.Json.Nodes
 open Expecto
 open CliCalls
 
-let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit -> int64) =
+let qualify (fixture: PublishedFixture.Fixture) source (readHead: unit -> int64) =
     let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
-    CliCalls.run fixture fixture.Environment source 0 |> ignore
+    let opened = CliCalls.run fixture fixture.Environment source 0 |> require "ACCEPTED"
+
+    let reference =
+        opened.GetProperty("subject").GetProperty("caseReference").GetString()
+        |> nonNull
 
     CliCalls.verb
         fixture
@@ -29,19 +33,13 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
     |> require "ACCEPTED"
     |> ignore
 
+    let formula = "=SUM(1,2) Rīga العربية"
+
     let planned =
         CliCalls.verb
             fixture
             owner
-            [
-                "reminder"
-                "create"
-                reference
-                "--action"
-                "Contact insurer"
-                "--due"
-                "2027-12-31"
-            ]
+            [ "reminder"; "create"; reference; "--action"; formula; "--due"; "2027-12-31" ]
             0
         |> require "ACCEPTED"
 
@@ -248,19 +246,6 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
         action
         "Reminder JSON preserves retained text exactly"
 
-    let formula = "=SUM(1,2)" + unsafe + "END-FORMULA"
-
-    let rewriteQueue bytes =
-        let root = JsonNode.Parse(bytes: byte array) |> nonNull
-
-        let items =
-            (((root["outcome"] |> nonNull)["data"] |> nonNull)["items"] |> nonNull).AsArray()
-
-        ((items[0] |> nonNull)["reminder"] |> nonNull)["action"] <- JsonValue.Create formula
-        Encoding.UTF8.GetBytes(root.ToJsonString())
-
-    fixture.TransformNextReply("/api/reminder.list", rewriteQueue)
-
     let csv =
         CliCalls.invoke
             fixture
@@ -278,7 +263,7 @@ let qualify (fixture: PublishedFixture.Fixture) source reference (readHead: unit
             Array.empty
             0
 
-    Expect.equal csv.ExitCode 0 "Retained reminder CSV is produced by the actual published client"
+    Expect.equal csv.ExitCode 0 "The published CLI receives the server's audited reminder CSV"
 
     Expect.isTrue
         (Encoding.UTF8

@@ -37,6 +37,7 @@ type internal MaterializedExport =
         RowCount: int
         Manifest: string
         CaseId: CaseId option
+        NextCursor: string option
     }
 
 /// Materialize the whole authorized traversal before any success bytes or headers are sent.
@@ -46,7 +47,12 @@ module internal CsvExport =
     let private continuation =
         ExportFailure.InvalidContinuation ExportAdvice.invalidContinuation
 
-    let materialize maximum (token: CancellationToken) traversal =
+    let materializeWindow
+        maximum
+        (window: ExportPageWindow option)
+        (token: CancellationToken)
+        traversal
+        =
         task {
             use subjects = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
             use bytes = new MemoryStream(min maximum 8192)
@@ -58,11 +64,15 @@ module internal CsvExport =
                     bytes.Write(chunk)
                     true
 
-            if not (append traversal.Header) then
+            if
+                (window |> Option.forall (fun page -> page.After.IsNone))
+                && not (append traversal.Header)
+            then
                 return Error limit
             else
                 let seen = HashSet<string>(StringComparer.Ordinal)
-                let mutable cursor = None
+                let mutable cursor = window |> Option.bind _.After
+                let mutable nextCursor = None
                 let mutable finished = false
                 let mutable failure = None
                 let mutable rowCount = 0
@@ -105,6 +115,9 @@ module internal CsvExport =
                                 || not (seen.Add next)
                                 ->
                                 failure <- Some continuation
+                            | Some next when window.IsSome ->
+                                nextCursor <- Some next
+                                finished <- true
                             | Some next -> cursor <- Some next
 
                 return
@@ -124,8 +137,12 @@ module internal CsvExport =
                                         )
                                     )
                                 CaseId = caseId
+                                NextCursor = nextCursor
                             }
         }
+
+    let materialize maximum token traversal =
+        materializeWindow maximum None token traversal
 
     let private page encode count subjects caseId next outcome =
         match outcome with
@@ -155,7 +172,7 @@ module internal CsvExport =
     let private render key args = Messages.render english.Value key args
 
     /// Page encoding consumes the typed queries within the Core export snapshot.
-    let traversal services =
+    let traversalAt limit (snapshot: ExportSnapshot) =
         function
         | ExportSelection.Cases filter ->
             {
@@ -164,15 +181,10 @@ module internal CsvExport =
                     fun cursor token ->
                         task {
                             let! result =
-                                Service.list
-                                    services
+                                snapshot.Cases
                                     {
                                         CaseListRequest.Filter = filter
-                                        Page =
-                                            {
-                                                AfterCursor = cursor
-                                                Limit = Paging.MaximumPageSize
-                                            }
+                                        Page = { AfterCursor = cursor; Limit = limit }
                                     }
                                     token
 
@@ -195,15 +207,10 @@ module internal CsvExport =
                     fun cursor token ->
                         task {
                             let! result =
-                                Service.caseSummary
-                                    services
+                                snapshot.Summary
                                     {
                                         Selection = selection
-                                        Page =
-                                            {
-                                                AfterCursor = cursor
-                                                Limit = Paging.MaximumPageSize
-                                            }
+                                        Page = { AfterCursor = cursor; Limit = limit }
                                     }
                                     token
 
@@ -224,11 +231,10 @@ module internal CsvExport =
                     fun cursor token ->
                         task {
                             let! result =
-                                Service.timelineForExport
-                                    services
+                                snapshot.Timeline
                                     { selection with
                                         AfterCursor = cursor
-                                        Limit = Paging.MaximumPageSize
+                                        Limit = limit
                                     }
                                     token
 
@@ -253,11 +259,10 @@ module internal CsvExport =
                     fun cursor token ->
                         task {
                             let! result =
-                                Service.reminders
-                                    services
+                                snapshot.Reminders
                                     { selection with
                                         AfterCursor = cursor
-                                        Limit = Paging.MaximumPageSize
+                                        Limit = limit
                                     }
                                     token
 
@@ -289,11 +294,10 @@ module internal CsvExport =
                     fun cursor token ->
                         task {
                             let! result =
-                                Service.peopleHistory
-                                    services
+                                snapshot.PeopleHistory
                                     { selection with
                                         AfterCursor = cursor
-                                        Limit = Paging.MaximumPageSize
+                                        Limit = limit
                                     }
                                     token
 
@@ -313,3 +317,7 @@ module internal CsvExport =
                                     result
                         }
             }
+
+
+    let traversal services selection =
+        traversalAt Paging.MaximumPageSize services selection

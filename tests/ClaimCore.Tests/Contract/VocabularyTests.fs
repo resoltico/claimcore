@@ -133,12 +133,12 @@ let tests =
 
                     Expect.hasLength
                         tokens
-                        41
+                        40
                         "All ledger declarations, including operator provisioning and recovery"
 
                     for subject, count in
                         [
-                            ActSubject.Case, 14
+                            ActSubject.Case, 13
                             ActSubject.People, 11
                             ActSubject.Work, 1
                             ActSubject.Note, 2

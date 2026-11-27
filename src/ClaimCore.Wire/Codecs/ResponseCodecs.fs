@@ -266,10 +266,8 @@ module ResponseCodecs =
                 changedAt
                 recordedBy
                 family
-                matchedReference
                 relatedCases ->
                 {
-                    MatchedReference = matchedReference
                     RelatedCases = defaultArg relatedCases RelatedCaseLinks.empty
                     FamilySequence = family
                     Snapshot =
@@ -328,7 +326,6 @@ module ResponseCodecs =
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "familySequence" _.FamilySequence ResponseScalars.sequence
-        |> optionalField "matchedReference" _.MatchedReference caseReference
         |> optionalField
             "relatedCases"
             (fun reply ->
@@ -604,26 +601,20 @@ module ResponseCodecs =
         |> named "AccessRequestPage"
 
     let private disclosureSelection =
-        let pair =
-            record (fun key value -> key, value)
-            |> field "key" fst text
-            |> field "value" snd text
-            |> build
-
-        list 64 pair
-        |> Codec.interpret
-            (fun path values ->
-                let selection = Map.ofList values
-
-                if selection.Count = values.Length then
-                    Ok selection
-                else
-                    Error
-                        {
-                            Path = path
-                            Reason = "Disclosure selection keys must be unique."
-                        })
-            Map.toList
+        (record (fun filtered paged order grouping ->
+            {
+                Filtered = filtered
+                Paged = paged
+                Order = order
+                Grouping = grouping
+            })
+        : Fields<DisclosureExportSelection, _>)
+        |> field "filtered" _.Filtered boolean
+        |> field "paged" _.Paged boolean
+        |> field "order" _.Order (nullable (VocabularyCodec.create CaseListOrder.vocabulary))
+        |> field "grouping" _.Grouping (nullable (VocabularyCodec.create CaseGrouping.vocabulary))
+        |> build
+        |> named "DisclosureExportSelection"
 
     let private disclosureExport =
         (record (fun query selection count ->
@@ -633,17 +624,25 @@ module ResponseCodecs =
                 RowCount = count
             })
         : Fields<DisclosureExport, _>)
-        |> field "query" _.Query text
+        |> field "query" _.Query (VocabularyCodec.create DisclosureExportQuery.vocabulary)
         |> field "selection" _.Selection disclosureSelection
         |> field "rowCount" _.RowCount (integer 0L (int64 Int32.MaxValue) |> map int int64)
         |> build
         |> named "DisclosureExport"
 
+    let private disclosurePageEvidence =
+        record (fun count cases people -> DisclosurePageEvidence.create count cases people)
+        |> field "rowCount" _.RowCount (integer 0L (int64 Int32.MaxValue) |> map int int64)
+        |> field "cases" _.Cases (list DisclosurePageEvidence.maximumSubjects caseId)
+        |> field "people" _.People (list DisclosurePageEvidence.maximumSubjects actorId)
+        |> build
+        |> named "DisclosurePageEvidence"
+
     let private disclosureEvent =
         let attachmentId =
             uuid |> map (AttachmentId.create >> Option.get) AttachmentId.value
 
-        (record (fun actor kind caseId attachment outcome export ->
+        (record (fun actor kind caseId attachment outcome export page ->
             {
                 DisclosureEvent.ActorId = actor
                 Kind = kind
@@ -651,6 +650,7 @@ module ResponseCodecs =
                 AttachmentId = attachment
                 Outcome = outcome
                 Export = export
+                Page = page
             })
         : Fields<DisclosureEvent, _>)
         |> field "actorId" _.ActorId actorId
@@ -659,6 +659,7 @@ module ResponseCodecs =
         |> field "attachmentId" _.AttachmentId (nullable attachmentId)
         |> field "outcome" _.Outcome (VocabularyCodec.create DisclosureOutcome.vocabulary)
         |> field "export" _.Export (nullable disclosureExport)
+        |> optionalField "page" _.Page disclosurePageEvidence
         |> build
         |> named "DisclosureEvent"
 
@@ -895,16 +896,14 @@ module ResponseCodecs =
         |> named "CaseRef"
 
     let private exactCaseReference =
-        (record (fun id reference matched ->
+        (record (fun id reference ->
             {
                 ExactCaseReference.CaseId = id
                 CaseReference = reference
-                MatchedReference = matched
             })
         : Fields<ExactCaseReference, _>)
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.CaseReference caseReference
-        |> field "matchedReference" _.MatchedReference (nullable caseReference)
         |> build
         |> named "ExactCaseReference"
 

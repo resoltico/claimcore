@@ -56,10 +56,9 @@ A display name or email address is not a sign-in identity and grants no access.
 
 A **Case ID** is the stable UUID of the accepted `case.open` change. A **case reference** is the
 identifier people use to find and discuss a case. The system issues references such as
-`CC-7K3M-Q8T2-PW6D-X9HR-49` with a random payload and two check digits. A register can also allow
-custom references. References remain reserved to their case under ASCII-case-insensitive comparison
-after correction or erasure. Use tagged selectors to choose exact lookup by ID or reference. An
-earlier authorized reference resolves to the current case.
+`CC-7K3M-Q8T2-PW6D-X9HR-49` with a random payload and two check digits. The reference is permanent
+and remains tied to the Case ID after erasure. Use tagged selectors for exact lookup by ID or reference.
+Policy numbers and insurer claim references are erasable business facts.
 
 ## Facts, decision and payment
 

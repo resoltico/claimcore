@@ -11,6 +11,22 @@ let at (instant: DateTimeOffset) = Guid.CreateVersion7 instant
 type Scope() =
     let identities = System.Collections.Concurrent.ConcurrentDictionary<int, Guid>()
 
+    let cases =
+        System.Collections.Concurrent.ConcurrentDictionary<string, Guid>(
+            StringComparer.OrdinalIgnoreCase
+        )
+
+    member _.DescribeCase(name, operation) = cases[name] <- operation
+
+    member _.Case(name) =
+        match cases.TryGetValue name with
+        | true, operation -> Some operation
+        | _ -> None
+
+    member _.CaseName(identity) =
+        cases
+        |> Seq.tryPick (fun pair -> if pair.Value = identity then Some pair.Key else None)
+
     member _.Id number =
         identities.GetOrAdd(number, fun _ -> fresh ())
 

@@ -72,11 +72,8 @@ let tests = unicode
 [<Tests>]
 let identifiers =
     testCase
-        "ASCII references and supported country codes retain their literal boundaries"
+        "Issued references and supported country codes retain their literal boundaries"
         (fun () ->
-            for reference in [ "A"; "cc"; "cC9-1"; "C-9"; String.replicate 32 "a"; "Del-Ta9" ] do
-                Expect.isOk (CaseReference.parseCustom reference) "Custom ASCII reference"
-
             for reference in
                 [
                     ""
@@ -91,9 +88,9 @@ let identifiers =
                     "A_B"
                     "cc-"
                     "cC-0"
-                    "CC-0000-0000-0000-0000-98"
+                    "CC-0000-0000-0000-0000-99"
                 ] do
-                Expect.isError (CaseReference.parseCustom reference) "Invalid custom reference"
+                Expect.isError (CaseReference.parse reference) "Invalid issued reference"
 
             Expect.equal (CaseReference.key "i-Demo") "I-DEMO" "ASCII identity folding"
 
@@ -127,8 +124,8 @@ let generatedReferences =
 
                         Expect.equal
                             (CaseReference.format lookup)
-                            exact
-                            "Selector retains spelling"
+                            reference
+                            "Selector gives the canonical spelling"
 
                         Expect.equal (CaseReference.canonical lookup) generated "Folded identity"
 

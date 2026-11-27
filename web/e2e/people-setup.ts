@@ -65,6 +65,9 @@ export const applyPeople = async (page: Page, body: RequestByEndpoint["operation
     if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return;
     }
+    if (outcome.kind === "RECEIPT_UNAVAILABLE") {
+      throw new Error("Synthetic people operation receipt unavailable; recover by operation ID.");
+    }
     if (outcome.kind !== "OUTCOME_UNKNOWN") {
       const code = outcome.kind === "REJECTED" ? outcome.rejection.code : outcome.fault.code;
       throw new Error(`Synthetic people action ${outcome.kind}: ${code}`);

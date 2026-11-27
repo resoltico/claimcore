@@ -41,24 +41,15 @@ let tests =
                 CaseId.create (Guid.Parse "10000000-0000-7000-8000-000000000002") |> Option.get
 
             Expect.isEmpty
-                (Advice.installationOffers
-                    CaseReferencePolicy.CustomAllowed
-                    human
-                    (access human [] [ caseId, [ Role.Owner ] ]))
+                (Advice.installationOffers human (access human [] [ caseId, [ Role.Owner ] ]))
                 "A scoped role does not manage the installation"
 
             Expect.isEmpty
-                (Advice.installationOffers
-                    CaseReferencePolicy.CustomAllowed
-                    service
-                    (access service [ Role.Owner ] []))
+                (Advice.installationOffers service (access service [ Role.Owner ] []))
                 "Invalid service owner has no controls"
 
             Expect.equal
-                (Advice.installationOffers
-                    CaseReferencePolicy.CustomAllowed
-                    human
-                    (access human [ Role.Owner ] []))
+                (Advice.installationOffers human (access human [ Role.Owner ] []))
                 [
                     InstallationOffer.PeopleAct(TaskId.ofLiteral "people.register")
                     InstallationOffer.PeopleAct(TaskId.ofLiteral "people.admit")

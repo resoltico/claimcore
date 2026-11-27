@@ -32,7 +32,7 @@ let tests =
                         let arguments =
                             TextInputs.expand
                                 false
-                                [ "note"; "add"; "NOTE-1"; "--text-file"; path ]
+                                [ "note"; "add"; "CC-55KW-SSJ4-8HMS-G1BH-73"; "--text-file"; path ]
                             |> accepted
 
                         let prepared =
@@ -74,7 +74,7 @@ let tests =
                                 [
                                     "work"
                                     "update"
-                                    "NAR"
+                                    "CC-W5Z8-AVW6-REFR-AHRB-03"
                                     "--handling-summary-file"
                                     path
                                     "--expected-work-revision"
@@ -97,7 +97,7 @@ let tests =
                             Expect.equal
                                 value.Binding
                                 (Binding.Work(
-                                    CaseSelector.Reference "NAR",
+                                    CaseSelector.Reference "CC-W5Z8-AVW6-REFR-AHRB-03",
                                     Revision.create 2L |> Option.get
                                 ))
                                 "Reviewed work version"
@@ -126,7 +126,7 @@ let tests =
                             [
                                 "work"
                                 "update"
-                                "NAR"
+                                "CC-W5Z8-AVW6-REFR-AHRB-03"
                                 "--handling-summary-file"
                                 "/does-not-exist"
                             ])
@@ -138,7 +138,7 @@ let tests =
                             [
                                 "work"
                                 "update"
-                                "NAR"
+                                "CC-W5Z8-AVW6-REFR-AHRB-03"
                                 "--handling-summary"
                                 "kept"
                                 "--handling-summary-file"
@@ -149,10 +149,22 @@ let tests =
                     Expect.isError
                         (TextInputs.expand
                             false
-                            [ "work"; "update"; "NAR"; "--handling-summary-editor" ])
+                            [
+                                "work"
+                                "update"
+                                "CC-W5Z8-AVW6-REFR-AHRB-03"
+                                "--handling-summary-editor"
+                            ])
                         "Editor requires intentional terminal use")
             testCase "clear is explicit and duplicate set plus clear refuses" (fun () ->
-                let prefix = [ "work"; "update"; "NAR"; "--expected-work-revision"; "2" ]
+                let prefix =
+                    [
+                        "work"
+                        "update"
+                        "CC-W5Z8-AVW6-REFR-AHRB-03"
+                        "--expected-work-revision"
+                        "2"
+                    ]
 
                 let prepare arguments =
                     Grammar.prepare (fun () -> "10000000-0000-4000-8000-000000000002") arguments

@@ -23,7 +23,6 @@ let private token = CancellationToken.None
 let identities (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        let reference = "a0000000000040008000000000000609"
 
         let identityWithThoseDigits =
             CaseFixtures.caseId (Guid.Parse "a0000000-0000-4000-8000-000000000609")
@@ -35,18 +34,16 @@ let identities (fixture: Fixture) =
                 "case.open"
                 (id fixture 610)
                 (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
-                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration))
-                 |> Map.add
-                     (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                     (ClaimCore.Application.Contracts.SubmissionValue.Text(reference)))
+                (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
         let! opened = Service.executeSubmission actor ((openInput)) token
         let opening = accepted opened
+        let reference = CaseReference.format (caseReceipt opening).Reference
 
         Expect.equal
             (caseReceipt opening).CaseId
             expected
-            "OPEN identity is its operation UUID, independently of its UUID-shaped reference"
+            "OPEN identity is its operation UUID, independently of its issued reference"
 
         let! byReference =
             Service.get
@@ -201,15 +198,7 @@ let identities (fixture: Fixture) =
         let! second =
             Service.executeSubmission
                 actor
-                (request
-                    fixture
-                    612
-                    "SELECTOR-OTHER"
-                    0L
-                    "case.open"
-                    (Map.remove
-                        (Submissions.field BusinessField.CaseReference)
-                        openInput.Envelope.Inputs))
+                (request fixture 612 "SELECTOR-OTHER" 0L "case.open" openInput.Envelope.Inputs)
                 token
 
         Expect.equal
@@ -314,22 +303,17 @@ let identities (fixture: Fixture) =
                 ((ClaimCore.TestSupport.Submissions.withOperationId (id fixture 623) (openInput)))
                 token
 
-        match reuse.Outcome with
-        | ExecuteResult.Rejected _ -> ()
-        | _ -> failtest "An erased case reference cannot be reused"
+        let issued = accepted reuse |> caseReceipt
+
+        Expect.notEqual
+            (CaseReference.format issued.Reference)
+            reference
+            "The later case receives its own permanent reference"
 
         let! fresh =
             Service.executeSubmission
                 actor
-                (request
-                    fixture
-                    624
-                    "SELECTOR-FRESH"
-                    0L
-                    "case.open"
-                    (Map.remove
-                        (Submissions.field BusinessField.CaseReference)
-                        openInput.Envelope.Inputs))
+                (request fixture 624 "SELECTOR-FRESH" 0L "case.open" openInput.Envelope.Inputs)
                 token
 
         accepted fresh |> ignore
@@ -364,7 +348,6 @@ let grantScopes (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
         let expectedId = CaseFixtures.caseId (id fixture 630)
-        let reference = CaseFixtures.reference "Scope-A"
 
         let! opened =
             Service.executeSubmission
@@ -381,6 +364,7 @@ let grantScopes (fixture: Fixture) =
                 token
 
         Expect.equal (caseReceipt (accepted opened)).CaseId expectedId "Independent creation ID"
+        let reference = (accepted opened |> caseReceipt).Reference
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "scope-reader"
@@ -457,7 +441,10 @@ let grantScopes (fixture: Fixture) =
                     input.Envelope.Binding
                     (Submissions.grant
                         { authored with
-                            Scope = GrantTarget.CaseReference "scope-a"
+                            Scope =
+                                GrantTarget.CaseReference(
+                                    (issuedCaseReference fixture "scope-a").ToLowerInvariant()
+                                )
                         }))
                 token
 
@@ -530,7 +517,10 @@ let grantScopes (fixture: Fixture) =
                 (id fixture 633)
                 reader
                 { authored with
-                    Scope = GrantTarget.CaseReference "scope-a"
+                    Scope =
+                        GrantTarget.CaseReference(
+                            (issuedCaseReference fixture "scope-a").ToLowerInvariant()
+                        )
                 }
                 false
 

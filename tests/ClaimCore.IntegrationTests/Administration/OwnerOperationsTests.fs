@@ -70,7 +70,6 @@ let private statusAndModes (database: PostgresFixture.Database) =
                 (id database.Fixture 1)
                 DomainInputs.ownerProfile
                 []
-                CaseReferencePolicy.CustomAllowed
                 token
 
         Expect.equal
@@ -215,7 +214,7 @@ let private actionState (database: PostgresFixture.Database) =
             Service.get
                 actor
                 {
-                    Target = CaseSelector.Reference "MAINTENANCE-A"
+                    Target = caseTarget database.Fixture "MAINTENANCE-A"
                 }
                 token
 
@@ -713,14 +712,7 @@ let private recoverPausedOwner (database: PostgresFixture.Database) =
         Expect.equal
             retainedBootstrap.Root.Hash
             firstRoot.Root.Hash
-            "Owner recovery does not replace the policy evidence"
-
-        let! status = administration.Status token
-
-        Expect.equal
-            status.CaseReferencePolicy
-            CaseReferencePolicy.CustomAllowed
-            "Owner recovery leaves the effective policy unchanged"
+            "Owner recovery preserves the original bootstrap evidence"
 
         let! _ = verified database
         ()

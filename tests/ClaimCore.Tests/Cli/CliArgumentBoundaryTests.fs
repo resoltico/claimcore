@@ -95,7 +95,7 @@ let tests =
                     let caseId = CaseId.create (Guid.Parse rawCase) |> Option.get
                     let attachment = AttachmentId.create (Guid.Parse rawAttachment) |> Option.get
                     let byId = CaseSelector.Id caseId
-                    let byReference = CaseSelector.Reference "REFERENCE"
+                    let byReference = CaseSelector.Reference "CC-NSKS-Q0SY-B19R-X8WQ-93"
 
                     let verb = [ "attachment"; "withdraw" ]
 
@@ -118,7 +118,9 @@ let tests =
                             "Both tagged selectors retain the child ID"
 
                     machine [ "--case-id"; rawCase; rawAttachment ] |> expectBinding byId
-                    machine [ "REFERENCE"; rawAttachment ] |> expectBinding byReference
+
+                    machine [ "CC-NSKS-Q0SY-B19R-X8WQ-93"; rawAttachment ]
+                    |> expectBinding byReference
 
                     let action =
                         TaskAffordances.offered
@@ -130,7 +132,11 @@ let tests =
 
                     actionCommand action |> words |> preview |> expectBinding byId
 
-                    for extras in [ [ "REFERENCE"; rawAttachment ]; [ rawAttachment; "extra" ] ] do
+                    for extras in
+                        [
+                            [ "CC-NSKS-Q0SY-B19R-X8WQ-93"; rawAttachment ]
+                            [ rawAttachment; "extra" ]
+                        ] do
                         let argv =
                             explicitOperation (
                                 verb @ [ "--case-id"; rawCase ] @ extras @ [ "--preview" ]
@@ -198,9 +204,9 @@ let tests =
 
                     Expect.equal request.Page.Limit 17 "Pagination stays a named argument")
             testCase
-                "query and bound operation hints preserve custom and generated reference spelling"
+                "query and bound operation hints preserve the supplied issued reference spelling"
                 (fun () ->
-                    for reference in [ "Claim-Mixed"; "cc-0000-0000-0000-0000-98" ] do
+                    for reference in [ "cc-5nrh-cgnq-4tr4-80b2-30"; "cc-0000-0000-0000-0000-98" ] do
                         let query =
                             ControlHints.link (
                                 Link.CaseGet
@@ -351,7 +357,7 @@ let tests =
                         "<ROLE[@CASE-REF]>"
                         "The required collection has an acquisition row"
 
-                    for reference in [ "Claim-Mixed"; "cc-0000-0000-0000-0000-98" ] do
+                    for reference in [ "cc-5nrh-cgnq-4tr4-80b2-30"; "cc-0000-0000-0000-0000-98" ] do
                         let supplied =
                             hint
                                 .Replace("'<principalKind>'", "HUMAN")
@@ -528,7 +534,7 @@ let tests =
                                     path
                                     "--preview"
                                     "--"
-                                    "Claim-Mixed"
+                                    "cc-5nrh-cgnq-4tr4-80b2-30"
                                 ]
                             |> required
 
@@ -550,7 +556,10 @@ let tests =
 
                         Expect.equal
                             submission.Envelope.Binding
-                            (OperationBinding.Note(CaseSelector.Reference "Claim-Mixed", None))
+                            (OperationBinding.Note(
+                                CaseSelector.Reference "cc-5nrh-cgnq-4tr4-80b2-30",
+                                None
+                            ))
                             "Source expansion preserves the supplied selector"
 
                         let command = ClaimCore.TestSupport.Submissions.command submission

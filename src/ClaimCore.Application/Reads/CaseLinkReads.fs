@@ -17,6 +17,7 @@ module internal CaseLinkReads =
 
                 return
                     stored
+                    |> Option.filter (fun row -> row.Snapshot.State <> CaseState.Erased)
                     |> Option.map (fun row ->
                         {
                             RelatedCaseTarget.CaseId = id
@@ -57,7 +58,6 @@ module internal CaseLinkReads =
                         None
 
                 let facts = family |> Option.map _.Facts
-                let mutable targets = Map.empty
                 let mutable outgoing = []
 
                 for id, row in
@@ -69,7 +69,6 @@ module internal CaseLinkReads =
                     | None -> ()
                     | Some content ->
                         let! item = related tx principal content.Target
-                        targets <- Map.add content.Target item targets
 
                         outgoing <-
                             ({
@@ -82,20 +81,12 @@ module internal CaseLinkReads =
 
                 let environment =
                     {
-                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
-                        Requester = view.Actor
+                        FamilyEnvironment.Requester = view.Actor
                         RequesterPrincipal = principal
                         Maintenance = view.Maintenance.Active
                         AssigneeEligible = fun _ -> false
                         ReferenceOwner = fun _ -> None
-                        RelatedCase =
-                            function
-                            | CaseSelector.Id id ->
-                                targets
-                                |> Map.tryFind id
-                                |> Option.flatten
-                                |> Option.map (fun value -> id, value.Lifecycle)
-                            | CaseSelector.Reference _ -> None
+                        RelatedCase = fun _ -> None
                     }
 
                 let available id binding =

@@ -57,7 +57,7 @@ it("rebinds the declared revision without putting executable identity or authori
       kind: "CASE",
       target: {
         kind: "REFERENCE",
-        caseReference: "CASE-SERIALIZATION",
+        caseReference: "CC-3PBY-1JRP-Z70W-2VXH-71",
       },
       expectedRevision: 4,
     },
@@ -179,7 +179,7 @@ it("refuses implicit preview and re-preparation for a different case target", ()
       kind: "CASE",
       target: {
         kind: "REFERENCE",
-        caseReference: "OTHER-CASE",
+        caseReference: "CC-6990-QC0Q-HE04-SVXM-94",
       },
       expectedRevision: 8,
     },
@@ -212,7 +212,7 @@ it("refuses implicit preview and re-preparation for a different case target", ()
 });
 
 it("refreshes both erasure preconditions from the supplied current action after a root revision conflict", () => {
-  const target = { kind: "REFERENCE" as const, caseReference: "CASE-SERIALIZATION" };
+  const target = { kind: "REFERENCE" as const, caseReference: "CC-3PBY-1JRP-Z70W-2VXH-71" };
   const old = prepareRequest("operation.execute", {
     operationId: secondId,
     task: "case.erase",

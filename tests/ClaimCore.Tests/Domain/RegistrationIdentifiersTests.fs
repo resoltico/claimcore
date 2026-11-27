@@ -67,7 +67,7 @@ let private run number revision task members previous =
     let changes =
         match ClaimCore.Domain.Tasks.Registry.find (TaskId.ofLiteral task) with
         | Some(ClaimCore.Domain.Tasks.Task.Opening _) ->
-            ClaimCore.Tests.TaskBuilders.openCustom context environment state binding input
+            ClaimCore.Tests.TaskBuilders.openCase context environment state binding input
         | Some(ClaimCore.Domain.Tasks.Task.Family task) ->
             task.Decide context environment state binding input
         | _ -> failtest "Expected family task."

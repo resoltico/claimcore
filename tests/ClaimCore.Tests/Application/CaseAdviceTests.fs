@@ -17,7 +17,6 @@ let private kinds =
     [
         (TaskId.ofLiteral "case.open")
         (TaskId.ofLiteral "case.amendRegistration")
-        (TaskId.ofLiteral "case.changeReference")
         (TaskId.ofLiteral "case.correct")
         (TaskId.ofLiteral "case.decide")
         (TaskId.ofLiteral "case.withdrawDecision")

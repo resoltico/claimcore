@@ -198,35 +198,40 @@ module internal CaseSetQueries =
                             Capability.ReadCase
                             (Some record)
                     then
-                        let! matched =
-                            CaseIdentityReads.matchedEarlier
-                                tx
-                                record.CaseId
-                                record.Snapshot.Reference
-                                (CaseSelector.Reference text)
-
                         return
                             Some
                                 {
                                     ExactCaseReference.CaseId = record.CaseId
                                     CaseReference = record.Snapshot.Reference
-                                    MatchedReference = matched
                                 }
                     else
                         return None
         }
 
-    let list (services: ServiceContext) (request: CaseListRequest) token =
-        let store = services.Store
+    let private listWith
+        finalize
+        reject
+        (services: ServiceContext)
+        (request: CaseListRequest)
+        token
+        =
         let principal = services.Principal
 
         task {
             if not (validLimit request.Page.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! reject services token QueryResults.invalidLimitRefusal
             else
                 let! result =
-                    store.Read(
-                        {
+                    DisclosureReads.pageReadWith
+                        finalize
+                        services
+                        DisclosureKind.CaseList
+                        (fun _ -> None)
+                        (fun (page: CaseSummaryPage) ->
+                            let cases = page.Items |> List.map _.CaseId
+                            let extra = page.ExactReference |> Option.map _.CaseId |> Option.toList
+                            DisclosurePageEvidence.create page.Items.Length (cases @ extra) [])
+                        ({
                             ReadOperation.Work =
                                 (fun tx ->
                                     task {
@@ -317,8 +322,6 @@ module internal CaseSetQueries =
                                                                         else
                                                                             Advice
                                                                                 .installationOffers
-                                                                                tx
-                                                                                    .CaseReferencePolicy
                                                                                 principal
                                                                                 actor
                                                                     NextCursor = next
@@ -326,19 +329,35 @@ module internal CaseSetQueries =
 
                                     })
                             CancellationToken = token
-                        }
-                    )
+                        })
 
-                return readResult result
+                return result
         }
 
-    let caseSummary (services: ServiceContext) (summary: CaseSummaryRequest) token =
+    let list services request token =
+        listWith DisclosureReads.complete RequestRefusals.protectedRead services request token
+
+    let listForExport services request token =
+        listWith DisclosureReads.completePreparation RequestRefusals.read services request token
+
+    let private caseSummaryWith
+        finalize
+        reject
+        (services: ServiceContext)
+        (summary: CaseSummaryRequest)
+        token
+        =
         task {
             if not (validLimit summary.Page.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! reject services token QueryResults.invalidLimitRefusal
             else
                 let! result =
-                    services.Store.Read
+                    DisclosureReads.pageReadWith
+                        finalize
+                        services
+                        DisclosureKind.CaseSummary
+                        (fun _ -> None)
+                        (fun (page: CaseWorklistSummary) -> DisclosureReads.rows page.Rows)
                         {
                             Work =
                                 fun tx ->
@@ -429,5 +448,21 @@ module internal CaseSetQueries =
                             CancellationToken = token
                         }
 
-                return readResult result
+                return result
         }
+
+    let caseSummary services request token =
+        caseSummaryWith
+            DisclosureReads.complete
+            RequestRefusals.protectedRead
+            services
+            request
+            token
+
+    let caseSummaryForExport services request token =
+        caseSummaryWith
+            DisclosureReads.completePreparation
+            RequestRefusals.read
+            services
+            request
+            token
