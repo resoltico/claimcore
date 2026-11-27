@@ -251,6 +251,75 @@ let tests =
                             outcome
                             "Terminal outcome survives the mapping")
 
+            testCase "a credential retired during preparation refuses without dispatch" (fun () ->
+                let clock = Clock()
+                let mutable calls = 0
+
+                use handler =
+                    new CliTransportFixture.Handler(fun request ->
+                        calls <- calls + 1
+
+                        Expect.equal
+                            (request.RequestUri |> nonNull |> _.AbsolutePath)
+                            "/api/context"
+                            "Preparation alone reaches the service"
+
+                        Task.FromResult(
+                            reply (
+                                Codec.encode
+                                    Api.context.Output
+                                    (RepresentationReply.Data(
+                                        Outcome.Succeeded
+                                            {
+                                                Requester = RequesterState.SignInRequired
+                                                TerminationScope = None
+                                            }
+                                    ))
+                            )
+                        ))
+
+                use client = new HttpClient(handler)
+                use output = new MemoryStream()
+                use errors = new MemoryStream()
+
+                use processor =
+                    RemoteFrameProcessor.ForAuthenticatedTest(
+                        {
+                            Input = Stream.Null
+                            Output = output
+                            Errors = errors
+                        },
+                        {
+                            Configuration = configuration
+                            Client = client
+                            IsCurrent = (fun _ -> true)
+                            Clock = clock
+                            JournalDirectory = (fun () -> failtest "No journal allocation")
+                        },
+                        token clock
+                    )
+
+                let frame =
+                    Frames.create Api.operationGet { OperationId = OperationIds.fresh () }
+                    |> required
+
+                let response = processor.Exchange(frame, CancellationToken.None) |> sync
+                let decoded = Frames.decode response.Bytes |> required
+
+                Expect.equal
+                    decoded.Delivery
+                    DeliveryState.NotSent
+                    "No protected call was dispatched"
+
+                match decoded.Result with
+                | FrameResult.LocalFailure CliFailure.AuthenticationFailed -> ()
+                | _ -> failtest "Preparation requires fresh authentication"
+
+                Expect.equal
+                    calls
+                    1
+                    "A failed freshness check never dispatches the original request")
+
             testCase
                 "operational commands send once through the actual processor without ledger recovery"
                 (fun () ->

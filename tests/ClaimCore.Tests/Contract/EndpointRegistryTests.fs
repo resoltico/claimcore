@@ -46,7 +46,8 @@ let private registry () =
             | "session.logout"
             | "session.terminateOwn"
             | "people.terminateSessions"
-            | "people.requests.dismiss" -> EndpointEffect.OperationalWrite
+            | "people.requests.dismiss"
+            | "people.requests.submit" -> EndpointEffect.OperationalWrite
             | _ -> EndpointEffect.Read
 
         Expect.equal endpoint.Effect expectedEffect "Only declared mutations write state"

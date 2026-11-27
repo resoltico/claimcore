@@ -70,9 +70,12 @@ type private RuntimeResource(storage: ClaimCore.Application.IRuntime, calendar: 
 
     let sessions =
         { new ClaimCore.Application.ISessionStore with
-            member _.Create(principal, payload, expiry, idle, absolute, token) =
+            member _.StartFlow token =
+                sessionAction (fun store -> store.StartFlow token)
+
+            member _.Create(principal, login, protect, expiry, idle, absolute, token) =
                 sessionAction (fun store ->
-                    store.Create(principal, payload, expiry, idle, absolute, token))
+                    store.Create(principal, login, protect, expiry, idle, absolute, token))
 
             member _.Retrieve(key, token) =
                 sessionAction (fun store -> store.Retrieve(key, token))

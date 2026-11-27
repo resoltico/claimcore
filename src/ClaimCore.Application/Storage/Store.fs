@@ -27,19 +27,23 @@ type internal WriteOperation<'result> =
         CancellationToken: CancellationToken
     }
 
-/// Context cache writes are non-ledger facts. Implementations serialize the principal before
-/// taking the access snapshot and refresh a request only when that snapshot has no actor.
+/// Read-only requester status in one snapshot.
 [<NoComparison>]
 type internal ContextQuery =
     {
         Principal: PrincipalKey
-        Claims: RequesterClaims
+        Credential: (PrincipalKey * VerifiedCredential) option
         CancellationToken: CancellationToken
     }
 
 type internal ContextFacts =
     {
         Facts: GlobalReadFacts
+        Association: PrincipalAssociation
+        RequestPending: bool
+        CredentialUsable: bool
+        AuthorityVersion: int64
+        TerminationCutoff: DateTimeOffset option
         CaseReferencePolicy: CaseReferencePolicy
         ObservedAt: DateTimeOffset
     }

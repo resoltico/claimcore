@@ -45,7 +45,17 @@ module RequestGate =
                 | None -> return Error GateFailure.SessionRejected
                 | Some principal ->
                     match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
-                    | Ok actor -> return Ok actor
+                    | Ok actor ->
+                        return
+                            authentication.Properties
+                            |> Option.ofObj
+                            |> Option.bind BrowserTicket.credential
+                            |> Option.map (
+                                ClaimCore.Application.VerifiedCredential.Browser
+                                >> fun proof -> AuthenticatedPrincipals.withCredential proof actor
+                            )
+                            |> Option.defaultValue actor
+                            |> Ok
                     | Error _ -> return Error GateFailure.SessionRejected
         }
 
@@ -69,6 +79,7 @@ module RequestGate =
                         PrincipalIdentity.fromAccessToken
                             configuration.Issuer
                             configuration.CliClientId
+                            configuration.ServiceClientIds
                             principal
                     with
                     | Ok actor -> return Ok actor

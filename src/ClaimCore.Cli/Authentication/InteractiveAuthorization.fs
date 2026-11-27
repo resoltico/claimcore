@@ -95,7 +95,10 @@ module InteractiveAuthorization =
             let! result =
                 task {
                     try
-                        let! result = oidc.LoginAsync(LoginRequest(), cancelled)
+                        let request = LoginRequest()
+                        request.FrontChannelExtraParameters.Add("prompt", "login")
+                        request.FrontChannelExtraParameters.Add("max_age", "0")
+                        let! result = oidc.LoginAsync(request, cancelled)
 
                         try
                             match tokenEndpoint options () with

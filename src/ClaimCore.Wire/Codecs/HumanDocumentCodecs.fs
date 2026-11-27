@@ -87,9 +87,11 @@ module HumanDocumentCodecs =
                 (function
                 | DocumentSubject.Requester value -> Some value
                 | _ -> None)
-                (record (fun state installation actor ->
+                (record (fun state installation actor authorityVersion scope ->
                     {
                         RequesterSubject.State = state
+                        AuthorityVersion = authorityVersion
+                        TerminationScope = scope
                         InstallationId = installation
                         ActorId = actor
                     })
@@ -102,7 +104,15 @@ module HumanDocumentCodecs =
                          None
                       |> VocabularyCodec.create)
                  |> field "installationId" _.InstallationId (nullable uuid)
-                 |> field "actorId" _.ActorId (nullable ResponseScalars.actorId))
+                 |> field "actorId" _.ActorId (nullable ResponseScalars.actorId)
+                 |> field
+                     "authorityVersion"
+                     _.AuthorityVersion
+                     (nullable (integer 0L SafeInteger.Maximum))
+                 |> optionalField
+                     "terminationScope"
+                     _.TerminationScope
+                     ResponseCodecs.terminationScope)
             unitVariant "LIST" DocumentSubject.List
             variant
                 "REVIEW"

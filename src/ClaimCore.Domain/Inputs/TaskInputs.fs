@@ -39,6 +39,8 @@ type TaskInputId =
     | ReminderKindFilter
     | DeadlineOutcomeFilter
     | IncludeInactive
+    | SettleOnly
+    | ConfirmRetirement
     | CaseDate of CaseDateFilter
     | GroupBy
 
@@ -55,6 +57,8 @@ module TaskInputId =
         | TaskInputId.ReminderKindFilter -> "reminderKind"
         | TaskInputId.ReminderDue -> "reminderDue"
         | TaskInputId.IncludeInactive -> "includeInactive"
+        | TaskInputId.SettleOnly -> "settleOnly"
+        | TaskInputId.ConfirmRetirement -> "confirmRetirement"
         | TaskInputId.Scope -> "scope"
         | TaskInputId.ActorId -> "actorId"
         | TaskInputId.CaseId -> "caseId"
@@ -108,6 +112,8 @@ module TaskInputId =
             TaskInputId.ReminderKindFilter
             TaskInputId.DeadlineOutcomeFilter
             TaskInputId.IncludeInactive
+            TaskInputId.SettleOnly
+            TaskInputId.ConfirmRetirement
             TaskInputId.GroupBy
             yield! CaseDateFilter.all |> List.map TaskInputId.CaseDate
         ]

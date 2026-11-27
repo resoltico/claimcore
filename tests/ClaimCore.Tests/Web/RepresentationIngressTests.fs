@@ -78,13 +78,20 @@ let tests =
                                     ClientSecret = "synthetic"
                                     ApiAudience = "api"
                                     CliClientId = "cli"
+                                    ServiceClientIds = Set.singleton "synthetic-service"
                                 }
                     }
 
                 let principal =
                     ClaimsPrincipal(
                         ClaimsIdentity(
-                            [ Claim("azp", "synthetic-service"); Claim("sub", "synthetic") ],
+                            [
+                                Claim("azp", "synthetic-service")
+                                Claim("sub", "synthetic")
+                                Claim("typ", "Bearer")
+                                Claim("claimcore_principal", "service")
+                                Claim("iat", "1800000000", ClaimValueTypes.Integer64)
+                            ],
                             "synthetic"
                         )
                     )

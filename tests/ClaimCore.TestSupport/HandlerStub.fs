@@ -175,6 +175,15 @@ type internal ScriptedStore(observed: DateTimeOffset, actor: Actor option, ?read
                 Ok
                     {
                         ContextFacts.Facts = facts query.Principal
+                        Association =
+                            actor
+                            |> Option.filter (fun value -> value.Principal = query.Principal)
+                            |> Option.map PrincipalAssociation.Current
+                            |> Option.defaultValue PrincipalAssociation.NeverBound
+                        RequestPending = false
+                        CredentialUsable = true
+                        AuthorityVersion = 1L
+                        TerminationCutoff = None
                         ObservedAt = observed
                         CaseReferencePolicy = CaseReferencePolicy.CustomAllowed
                     }
@@ -253,7 +262,6 @@ type Stub() =
                 Api.operationPreviewUnavailable
                 HumanReplies.previewSubmission
                 (fun _ -> None)
-                (fun _ -> false)
                 (fun _ input _ ->
                     let outcome =
                         match input.Operation with
@@ -289,7 +297,6 @@ type Stub() =
                     | ExecuteResult.Accepted receipt ->
                         receipt.RecordedBy |> AuthorityRef.actor |> Option.map _.ActorId
                     | _ -> None)
-                (fun _ -> false)
                 (fun _ input token ->
                     task {
                         match this.Error with
@@ -375,7 +382,6 @@ type Stub() =
                                                                             reply
                                                                     )
                                                                 RecordedBy = None
-                                                                ExpireBrowserSession = false
                                                             }
                                                     }
                                         })

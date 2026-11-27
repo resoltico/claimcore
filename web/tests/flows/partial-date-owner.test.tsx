@@ -20,7 +20,7 @@ vi.mock("../../src/session/useSession", () => ({
   useSession: () => ({
     state: session.state,
     logout: () => Promise.resolve(),
-    endedBrowserSessions: vi.fn(),
+    refreshAfterTermination: vi.fn(),
     refresh: () => Promise.resolve(),
   }),
 }));
@@ -133,7 +133,7 @@ it.each([
 );
 
 it.each(["NO_ROLES", "DISABLED"] as const)(
-  "keeps partial creation entry inert through %s and returns it only after current access is checked",
+  "clears partial creation entry when current access changes to %s",
   async (kind) => {
     const context = stubDashboardContext();
     mockEndpoint("case.list").mockResolvedValue({
@@ -204,6 +204,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       subject: {
         kind: "REQUESTER" as const,
         state: kind,
+        authorityVersion: null,
         actorId: self.subject.actorId,
         installationId: kind === "NO_ROLES" ? self.subject.installationId : null,
       },
@@ -231,7 +232,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     await user.click(screen.getByRole("button", { name: "Check access" }));
     const restored = await screen.findByRole("group", { name: "Incident date" });
     await waitFor(() => {
-      expect(restored.querySelector('[data-type="day"]')).toHaveAttribute("aria-valuenow", "12");
+      expect(restored.querySelector('[data-type="day"]')).not.toHaveAttribute("aria-valuenow");
     });
     expect(context).toHaveBeenCalledTimes(3);
     expect(preview).not.toHaveBeenCalled();

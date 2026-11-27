@@ -96,6 +96,7 @@ let private configuration issuer =
         ClientSecret = "synthetic"
         ApiAudience = "api"
         CliClientId = "cli"
+        ServiceClientIds = Set.singleton "service"
     }
 
 let private discoveryPaths () =

@@ -31,6 +31,16 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
         lock gate (fun () ->
             match pending with
             | None -> ()
+            | Some frame when Api.terminatesSessions (Frames.endpoint frame) ->
+                let message =
+                    MessageCatalogs.renderCli currentLanguage CliMessage.OperationalUnresolved
+
+                errors.Write(System.Text.Encoding.UTF8.GetBytes(message + "\n"))
+
+                if (Frames.installationId frame).IsSome then
+                    let bytes = Frames.terminationRecovery frame |> Frames.encodeInvocation
+                    errors.Write bytes
+                    errors.WriteByte(byte '\n')
             | Some frame when Api.effect (Frames.endpoint frame) = EndpointEffect.OperationalWrite ->
                 let message =
                     MessageCatalogs.renderCli currentLanguage CliMessage.OperationalUnresolved

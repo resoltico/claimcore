@@ -110,6 +110,7 @@ let private webEnvironment
             FixtureFiles.text directory "web.secret" identity.WebSecret
             "CLAIMCORE_OIDC_API_AUDIENCE", "api"
             "CLAIMCORE_OIDC_CLI_CLIENT_ID", "cli"
+            "CLAIMCORE_OIDC_SERVICE_CLIENT_IDS", "service,second-service"
             "CLAIMCORE_OIDC_CA_CERT_FILE",
             FixtureFiles.text directory "identity.pem" (identity.Root.ExportCertificatePem())
         ] do

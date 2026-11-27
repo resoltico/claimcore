@@ -190,5 +190,14 @@
   "ui.rowActionLabel": "{action}: {row}",
   "ui.attachments.drop": "Drop or paste a file",
   "ui.incompatiblePreferences": "ClaimCore cannot read your saved preferences. Changes apply only to this session until you reset them.",
-  "ui.resetSavedPreferences": "Reset saved preferences"
+  "ui.resetSavedPreferences": "Reset saved preferences",
+  "ui.resumeTermination": "Resume unconfirmed termination",
+  "ui.newTermination": "Start a new termination",
+  "ui.resumeTerminationDescription": "Check the saved result of the earlier request. Later sessions will stay open.",
+  "ui.newTerminationDescription": "A new request can end newer sessions. Earlier request IDs are kept while they can still be recovered.",
+  "ui.terminationOutsideWindow": "The earlier request is outside the current recovery window. Its saved request ID is kept.",
+  "ui.terminationRecoveryExpired": "The earlier termination request has expired. Its result is still unconfirmed.",
+  "ui.terminationScopeMismatch": "A saved termination belongs to a different account, register or selected person. Return to that selection to resume it.",
+  "ui.forgetTermination": "Forget expired request",
+  "ui.terminationRecoveryDamaged": "Some saved termination requests could not be read."
 }

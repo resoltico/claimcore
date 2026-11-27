@@ -91,6 +91,7 @@ let private catalogue () =
                 "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
                 "CLAIMCORE_OIDC_API_AUDIENCE"
                 "CLAIMCORE_OIDC_CLI_CLIENT_ID"
+                "CLAIMCORE_OIDC_SERVICE_CLIENT_IDS"
                 "CLAIMCORE_OIDC_CA_CERT_FILE"
                 "CLAIMCORE_WEB_PROBE_CA_CERT_FILE"
                 "CLAIMCORE_DIGEST_SMTP_HOST"

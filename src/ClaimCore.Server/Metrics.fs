@@ -96,10 +96,6 @@ module internal WebMetrics =
     let sessionEnded reason = ended reason 1L
     let sessionsExpired count = ended SessionEndReason.Expired count
 
-    let sessionsTerminated count =
-        if count > 0L then
-            safe (fun () -> ends.Add(count, KeyValuePair<string, obj>("reason", "terminated")))
-
     let sessionChanges (changes: SessionChanges<'value>) =
         changes.Ended |> List.iter sessionEnded
         changes.Value

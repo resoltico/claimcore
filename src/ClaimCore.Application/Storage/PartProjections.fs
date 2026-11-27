@@ -54,9 +54,9 @@ module internal PartProjections =
     let actorTable =
         ProjectionWrite.table
             "actors"
-            "actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision,principal_key,digest_email"
-            "$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12"
-            "ON CONFLICT(actor_id) DO UPDATE SET principal_key=EXCLUDED.principal_key,issuer=EXCLUDED.issuer,subject=EXCLUDED.subject,enabled=EXCLUDED.enabled,display_name=EXCLUDED.display_name,contact=EXCLUDED.contact,digest_email=EXCLUDED.digest_email,display_name_search=EXCLUDED.display_name_search,contact_search=EXCLUDED.contact_search,revision=EXCLUDED.revision WHERE claimcore.actors.principal_kind=EXCLUDED.principal_kind"
+            "actor_id,principal_kind,issuer,subject,enabled,display_name,contact,display_name_search,contact_search,revision,principal_key,digest_email,credential_generation,credential_cutoff"
+            "$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14"
+            "ON CONFLICT(actor_id) DO UPDATE SET principal_key=EXCLUDED.principal_key,issuer=EXCLUDED.issuer,subject=EXCLUDED.subject,enabled=EXCLUDED.enabled,display_name=EXCLUDED.display_name,contact=EXCLUDED.contact,digest_email=EXCLUDED.digest_email,display_name_search=EXCLUDED.display_name_search,contact_search=EXCLUDED.contact_search,revision=EXCLUDED.revision,credential_generation=EXCLUDED.credential_generation,credential_cutoff=EXCLUDED.credential_cutoff WHERE claimcore.actors.principal_kind=EXCLUDED.principal_kind"
 
     let actorValues (row: PersonProjection) =
         let actor = row.Actor
@@ -78,12 +78,41 @@ module internal PartProjections =
             box (Revision.value row.Revision)
             box (PrincipalKey.naturalKey actor.Principal)
             optional (actor.Profile |> Option.bind _.DigestEmail |> Option.map EmailAddress.format)
+            box (Sequence.value row.CredentialBoundary.CredentialGeneration)
+            box row.CredentialBoundary.CredentialCutoff
         |]
 
     let personIdentity connection (row: PersonProjection) token =
         task {
             let actor = row.Actor
-            let! _ = PrincipalLock.acquire connection actor.Principal token
+            let key = PrincipalKey.naturalKey actor.Principal
+
+            let! prior =
+                DatabaseSession.rows
+                    connection
+                    "SELECT principal_key,credential_generation FROM claimcore.actors WHERE actor_id=$1"
+                    [| box (ActorId.value actor.ActorId) |]
+                    token
+
+            match prior with
+            | [ current ] when
+                DatabaseSession.value<int64> 1 current =
+                    Sequence.value row.CredentialBoundary.CredentialGeneration
+                ->
+                ()
+            | [ current ] ->
+                let! _ =
+                    PrincipalLock.acquireChange
+                        connection
+                        [| DatabaseSession.value<string> 0 current; key |]
+                        token
+
+                ()
+            | [] ->
+                let! _ = PrincipalLock.acquire connection actor.Principal token
+                ()
+            | _ -> invalidOp "An actor must have at most one live identity."
+
             let! changed = ProjectionWrite.insert connection actorTable (actorValues row) token
             exactlyOne changed
 

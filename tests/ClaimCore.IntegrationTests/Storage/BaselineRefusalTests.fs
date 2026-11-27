@@ -154,7 +154,7 @@ let tests =
                 "a synthetic baseline differing by one SQL statement is refused untouched"
                 (refusedInstallation Baseline.identifier 12s alteredBaseline)
             testCaseAsync
-                "the preceding installation format and baseline identity refuse without mutation"
+                "the published format 11 and baseline identity refuse without mutation"
                 (refusedInstallation "claimcore-format-11" 11s (fun () ->
                     File
                         .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
@@ -163,6 +163,6 @@ let tests =
                         .Replace("p_format<>12", "p_format<>11")
                     |> Encoding.UTF8.GetBytes))
             testCaseAsync
-                "a schema with a different checksum is refused untouched"
+                "an earlier development baseline with the same format and a different checksum refuses untouched"
                 (refusedInstallation Baseline.identifier 12s differentChecksum)
         ]

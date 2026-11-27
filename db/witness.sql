@@ -14,6 +14,7 @@ CREATE TABLE claimcore_witness.installations (
     admitted_sequence bigint NOT NULL CHECK (admitted_sequence>0),
     admitted_hash bytea NOT NULL CHECK (octet_length(admitted_hash)=32),
     expiry_floor_ticks bigint CHECK (expiry_floor_ticks BETWEEN 0 AND 3155378975999999999),
+    credential_floor timestamptz CHECK (credential_floor IS NULL OR isfinite(credential_floor)),
     transition uuid UNIQUE,
     latest_dispatch date,
     suppress_through date,
@@ -82,11 +83,12 @@ CREATE VIEW claimcore_witness.fence_decisions AS
     JOIN claimcore_witness.transitions origin
         ON origin.installation=t.installation AND origin.transition=coalesce(t.fence_origin,t.transition);
 
-CREATE FUNCTION claimcore_witness.is_active(uuid,uuid,bigint,text,uuid)
+CREATE FUNCTION claimcore_witness.is_active(uuid,uuid,bigint,text,uuid,timestamptz)
 RETURNS boolean LANGUAGE sql SECURITY DEFINER STABLE SET search_path=pg_catalog AS $$
     SELECT EXISTS (
         SELECT FROM claimcore_witness.installations
-        WHERE installation=$1 AND generation=$2 AND system_id=$3 AND timeline=$4 AND primary_id=$5 AND transition IS NULL
+        WHERE installation=$1 AND generation=$2 AND system_id=$3 AND timeline=$4 AND primary_id=$5
+            AND credential_floor IS NOT DISTINCT FROM $6 AND transition IS NULL
     )
 $$;
 
@@ -307,6 +309,7 @@ CREATE TABLE claimcore_witness.preparations (
     admitted_sequence bigint NOT NULL CHECK (admitted_sequence>0),
     admitted_hash bytea NOT NULL CHECK (octet_length(admitted_hash)=32),
     expiry_floor_ticks bigint CHECK (expiry_floor_ticks BETWEEN 0 AND 3155378975999999999),
+    credential_floor timestamptz NOT NULL CHECK (isfinite(credential_floor)),
     prepared_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     PRIMARY KEY (installation,transition),
     FOREIGN KEY (installation,transition)
@@ -320,11 +323,12 @@ RETURNS boolean LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
     SELECT ($1>$4 OR ($1=$4 AND $2=$5)) AND ($6 IS NULL OR $3 >= $6)
 $$;
 
-CREATE FUNCTION claimcore_witness.prepare_target(uuid,uuid,uuid,bigint,text,bytea,bytea,bigint,bytea,bigint)
+CREATE FUNCTION claimcore_witness.prepare_target(uuid,uuid,uuid,bigint,text,bytea,bytea,bigint,bytea,bigint,timestamptz)
 RETURNS boolean LANGUAGE sql SET search_path=pg_catalog AS $$
     WITH fenced AS MATERIALIZED (
         SELECT installation FROM claimcore_witness.installations
         WHERE installation=$1 AND transition=$2
+            AND isfinite($11) AND (credential_floor IS NULL OR $11 >= credential_floor)
             AND claimcore_witness.retains_checkpoint(
                 $8,$9,$10,admitted_sequence,admitted_hash,expiry_floor_ticks)
             AND EXISTS(SELECT FROM claimcore_witness.transitions t
@@ -333,8 +337,8 @@ RETURNS boolean LANGUAGE sql SET search_path=pg_catalog AS $$
     ), prepared AS (
         INSERT INTO claimcore_witness.preparations(
             installation,transition,primary_id,system_id,timeline,fence_digest,preparation_digest,
-            admitted_sequence,admitted_hash,expiry_floor_ticks)
-        SELECT installation,$2,$3,$4,$5,$6,$7,$8,$9,$10 FROM fenced
+            admitted_sequence,admitted_hash,expiry_floor_ticks,credential_floor)
+        SELECT installation,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11 FROM fenced
         ON CONFLICT (installation,transition) DO NOTHING
         RETURNING 1
     )
@@ -343,6 +347,7 @@ RETURNS boolean LANGUAGE sql SET search_path=pg_catalog AS $$
         WHERE p.transition=$2 AND p.primary_id=$3 AND p.system_id=$4 AND p.timeline=$5
             AND p.fence_digest=$6 AND p.preparation_digest=$7
             AND p.admitted_sequence=$8 AND p.admitted_hash=$9 AND p.expiry_floor_ticks IS NOT DISTINCT FROM $10
+            AND p.credential_floor=$11
     )
 $$;
 
@@ -387,7 +392,8 @@ RETURNS boolean LANGUAGE sql SET search_path=pg_catalog AS $$
     ), published AS (
         UPDATE claimcore_witness.installations i
         SET generation=$2,primary_id=$8,system_id=$3,timeline=$4,disclosure_lsn=$5,transition=NULL,suppress_through=$7,
-            admitted_sequence=p.admitted_sequence,admitted_hash=p.admitted_hash,expiry_floor_ticks=p.expiry_floor_ticks
+            admitted_sequence=p.admitted_sequence,admitted_hash=p.admitted_hash,expiry_floor_ticks=p.expiry_floor_ticks,
+            credential_floor=p.credential_floor
         FROM activation a
         JOIN claimcore_witness.preparations p ON p.installation=a.installation AND p.transition=a.generation
         WHERE i.installation=a.installation
@@ -417,7 +423,7 @@ $$;
 REVOKE ALL ON ALL TABLES IN SCHEMA claimcore_witness FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore_witness FROM PUBLIC;
 GRANT USAGE ON SCHEMA claimcore_witness TO claimcore_witness_runtime;
-GRANT EXECUTE ON FUNCTION claimcore_witness.is_active(uuid,uuid,bigint,text,uuid) TO claimcore_witness_runtime;
+GRANT EXECUTE ON FUNCTION claimcore_witness.is_active(uuid,uuid,bigint,text,uuid,timestamptz) TO claimcore_witness_runtime;
 GRANT EXECUTE ON FUNCTION claimcore_witness.acknowledge_disclosure(uuid,uuid,bigint,text,uuid,pg_lsn) TO claimcore_witness_runtime;
 GRANT EXECUTE ON FUNCTION claimcore_witness.admit_dispatch(uuid,uuid,bigint,text,uuid,date) TO claimcore_witness_runtime;
 COMMIT;

@@ -225,9 +225,21 @@ module EndpointDeclarations =
         |> List.map (fun task ->
             let inputs =
                 match task with
+                | CommandTaskId.RequestAccess -> []
                 | CommandTaskId.DismissAccessRequest -> principal
-                | CommandTaskId.TerminateOwnSessions -> []
-                | CommandTaskId.TerminatePersonSessions -> [ required TaskInputId.ActorId ]
+                | CommandTaskId.TerminateOwnSessions ->
+                    [
+                        required (target InputTarget.OperationId)
+                        optional TaskInputId.SettleOnly
+                        optional TaskInputId.ConfirmRetirement
+                    ]
+                | CommandTaskId.TerminatePersonSessions ->
+                    [
+                        required TaskInputId.ActorId
+                        required (target InputTarget.OperationId)
+                        optional TaskInputId.SettleOnly
+                        optional TaskInputId.ConfirmRetirement
+                    ]
 
             {
                 Id = CommandTaskId.key task

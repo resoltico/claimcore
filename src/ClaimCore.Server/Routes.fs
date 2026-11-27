@@ -22,7 +22,6 @@ type RouteReply =
     {
         Response: RouteBody
         RecordedBy: ActorId option
-        ExpireBrowserSession: bool
     }
 
     member this.Wire =
@@ -86,7 +85,6 @@ module Route =
                                                                 (endpoint.Unavailable input)
                                                         )
                                                     RecordedBy = None
-                                                    ExpireBrowserSession = false
                                                 }
                                         | Some context ->
                                             let! reply = invoke context input cancellation
@@ -99,7 +97,6 @@ module Route =
                                                             Endpoint.reply endpoint reply
                                                         )
                                                     RecordedBy = None
-                                                    ExpireBrowserSession = false
                                                 }
                                     }
                         })
@@ -118,7 +115,6 @@ module Route =
         (unavailable: 'input -> 'data)
         (describe: 'input -> 'data -> 'human)
         (recordedBy: 'data -> ActorId option)
-        (expireBrowserSession: 'data -> bool)
         (invoke: ServiceContext -> 'input -> CancellationToken -> Task<'data>)
         =
         {
@@ -154,7 +150,6 @@ module Route =
                                                 Response =
                                                     RouteBody.Json(Endpoint.reply endpoint reply)
                                                 RecordedBy = recordedBy outcome
-                                                ExpireBrowserSession = expireBrowserSession outcome
                                             }
                                     }
                         })
@@ -166,7 +161,6 @@ module Route =
             (fun _ -> Outcome.Failed CoreFault.StoreUnavailable)
             (fun input outcome -> HumanReplies.read (describe input) outcome)
             (fun _ -> None)
-            (fun _ -> false)
             invoke
 
     let representedRead endpoint describe invoke =

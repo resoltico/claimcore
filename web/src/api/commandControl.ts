@@ -1,16 +1,14 @@
 import { apiEndpoints } from "./service";
 import type { Affordance } from "@contracts/client";
 
-/** Core supplies the complete validated operational request. */
-export const assembleCommand = (action: Affordance) => {
-  if (action.binding.kind !== "COMMAND") {
+/** The inbox posts the verified principal supplied by its dismissal control. */
+export const assembleDismissal = (action: Affordance) => {
+  if (
+    action.binding.kind !== "COMMAND" ||
+    action.binding.request.command !== apiEndpoints.peopleRequestsDismiss
+  ) {
     return null;
   }
   const { command, ...input } = action.binding.request;
-  switch (command) {
-    case apiEndpoints.peopleRequestsDismiss:
-    case apiEndpoints.terminateOwnSessions:
-    case apiEndpoints.terminatePersonSessions:
-      return { endpoint: command, input };
-  }
+  return { endpoint: command, input };
 };

@@ -33,7 +33,7 @@ let private stop (fixture: PublishedFixture.Fixture) =
         Expect.equal exitCode 0 "Published host drains before database isolation"
     }
 
-let private sessions (fixture: PublishedFixture.Fixture) =
+let private count (fixture: PublishedFixture.Fixture) statement =
     use source =
         NpgsqlDataSource.Create(
             File.ReadAllText(Path.Combine(fixture.Directory, "owner.connection"))
@@ -41,10 +41,14 @@ let private sessions (fixture: PublishedFixture.Fixture) =
 
     use connection = source.OpenConnection()
 
-    use command =
-        new NpgsqlCommand("SELECT count(*) FROM claimcore.sessions", connection)
-
+    use command = new NpgsqlCommand(statement, connection)
     command.ExecuteScalar() |> unbox<int64>
+
+let private sessions fixture =
+    count fixture "SELECT count(*) FROM claimcore.sessions"
+
+let private pendingFlows fixture =
+    count fixture "SELECT count(*) FROM claimcore.browser_flows"
 
 let private openFrameForDate operationId reference receivedDate =
     let registration =
@@ -222,6 +226,14 @@ let private qualify () =
         do! fixture.RestartWeb()
         PublishedSessionTests.browserPhase fixture "login" "restore-login"
         Expect.equal (sessions fixture) 1L "Real login supplies a restorable server-side ticket"
+        use! challenge = fixture.Http.GetAsync(fixture.Origin + "/auth/login")
+
+        Expect.equal
+            (int challenge.StatusCode)
+            302
+            "Open a real browser sign-in and leave the callback pending"
+
+        Expect.equal (pendingFlows fixture) 1L "The original database retains the pending flow"
         let! retainedBearer = fixture.ServiceToken()
 
         let admittedInstallation =
@@ -314,6 +326,12 @@ let private qualify () =
             "Restore cannot manufacture missing accepted history"
 
         Expect.equal (sessions fixture) 1L "Refused admission preserves the restored ticket"
+
+        Expect.equal
+            (pendingFlows fixture)
+            1L
+            "Refused admission preserves the pending flow in the restored copy"
+
         let missingHead = operator fixture [ "head" ] 0
 
         Expect.isLessThan
@@ -353,6 +371,12 @@ let private qualify () =
             "Published admission invalidates the restored ticket"
 
         Expect.equal (sessions fixture) 0L "Session invalidation is committed before reopening"
+
+        Expect.equal
+            (pendingFlows fixture)
+            0L
+            "Pre-restore flow evidence is retired before reopening"
+
         let head = operator fixture [ "head" ] 0
 
         Expect.isTrue
@@ -367,7 +391,7 @@ let private qualify () =
         do! fixture.RestartWeb()
         PublishedSessionTests.browserPhase fixture "stale" "restore-stale-cookie"
 
-        let! found =
+        let! stale =
             bearer
                 fixture
                 retainedBearer
@@ -376,14 +400,31 @@ let private qualify () =
                 (JsonSerializer.Serialize {| operationId = acceptedId |})
 
         Expect.equal
+            (stale.GetProperty("kind").GetString())
+            "REJECTED"
+            "Pre-restore bearer evidence cannot disclose an accepted operation"
+
+        // Whole-second issuer timestamps must advance past the witnessed floor and lead bound.
+        do! Task.Delay(TimeSpan.FromSeconds 3.)
+        let! freshBearer = fixture.ServiceToken()
+
+        let! found =
+            bearer
+                fixture
+                freshBearer
+                installation
+                "operation.get"
+                (JsonSerializer.Serialize {| operationId = acceptedId |})
+
+        Expect.equal
             (found.GetProperty("kind").GetString())
             "ACCEPTED"
-            "A pre-restore bearer still observes the accepted operation"
+            "A genuinely post-restore bearer observes the accepted operation"
 
         let! absent =
             bearer
                 fixture
-                retainedBearer
+                freshBearer
                 installation
                 "operation.get"
                 (JsonSerializer.Serialize {| operationId = unseenId |})
@@ -391,7 +432,7 @@ let private qualify () =
         Expect.equal
             (absent.GetProperty("kind").GetString())
             "NOT_ACCEPTED"
-            "Restart preserves the final absence for retained bearer callers"
+            "Fresh callers observe the preserved final absence"
 
         let expiredFrame = openFrame unseenId "RESTORE-MUST-NOT-APPEAR"
         use expired = JsonDocument.Parse(ReadOnlyMemory<byte> expiredFrame)
@@ -399,7 +440,7 @@ let private qualify () =
         let! rejected =
             bearer
                 fixture
-                retainedBearer
+                freshBearer
                 installation
                 "operation.execute"
                 (expired.RootElement.GetProperty("input").GetRawText())
@@ -482,7 +523,7 @@ let private qualify () =
                 |> ClaimCore.Json.CanonicalWriter.bytes
                 |> Encoding.UTF8.GetString
 
-            bearer fixture retainedBearer installation "case.summary" data
+            bearer fixture freshBearer installation "case.summary" data
 
         let! firstPage = report None
 

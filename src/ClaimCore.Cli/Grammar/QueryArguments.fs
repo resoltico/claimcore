@@ -12,6 +12,7 @@ open ClaimCore.Json
 module internal QueryArguments =
     let build
         entry
+        allocate
         (options: Dictionary<string, string option list>)
         operands
         (problems: ResizeArray<UsageError>)
@@ -36,6 +37,7 @@ module internal QueryArguments =
 
                 if
                     value.IsNone
+                    && input.Required
                     && not (
                         input.Name =
                             TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
@@ -179,6 +181,33 @@ module internal QueryArguments =
 
         if (members |> List.filter (fun (name, _) -> name = "target") |> List.length) > 1 then
             problems.Add(UsageError.DuplicateOption "--case-id")
+
+        let members =
+            if CommandGrammar.terminatesSessions entry then
+                let operation = TaskInputId.Target InputTarget.OperationId
+                let authored = supplied |> Seq.exists (fun (input, _) -> input = operation)
+                let settlement = EndpointInputs.memberName declaration TaskInputId.SettleOnly
+                let settling = List.contains (settlement, JsonValue.Boolean true) members
+
+                if settling && not authored then
+                    problems.Add(UsageError.MissingOperand "OPERATION-ID")
+
+                if
+                    (authored || settling || options.ContainsKey "--dry-run")
+                    && not (options.ContainsKey "--installation-id")
+                then
+                    problems.Add(UsageError.MissingOption "--installation-id")
+
+                if authored || problems.Count > 0 then
+                    members
+                else
+                    members
+                    @ [
+                        EndpointInputs.memberName declaration operation,
+                        JsonValue.String(allocate ())
+                    ]
+            else
+                members
 
         let members =
             match declaration.Page with

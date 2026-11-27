@@ -14,6 +14,8 @@ type internal WriteTx
     =
     inherit ReadTx(connection, installation, cipher, observedAt, token)
 
+    member val PersonProjected = false with get, private set
+
     member _.Head = head
 
     member _.DrawCaseReference() =
@@ -51,6 +53,7 @@ type internal WriteTx
         FailureDiagnostics.phase FailurePhase.Projection
         PartProjections.family connection projection token
 
-    member _.ProjectPerson projection =
+    member this.ProjectPerson projection =
+        this.PersonProjected <- true
         FailureDiagnostics.phase FailurePhase.Projection
         PartProjections.person connection projection token

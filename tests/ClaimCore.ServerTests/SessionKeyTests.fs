@@ -45,7 +45,9 @@ let private awaited () =
 
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _, _) =
+                member _.StartFlow _ = Task.FromResult(Guid.NewGuid())
+
+                member _.Create(_, _, _, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged "synthetic-key")
 
                 member _.Retrieve(_, _) = pending.Task
@@ -72,7 +74,11 @@ let private protectionFailures () =
 
         let storage =
             { new ISessionStore with
-                member _.Create(principal, bytes, _, _, _, _) =
+                member _.StartFlow _ = Task.FromResult(Guid.NewGuid())
+
+                member _.Create(principal, _, protect, _, _, _, _) =
+                    let bytes = protect BrowserCredential.StatusOnly
+
                     payload <-
                         {
                             StoredSessionTicket.PrincipalKey =
@@ -140,7 +146,11 @@ let private keyContinuity () =
 
             let storage =
                 { new ISessionStore with
-                    member _.Create(principal, bytes, _, _, _, _) =
+                    member _.StartFlow _ = Task.FromResult(Guid.NewGuid())
+
+                    member _.Create(principal, _, protect, _, _, _, _) =
+                        let bytes = protect BrowserCredential.StatusOnly
+
                         payload <-
                             {
                                 StoredSessionTicket.PrincipalKey =
@@ -173,7 +183,9 @@ let private storageFailure () =
     task {
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _, _) =
+                member _.StartFlow _ = Task.FromResult(Guid.NewGuid())
+
+                member _.Create(_, _, _, _, _, _, _) =
                     Task.FromException<SessionChanges<string>>(
                         IOException "Synthetic database failure"
                     )
@@ -222,7 +234,9 @@ let private requestAbort () =
 
         let storage =
             { new ISessionStore with
-                member _.Create(_, _, _, _, _, _) =
+                member _.StartFlow _ = Task.FromResult(Guid.NewGuid())
+
+                member _.Create(_, _, _, _, _, _, _) =
                     Task.FromResult(SessionChanges.unchanged "synthetic")
 
                 member _.Retrieve(_, token) =

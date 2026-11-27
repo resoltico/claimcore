@@ -170,7 +170,11 @@ let private cookieStorageIsolation () =
 
         let storage =
             { new ISessionStore with
-                member _.Create(principal, bytes, _, _, _, _) =
+                member _.StartFlow _ = Task.FromResult(Guid.NewGuid())
+
+                member _.Create(principal, _, protect, _, _, _, _) =
+                    let bytes = protect BrowserCredential.StatusOnly
+
                     payload <-
                         {
                             StoredSessionTicket.PrincipalKey =

@@ -110,6 +110,7 @@ it("ignores a stale dispatch and a context response for a different installation
           subject: {
             kind: "REQUESTER",
             state: "ACTIVE",
+            authorityVersion: 1,
             installationId: data.installationId,
             actorId: data.actorId,
           },
@@ -134,6 +135,7 @@ it("ignores a stale dispatch and a context response for a different installation
         subject: {
           kind: "REQUESTER",
           state: "ACTIVE",
+          authorityVersion: 1,
           installationId: "installation",
           actorId: "actor",
         },

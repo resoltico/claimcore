@@ -97,9 +97,12 @@ let private client (definition: ClientDefinition) =
     node["attributes"] <- attributes
 
     if scoped then
-        node["protocolMappers"] <-
-            parse
-                """[{"name":"api-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"api","id.token.claim":"false","access.token.claim":"true"}}]"""
+        let profile = if interactive then "human" else "service"
+
+        let mappers =
+            """[{"name":"api-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"api","id.token.claim":"false","access.token.claim":"true"}},{"name":"claimcore-principal","protocol":"openid-connect","protocolMapper":"oidc-hardcoded-claim-mapper","config":{"claim.name":"claimcore_principal","claim.value":"PROFILE","jsonType.label":"String","id.token.claim":"false","access.token.claim":"true"}}]"""
+
+        node["protocolMappers"] <- parse (mappers.Replace("PROFILE", profile))
 
     node
 

@@ -22,6 +22,11 @@ module internal RequesterContextQueries =
         (maintenance: RegisterMaintenance)
         (actor: AccessView)
         (roles: ActorRoleSummary list)
+        association
+        pending
+        credentialUsable
+        authorityVersion
+        terminationCutoff
         =
         let principal = services.Principal
 
@@ -31,6 +36,7 @@ module internal RequesterContextQueries =
             {
                 Issuer = issuer
                 Roles = roles |> ActorRoleSummary.ordered
+                AuthorityVersion = authorityVersion
                 Self = Actor.currentReference requester
                 Maintenance = maintenance
                 InstallationId = services.InstallationId
@@ -50,26 +56,30 @@ module internal RequesterContextQueries =
             }
 
         let state =
-            match actor.Actor with
-            | None ->
+            match association with
+            | PrincipalAssociation.Former -> Ok RequesterState.FormerIdentity
+            | PrincipalAssociation.NeverBound ->
                 let _, issuer, subject = PrincipalKey.parts principal
 
-                Ok(
-                    RequesterState.NotRegistered
-                        {
-                            Issuer = issuer
-                            Subject = subject
-                            Claims = services.Claims
-                        }
-                )
-            | Some requester when requester.Principal <> principal ->
-                Error CoreFault.StoreIntegrityError
-            | Some requester when
+                let requester =
+                    {
+                        UnregisteredRequester.Issuer = issuer
+                        Subject = subject
+                        Claims = services.Claims
+                    }
+
+                if pending then
+                    Ok(RequesterState.AccessPending requester)
+                else
+                    Ok(RequesterState.NotRegistered requester)
+            | PrincipalAssociation.Current requester when
                 AccountState.classify requester.Enabled actor.HasAssignedRoles =
                     AccountState.Disabled
                 ->
                 Ok(RequesterState.Disabled(Actor.currentReference requester))
-            | Some requester when
+            | PrincipalAssociation.Current _ when not credentialUsable ->
+                Ok RequesterState.SignInRequired
+            | PrincipalAssociation.Current requester when
                 AccountState.classify requester.Enabled actor.HasAssignedRoles =
                     AccountState.NoRoles
                 ->
@@ -84,10 +94,31 @@ module internal RequesterContextQueries =
                             TimeZone = basis.TimeZoneId
                         }
                 )
-            | Some requester -> Ok(RequesterState.Active(active requester))
+            | PrincipalAssociation.Current requester -> Ok(RequesterState.Active(active requester))
 
         state
-        |> Result.map (fun state -> { ContextReply.Requester = state })
+        |> Result.map (fun state ->
+            let scope =
+                if RequesterState.offersOwnSessionTermination state then
+                    let key =
+                        match association with
+                        | PrincipalAssociation.Current actor -> ActorId.format actor.ActorId
+                        | _ -> PrincipalKey.naturalKey principal
+
+                    Some
+                        {
+                            InstallationId = services.InstallationId
+                            RequesterKey = key
+                            ObservedAt = observedAt
+                            RetirementCutoff = terminationCutoff
+                        }
+                else
+                    None
+
+            {
+                ContextReply.Requester = state
+                TerminationScope = scope
+            })
         |> Result.map Outcome.Succeeded
         |> Result.defaultWith Outcome.Failed
 
@@ -97,7 +128,7 @@ module internal RequesterContextQueries =
                 services.Store.Context
                     {
                         Principal = services.Principal
-                        Claims = services.Claims
+                        Credential = None
                         CancellationToken = token
                     }
 
@@ -110,6 +141,11 @@ module internal RequesterContextQueries =
                         facts.CaseReferencePolicy
                         facts.Facts.Maintenance
                         facts.Facts.People
-                        facts.Facts.AssignedRoles)
+                        facts.Facts.AssignedRoles
+                        facts.Association
+                        facts.RequestPending
+                        facts.CredentialUsable
+                        facts.AuthorityVersion
+                        facts.TerminationCutoff)
                 |> readResult
         }

@@ -48,7 +48,7 @@ const view = (
     value={{
       state: { kind: "authenticated", token: credential, epoch },
       logout: () => Promise.resolve(),
-      endedBrowserSessions: vi.fn(),
+      refreshAfterTermination: vi.fn(),
       refresh: () => Promise.resolve(),
     }}
   >

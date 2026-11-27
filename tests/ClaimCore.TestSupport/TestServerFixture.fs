@@ -42,6 +42,7 @@ let oidc =
         ClientSecret = "synthetic"
         ApiAudience = "api"
         CliClientId = "cli"
+        ServiceClientIds = Set.singleton "service"
     }
 
 let limits =
@@ -185,7 +186,16 @@ let private login (context: HttpContext) : Task =
                 identity.AddClaim(Claim(name, context.Request.Query[name].ToString()))
 
         let properties = AuthenticationProperties()
-        properties.Items[AuthMiddleware.idTokenProperty] <- "synthetic-logout-hint"
+
+        let cookies =
+            context.RequestServices
+                .GetRequiredService<
+                    Microsoft.Extensions.Options.IOptionsMonitor<CookieAuthenticationOptions>
+                  >()
+                .Get(CookieAuthenticationDefaults.AuthenticationScheme)
+
+        if isNull cookies.SessionStore then
+            properties.Items[AuthMiddleware.idTokenProperty] <- "synthetic-logout-hint"
 
         do!
             context.SignInAsync(

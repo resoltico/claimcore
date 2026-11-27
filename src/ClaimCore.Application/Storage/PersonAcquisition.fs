@@ -9,6 +9,12 @@ open ClaimCore.Application.Reads
 open ClaimCore.Application.Execution
 
 /// Restores a person from authenticated roots and its current projection.
+[<RequireQualifiedAccess>]
+type internal PrincipalAssociation =
+    | NeverBound
+    | Former
+    | Current of Actor
+
 module internal PersonAcquisition =
     let private corrupt message = raise (RecordCorruptException message)
 
@@ -17,7 +23,7 @@ module internal PersonAcquisition =
             let! rows =
                 DatabaseSession.rows
                     tx.Connection
-                    "SELECT principal_kind,issuer,subject,enabled,display_name,contact,revision,display_name_search,contact_search,principal_key,digest_email FROM claimcore.actors WHERE actor_id=$1"
+                    "SELECT principal_kind,issuer,subject,enabled,display_name,contact,revision,display_name_search,contact_search,principal_key,digest_email,credential_generation,credential_cutoff FROM claimcore.actors WHERE actor_id=$1"
                     [| box (ActorId.value id) |]
                     tx.CancellationToken
 
@@ -166,6 +172,12 @@ module internal PersonAcquisition =
                         (at identity 5)
                         actor
                         revision
+                        {
+                            CredentialGeneration =
+                                DatabaseSession.value<int64> 11 row
+                                |> DatabaseSession.admitted Sequence.create
+                            CredentialCutoff = DatabaseSession.instant 12 row
+                        }
                         grants
                         erasure
                     |> Result.defaultWith (fun _ ->
@@ -202,6 +214,48 @@ module internal PersonAcquisition =
                         DatabaseSession.value<Guid> 0 row |> DatabaseSession.admitted ActorId.create
                     )
             | _ -> return corrupt "A natural person key has multiple owners."
+        }
+
+    let authorityVersion (tx: ReadTx) actor =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    """SELECT coalesce(max(operation_sequence),0)
+                       FROM claimcore.ledger_effects
+                       WHERE part_kind='PERSON' AND part_id=$1 AND jsonb_array_length(retained->'grants')>0"""
+                    [| box (ActorId.value actor) |]
+                    tx.CancellationToken
+
+            return DatabaseSession.value<int64> 0 (List.exactlyOne rows)
+        }
+
+    let reservedKeys (tx: ReadTx) actor =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    "SELECT lower(natural_key COLLATE \"C\") FROM claimcore.ledger_effects WHERE part_kind='PERSON' AND part_id=$1 AND natural_key IS NOT NULL ORDER BY natural_key"
+                    [| box (ActorId.value actor) |]
+                    tx.CancellationToken
+
+            if rows.IsEmpty then
+                corrupt "Actor has no reserved identity."
+
+            return rows |> List.map (DatabaseSession.value<string> 0) |> List.toArray
+        }
+
+    let association (tx: ReadTx) principal (current: Actor option) =
+        task {
+            let! owner = principalOwner tx principal
+
+            return
+                match owner, current with
+                | None, None -> PrincipalAssociation.NeverBound
+                | Some _, None -> PrincipalAssociation.Former
+                | Some id, Some actor when actor.Principal = principal && actor.ActorId = id ->
+                    PrincipalAssociation.Current actor
+                | _ -> corrupt "Current principal binding disagrees with accepted history."
         }
 
     let principal (tx: ReadTx) principal =

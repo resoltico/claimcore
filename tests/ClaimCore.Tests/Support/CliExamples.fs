@@ -109,4 +109,10 @@ let private queryInput (input: CommandInput) =
 
 let queryArguments operation =
     let inputs = CommandGrammar.inputs operation
-    CommandGrammar.words operation @ (inputs |> List.collect queryInput)
+
+    CommandGrammar.words operation
+    @ (inputs |> List.collect queryInput)
+    @ (if CommandGrammar.terminatesSessions operation then
+           [ "--installation-id"; "90000000-0000-7000-8000-000000000001" ]
+       else
+           [])

@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "Acceso solicitado",
-    "source": "119387f35ffc"
+    "text": "Solicitar acceso",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "Un propietario debe admitir esta cuenta para que pueda acceder a ClaimCore.",
-    "source": "9f93027815d5"
+    "text": "Envía una solicitud para que un propietario pueda admitir esta identidad de inicio de sesión.",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "Registro de acceso y exportación",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "La solicitud no se confirmó. Puede haber finalizado las sesiones de navegador de ClaimCore. Repetirla también puede finalizar sesiones más recientes.",
-    "source": "1ef989edf86f"
+    "text": "Es posible que la solicitud haya cerrado sesiones del navegador. Repítela con el mismo identificador de solicitud para recuperar el resultado. Un identificador nuevo puede cerrar sesiones más recientes.",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "La exportación supera el límite de tamaño de descarga. Reduzca la selección o recorra las páginas con la CLI.",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "Se desconoce si el servidor lo aceptó",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "Otro propietario que haya iniciado sesión debe cambiar la identidad de inicio de sesión de este propietario.",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "Solicitar acceso",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "Envía o actualiza tu solicitud de acceso.",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "Identidad de inicio de sesión sustituida",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "Cierra la sesión y usa tu identidad de inicio de sesión actual o pide ayuda a un propietario.",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "Volver a iniciar sesión",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "Cierra la sesión y vuelve a iniciarla para seguir usando esta cuenta.",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "Acceso solicitado",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "Un propietario debe admitir esta cuenta para que pueda acceder a ClaimCore.",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "Consultar solo el resultado guardado",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "Devuelve el resultado guardado para este identificador. Mantén intactas las sesiones del navegador.",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "Confirmar la retirada de resultados caducados",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "Adelante el límite confirmado de retirada y deje intactas las sesiones del navegador.",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "Se ha confirmado la retirada de los resultados caducados de cierre de sesiones.",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

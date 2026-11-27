@@ -252,6 +252,7 @@ let internal replies () : IEndpointOutput list =
                 ContextScreen.document
                 (Outcome.Succeeded
                     {
+                        TerminationScope = None
                         Requester =
                             RequesterState.Active
                                 {
@@ -262,6 +263,7 @@ let internal replies () : IEndpointOutput list =
                                     Issuer = "https://issuer.example/"
                                     Roles = []
                                     HasScopedCases = false
+                                    AuthorityVersion = 1L
                                     Maintenance = RegisterMaintenance.initial
                                     Runtime = runtime
                                     Capability =
@@ -563,6 +565,11 @@ let internal replies () : IEndpointOutput list =
                             ]
                         NextCursor = None
                     })
+        yield!
+            actorRead
+                Api.peopleRequestsSubmit
+                AccessRequestsScreen.submittedDocument
+                (Outcome.Succeeded())
         yield!
             actorRead
                 Api.peopleRequestsDismiss

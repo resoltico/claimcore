@@ -26,6 +26,7 @@
     <Compile Include="Storage/LikePattern.fs" />
     <Compile Include="Storage/InstallationCipher.fs" />
     <Compile Include="Storage/ReadTransaction.fs" />
+    <Compile Include="Storage/Credentials.fs" />
     <Compile Include="Storage/DisclosureStorage.fs" />
     <Compile Include="Storage/InstallationCheck/DatabaseProfile.fs" />
     <Compile Include="Storage/InstallationCheck/OwnerAdmission.fs" />

@@ -296,6 +296,11 @@
       "target": null
     },
     {
+      "code": "DISTINCT_OWNER_REQUIRED",
+      "action": "ReviewLatest",
+      "target": null
+    },
+    {
       "code": "IDEMPOTENCY_CONFLICT",
       "action": "StopAndInvestigate",
       "target": null

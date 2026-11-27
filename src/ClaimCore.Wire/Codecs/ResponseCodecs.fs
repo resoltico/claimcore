@@ -417,10 +417,12 @@ module ResponseCodecs =
                 maintenance
                 self
                 issuer
-                roles ->
+                roles
+                authorityVersion ->
                 {
                     ActorContext.Issuer = issuer
                     Roles = roles
+                    AuthorityVersion = authorityVersion
                     InstallationId = installation
                     Self = self
                     Maintenance = maintenance
@@ -445,6 +447,7 @@ module ResponseCodecs =
         |> field "self" _.Self ActorCodecs.actorRef
         |> field "issuer" _.Issuer PrincipalCodecs.issuer
         |> field "roles" _.Roles (list Role.all.Length actorRoleSummary)
+        |> field "authorityVersion" _.AuthorityVersion (integer 0L SafeInteger.Maximum)
 
     let actorContext = actorContextFields |> build |> named "ActorContext"
 
@@ -469,6 +472,18 @@ module ResponseCodecs =
         |> field "emailVerified" _.EmailVerified boolean
         |> build
         |> named "RequesterClaims"
+
+    let private unregisteredRequesterFields =
+        (record (fun issuer subject claims ->
+            {
+                UnregisteredRequester.Issuer = issuer
+                Subject = subject
+                Claims = claims
+            })
+        : Fields<UnregisteredRequester, _>)
+        |> field "issuer" _.Issuer (boundedText 1 PrincipalKey.MaximumIssuerCharacters)
+        |> field "subject" _.Subject (boundedText 1 PrincipalKey.MaximumHumanSubjectCharacters)
+        |> field "claims" _.Claims requesterClaims
 
     let private requesterState =
         tagged
@@ -512,24 +527,46 @@ module ResponseCodecs =
                     (function
                     | RequesterState.NotRegistered value -> Some value
                     | _ -> None)
-                    ((record (fun issuer subject claims ->
-                        {
-                            UnregisteredRequester.Issuer = issuer
-                            Subject = subject
-                            Claims = claims
-                        })
-                     : Fields<UnregisteredRequester, _>)
-                     |> field "issuer" _.Issuer (boundedText 1 PrincipalKey.MaximumIssuerCharacters)
-                     |> field
-                         "subject"
-                         _.Subject
-                         (boundedText 1 PrincipalKey.MaximumHumanSubjectCharacters)
-                     |> field "claims" _.Claims requesterClaims)
+                    unregisteredRequesterFields
+                variant
+                    (RequesterKind.token RequesterKind.AccessPending)
+                    RequesterState.AccessPending
+                    (function
+                    | RequesterState.AccessPending value -> Some value
+                    | _ -> None)
+                    unregisteredRequesterFields
+                unitVariant
+                    (RequesterKind.token RequesterKind.FormerIdentity)
+                    RequesterState.FormerIdentity
+                unitVariant
+                    (RequesterKind.token RequesterKind.SignInRequired)
+                    RequesterState.SignInRequired
             ]
 
+    let terminationScope =
+        (record (fun installation requester observedAt cutoff ->
+            {
+                SessionTerminationScope.InstallationId = installation
+                RequesterKey = requester
+                ObservedAt = observedAt
+                RetirementCutoff = cutoff
+            })
+        : Fields<SessionTerminationScope, _>)
+        |> field "installationId" _.InstallationId uuid
+        |> field "requesterKey" _.RequesterKey (boundedText 36 64)
+        |> field "observedAt" _.ObservedAt instant
+        |> field "retirementCutoff" _.RetirementCutoff (nullable instant)
+        |> build
+        |> named "SessionTerminationScope"
+
     let contextReply =
-        record (fun requester -> { ContextReply.Requester = requester })
+        record (fun requester scope ->
+            {
+                ContextReply.Requester = requester
+                TerminationScope = scope
+            })
         |> field "requester" _.Requester requesterState
+        |> optionalField "terminationScope" _.TerminationScope terminationScope
         |> build
         |> named "RequesterContext"
 

@@ -10,7 +10,12 @@ afterEach(() => vi.resetModules());
 const renderState = async (state: SessionState) => {
   vi.resetModules();
   vi.doMock("../../src/session/useSession", () => ({
-    useSession: () => ({ state, logout: vi.fn(), endedBrowserSessions: vi.fn(), refresh: vi.fn() }),
+    useSession: () => ({
+      state,
+      logout: vi.fn(),
+      refreshAfterTermination: vi.fn(),
+      refresh: vi.fn(),
+    }),
   }));
   const { stubDashboardContext } = await import("../support/dashboard-context.fixtures");
   stubDashboardContext();

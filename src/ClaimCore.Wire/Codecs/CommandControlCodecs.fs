@@ -25,6 +25,13 @@ module internal CommandControlCodecs =
 
     let forTask =
         function
+        | CommandTaskId.RequestAccess ->
+            record ()
+            |> fixedField "command" (CommandTaskId.key CommandTaskId.RequestAccess)
+            |> build
+            |> map (fun () -> CommandRequest.RequestAccess) (function
+                | CommandRequest.RequestAccess -> ()
+                | _ -> invalidOp "Access request command required.")
         | CommandTaskId.DismissAccessRequest ->
             let alternative kind maximumSubject =
                 branch

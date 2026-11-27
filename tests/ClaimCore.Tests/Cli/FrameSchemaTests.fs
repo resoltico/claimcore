@@ -50,12 +50,21 @@ let private examples response () =
         frame["endpoint"] <- JsonValue.Create(example.GetProperty("endpoint").GetString())
         let value = example.GetProperty("value")
 
+        let termination =
+            match example.GetProperty("endpoint").GetString() with
+            | "session.terminateOwn"
+            | "people.terminateSessions" -> true
+            | _ -> false
+
         if response then
             frame["operationId"] <- null
             frame["delivery"] <- JsonValue.Create "DELIVERED"
             frame["result"] <- JsonNode.Parse(value.GetRawText())
         else
             frame["input"] <- JsonNode.Parse(value.GetRawText())
+
+            if termination then
+                frame["installationId"] <- JsonValue.Create "90000000-0000-7000-8000-000000000001"
 
         let expected = example.GetProperty("valid").GetBoolean()
         let bytes = System.Text.Encoding.UTF8.GetBytes(frame.ToJsonString())
@@ -73,6 +82,20 @@ let private examples response () =
             (selected.Evaluate(document.RootElement).IsValid)
             expected
             "Independent frame schema agrees."
+
+        if termination && not response && expected then
+            frame.Remove "installationId" |> ignore
+            use missing = JsonDocument.Parse(frame.ToJsonString())
+
+            Expect.isFalse
+                (selected.Evaluate(missing.RootElement).IsValid)
+                "An offline termination frame requires a binding."
+
+            Expect.isError
+                (Frames.admit (System.Text.Encoding.UTF8.GetBytes(frame.ToJsonString())))
+                "Runtime agrees."
+
+            frame["installationId"] <- JsonValue.Create "90000000-0000-7000-8000-000000000001"
 
         frame["unexpectedMember"] <- JsonValue.Create true
         use changed = JsonDocument.Parse(frame.ToJsonString())

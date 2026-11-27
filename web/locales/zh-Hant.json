@@ -775,5 +775,50 @@
     "text": "重設已儲存的偏好設定",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "繼續未確認的工作階段結束請求",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "發起新的工作階段結束請求",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "查詢先前請求的已儲存結果。後續建立的工作階段會保持開啟。",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "新請求可能結束較晚開啟的工作階段。只要還能復原結果，先前的請求 ID 就會保留。",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "先前的請求已超出目前的復原時限。已儲存的請求 ID 會保留。",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "先前的請求已過期，結果仍未確認。",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "有一項已儲存的請求屬於其他帳戶、安裝或目標。請返回相應的選擇以繼續。",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "忘記已過期的請求",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "部分已儲存的工作階段結束請求無法讀取。",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

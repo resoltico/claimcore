@@ -235,6 +235,10 @@ module Frames =
             | _ -> error "$.input" "missing input"
         |> Result.bind (fun invocation ->
             match JsonValue.tryMember "installationId" document with
+            | None when Api.terminatesSessions invocation.Target ->
+                error
+                    "$.installationId"
+                    "Session termination frames require their installation binding."
             | None -> Ok invocation
             | Some value ->
                 Codec.uuid.Read "$.installationId" value
@@ -323,6 +327,24 @@ module Frames =
                     |> Option.toList
             ]
         |> WireWriter.bytes
+
+    let internal terminationRecovery invocation =
+        let settle endpoint request =
+            create endpoint request
+            |> Result.map (fun prepared ->
+                { prepared with
+                    InstallationId = invocation.InstallationId
+                })
+            |> Result.defaultWith (fun _ -> invalidOp "Invalid settlement request.")
+
+        match
+            value Api.terminateOwnSessions invocation, value Api.terminatePersonSessions invocation
+        with
+        | Some request, _ when request.ConfirmRetirement <> Some true ->
+            settle Api.terminateOwnSessions { request with SettleOnly = Some true }
+        | _, Some request when request.ConfirmRetirement <> Some true ->
+            settle Api.terminatePersonSessions { request with SettleOnly = Some true }
+        | _ -> invocation
 
     let private delivery =
         DeliveryState.vocabulary |> Vocabulary.entries |> Codec.enumeration

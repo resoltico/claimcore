@@ -47,6 +47,7 @@ export const apiEndpoints = {
   peopleRequests: "people.requests",
   disclosureTrail: "disclosure.trail",
   context: "context",
+  peopleRequestsSubmit: "people.requests.submit",
   peopleRequestsDismiss: "people.requests.dismiss",
   terminateOwnSessions: "session.terminateOwn",
   terminatePersonSessions: "people.terminateSessions",

@@ -142,10 +142,12 @@ Use matching service, browser and CLI builds. Initialize an empty database with 
 [SQL baseline](../db/baseline.sql). ClaimCore reads installation format 12 and
 [CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
 or owner command checks the database against the supported
-[installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
-before accessing installation data. Initialize a fresh database for a new register. Backup
-restore requires the supported format and baseline. Preserve any nonmatching database and recovery
-records separately. This build refuses them without conversion.
+[installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and exact baseline identity
+before accessing installation data. The published format 11 and earlier development databases marked
+format 12 require a fresh installation. Initialize a fresh database for a new register. Backup
+restore requires the supported format and baseline. Provision a fresh witness with this build's
+[SQL](../db/witness.sql). Preserve any nonmatching database, witness and recovery records separately.
+Existing sessions, bearer credentials and pending sign-in flows require fresh admission.
 
 Before cutover, resolve pending operations in each old browser profile and CLI state directory
 against the matching installation and build. Keep the old database, matching keys, build and
@@ -361,8 +363,26 @@ does not rewrite a prepared request; starting their change requires explicit dis
 
 Retain at least one enabled human owner. Service accounts cannot receive Owner or Data steward.
 Manage IdP membership separately from ClaimCore grants. Confidential service clients must use client
-credentials with user flows disabled. Public human CLI clients use authorization code/PKCE with service
-accounts disabled. Put the API audience in access tokens; azp/client_id alone does not establish grant type.
+credentials with user flows disabled. List the exact allowed machine client IDs in
+`CLAIMCORE_OIDC_SERVICE_CLIENT_IDS` (comma-separated). Public human CLI clients use authorization
+code with S256 PKCE and service accounts disabled. The Web client uses confidential authorization
+code with S256 PKCE. Restrict mapper configuration and token grants to trusted issuer operators.
+
+This build admits the Keycloak token profile. Set the API audience on CLI and service access tokens.
+Set the signed access-token claim `claimcore_principal` to `human` on the CLI client and to `service`
+on each allowed machine client. Use a provider-owned constant mapper. Access tokens carry
+`typ=Bearer`, `azp`, and integer Unix-second `iat`. If present, `client_id` must match `azp`.
+The human CLI token additionally carries integer `auth_time` and immutable `sub`. The Web ID token
+carries `typ=ID`, `sub`, `iat` and `auth_time`. See the pinned
+[Keycloak configuration](../deployment/configure-local.sh).
+
+Synchronize the issuer, ClaimCore hosts, register database and witness before serving protected
+traffic or admitting a restore. The [freshness comparison](../src/ClaimCore.Application/RuntimeContracts.fs)
+accounts for whole-second provider timestamps and a maximum possible two-second issuer clock lead.
+A human must authenticate after the cut and receive a token issued after it. A refreshed token that
+retains the earlier authentication time does not qualify. Disablement, re-enablement, rebinding and
+owner recovery retire protected sessions and bearer evidence for that actor. A restore adds a
+register-wide floor recorded by the independent witness and retires browser tickets and pending flows.
 
 Keep the shared key ring protected with mode 0700 and retain keys needed by live sessions and backups.
 Hosts sharing the database, key ring and application identity can share sessions. Logout takes effect
@@ -370,17 +390,25 @@ across hosts, though previously admitted work may finish. Session deadlines surv
 or key failures close authentication; inspect sanitized diagnostics.
 
 **End my ClaimCore browser sessions** in Settings or on the access screen deletes every stored
-browser ticket for the currently authenticated principal, including before registration or without
-roles. An Owner can use **End this person’s ClaimCore browser sessions** to delete every stored
-browser ticket for the selected person. The application rechecks ManageAccess against its locked
-action state before deletion. Both actions are limited to ClaimCore browser tickets.
+browser ticket for the current account and its reserved sign-in identities. A verified requester
+without a current binding can end tickets only for their own principal. An Owner can use
+**End this person’s ClaimCore browser sessions** for the selected account. Core rechecks
+ManageAccess against the locked action state, including on retries. Both actions are limited to ClaimCore browser tickets.
 Identity-provider sessions, credentials and independent bearer tokens remain valid, and neither
 action creates a ledger operation.
 
 Confirmed counts report deleted stored tickets, including expired ones that had not yet been
-pruned. Inspect an unconfirmed acknowledgement before deliberately starting another request.
-It reports no count, and repeating deletion could also end sessions created since the original
-attempt. These actions have no operation.get recovery record.
+pruned. The cut commits with deletion and its recoverable count. Use settlement-only mode with
+the original ID and selection to recover an unconfirmed result within the request window. Web
+offers this as **Resume unconfirmed termination** and keeps the request identity in the same tab
+across reload and sign-in. Choose a new termination explicitly to end newer sessions.
+All termination modes require the intended register UUID. A new register refuses requests prepared
+against the previous one. The browser compares a locally committed flow-start order to the cut, including for callbacks that
+arrive late. These actions have no `operation.get` recovery record. Retirement confirmation uses
+the same action-time authority and lock order. It commits a monotonic request cutoff and prunes
+older result records without issuing a cut or changing browser flows and tickets. Requester context
+reads the committed cutoff without modifying it. A clock observation on its own can put a request
+outside the current window, while a cutoff strictly after issuance permanently retires that ID.
 
 Ordinary Sign out deletes the current browser ticket first. When validated provider metadata
 and the session's provider hint are available, the browser continues to provider sign-out.
@@ -395,20 +423,23 @@ identity-dependent access. It reports a bounded 503 with a sanitized dependency 
 temporary unavailability or invalid trust. A new login or bearer request requiring unavailable
 trust fails closed. Discovery and signing keys refresh without restarting the host.
 
-Session creation and deletion serialize on the canonical principal index, including principal kind,
-issuer and subject. The index is derived from the validated protected ticket, not names or sign-in
-hints. Retrieval checks the decrypted ticket against this index. Renewal checks both the index and
+Ticket rows are indexed by canonical principal kind, issuer and subject. This identity comes from
+validated sign-in evidence. Retrieval checks the decrypted ticket against this index. Renewal checks both the index and
 previous protected ticket under its row lock, updates only an existing row and preserves its original
 deadlines. Runtime writers cannot retarget a session's principal or rewrite its original deadlines.
 
-The lock order is: owner action ledger/head serialization and current access; principal lock; session
-rows. Creation needs no head lock and takes principal, global capacity, then cleanup/insert row locks.
-Cleanup skips locked rows. Retrieve, renew and current-session logout take only their single row and
-never acquire head, principal or capacity locks afterward. This avoids a reverse lock dependency.
-The successful deletion commit is the cut: earlier tickets cannot be retrieved afterward; work whose
-retrieval was admitted before it may finish. A callback that started earlier but creates its ticket
-after that commit can survive. Self success expires the current cookie and clears private browser
-workspace ownership; it does not erase durable recovery identities belonging to the principal.
+Browser flow starts take the browser order lock. Callback completion takes that lock, the
+principal lock, then any ticket row locks. Credential-changing person writes take the ledger head
+and lock the affected principal keys. Termination and restore take the head before browser order.
+Ticket retrieval, renewal and ordinary sign-out take their own ticket lock. Expiry cleanup skips
+locked ticket rows. Credential publication observes committed generations separately from sign-in.
+
+The termination commit cuts off earlier starts for the selected identities, including delayed
+callbacks. Only later starts can establish new tickets. Previously admitted work may finish.
+A current account needs a current credential for account-wide self termination, including when
+it has no roles. For a verified identity without a current binding, self termination covers only
+that principal. Ordinary sign-out remains available. Browser session state is refreshed after
+confirmation, and durable recovery identities stay available after fresh authorization.
 
 Access requests identify the sign-in by issuer and subject. Names and email addresses are hints from
 the provider. Review the email verification status and confirm the exact subject before admission.

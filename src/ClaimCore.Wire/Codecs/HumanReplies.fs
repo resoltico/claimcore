@@ -195,6 +195,10 @@ module HumanReplies =
                 value.Self,
                 SessionTerminationScreen.terminated value
             )
+        | SessionTerminationResult.RetirementConfirmed ->
+            HumanSessionTerminationResult.RetirementConfirmed(
+                SessionTerminationScreen.retirementConfirmed ()
+            )
         | SessionTerminationResult.Rejected refusal ->
             HumanSessionTerminationResult.Rejected(rejection refusal)
         | SessionTerminationResult.Failed fault -> HumanSessionTerminationResult.Failed fault

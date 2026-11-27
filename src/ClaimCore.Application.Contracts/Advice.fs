@@ -208,6 +208,7 @@ type ActorContext =
     {
         Issuer: string
         Roles: ActorRoleSummary list
+        AuthorityVersion: int64
         Self: ActorRef
         Maintenance: RegisterMaintenance
         InstallationId: Guid

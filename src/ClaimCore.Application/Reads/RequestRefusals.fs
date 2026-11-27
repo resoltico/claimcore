@@ -14,12 +14,7 @@ open ClaimCore.Application.Contracts
 module internal RequestRefusals =
     let private current (services: ServiceContext) (tx: ReadTx) refusal =
         task {
-            let! person = PersonAcquisition.principal tx services.Principal
-
-            let actor =
-                person
-                |> Option.map ClaimCore.Domain.Aggregates.Person.access
-                |> AccessView.ofActor
+            let! actor = ExecutionEnvironment.requester tx services.Principal
 
             return
                 if Access.validActor services.Principal actor then

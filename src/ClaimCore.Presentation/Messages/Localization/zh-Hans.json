@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "已申请访问权限",
-    "source": "119387f35ffc"
+    "text": "申请访问权限",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "所有者需要先批准加入此账户，才能访问 ClaimCore。",
-    "source": "9f93027815d5"
+    "text": "发送申请，以便所有者批准此登录身份。",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "访问和导出日志",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "请求未得到确认。它可能已结束 ClaimCore 浏览器会话。重复请求也可能结束更新的会话。",
-    "source": "1ef989edf86f"
+    "text": "该请求可能已结束浏览器会话。使用相同的请求 ID 重试可获取结果。新的请求 ID 可能会结束之后创建的会话。",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "导出超过下载大小限制。请缩小选择范围或使用 CLI 逐页读取。",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "中继是否接受未知",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "需要由另一位已登录的所有者更改此所有者的登录身份。",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "申请访问权限",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "发送或刷新你的访问申请。",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "登录身份已更换",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "请退出后使用当前的登录身份，或联系所有者寻求帮助。",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "重新登录",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "请退出后重新登录，以继续使用此账户。",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "已申请访问权限",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "所有者需要先批准加入此账户，才能访问 ClaimCore。",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "仅查询已保存结果",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "返回此请求 ID 对应的已保存结果。浏览器会话保持不变。",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "确认清理过期结果",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "推进已提交的清理截止时间，浏览器会话保持不变。",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "已确认清理过期的会话结束结果。",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

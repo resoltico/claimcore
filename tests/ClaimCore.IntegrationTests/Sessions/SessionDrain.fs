@@ -83,7 +83,8 @@ let run (database: PostgresFixture.Database) =
         let create () =
             (storage.Create(
                 SessionResults.principal,
-                [| 1uy |],
+                None,
+                (fun _ -> [| 1uy |]),
                 None,
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,

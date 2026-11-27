@@ -38,7 +38,6 @@ module internal ExportRoutes =
                         Wire = ExportTransport.failure.Write value
                     }
             RecordedBy = None
-            ExpireBrowserSession = false
         }
 
     let private selection configuration (context: HttpContext) =
@@ -137,9 +136,8 @@ module internal ExportRoutes =
                                                             HostFailureReason.InstallationMismatch
                                                 else
                                                     let services =
-                                                        Service.withClaims
-                                                            (AuthenticatedPrincipals.claims
-                                                                principal)
+                                                        AuthenticatedPrincipals.serviceContext
+                                                            principal
                                                             services
                                                         |> Service.withReadCancellation
                                                             budget.Token
@@ -282,7 +280,6 @@ module internal ExportRoutes =
                                                                             installation
                                                                         )
                                                                     RecordedBy = None
-                                                                    ExpireBrowserSession = false
                                                                 }
 
                                             })

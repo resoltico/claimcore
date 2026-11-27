@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "접근 요청됨",
-    "source": "119387f35ffc"
+    "text": "접근 요청",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "ClaimCore에 접근하려면 소유자가 이 계정을 승인하여 추가해야 합니다.",
-    "source": "9f93027815d5"
+    "text": "소유자가 이 로그인 ID를 승인할 수 있도록 요청을 보내세요.",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "접근 및 내보내기 기록",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "요청이 확인되지 않았습니다. ClaimCore 브라우저 세션이 종료되었을 수 있습니다. 반복하면 새 세션도 종료될 수 있습니다.",
-    "source": "1ef989edf86f"
+    "text": "요청으로 브라우저 세션이 종료되었을 수 있습니다. 결과를 확인하려면 같은 요청 ID로 다시 요청하세요. 새 요청 ID는 이후에 만들어진 세션도 종료할 수 있습니다.",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "내보내기가 다운로드 크기 제한을 초과합니다. 선택 범위를 좁히거나 CLI 페이지 탐색을 사용하세요.",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "릴레이 수락 여부를 알 수 없음",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "이 소유자의 로그인 ID를 변경하려면 다른 소유자가 로그인해야 합니다.",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "접근 요청",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "접근 요청을 보내거나 갱신합니다.",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "로그인 ID가 변경되었습니다",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "로그아웃한 뒤 현재 로그인 ID를 사용하거나 소유자에게 문의하세요.",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "다시 로그인",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "이 계정을 계속 사용하려면 로그아웃한 뒤 다시 로그인하세요.",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "접근 요청됨",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "ClaimCore에 접근하려면 소유자가 이 계정을 승인하여 추가해야 합니다.",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "저장된 결과만 확인",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "이 요청 ID로 저장된 결과를 반환합니다. 브라우저 세션은 변경하지 않습니다.",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "만료된 결과 제거 확인",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "확정된 제거 기준을 앞으로 이동합니다. 브라우저 세션은 그대로 유지됩니다.",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "만료된 세션 종료 결과 제거가 확인되었습니다.",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

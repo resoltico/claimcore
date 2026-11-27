@@ -18,7 +18,6 @@ module internal AttachmentRoutes =
         {
             RouteReply.Response = RouteBody.Json { Class = classification; Wire = wire }
             RecordedBy = None
-            ExpireBrowserSession = false
         }
 
     let private failure value =
@@ -38,7 +37,6 @@ module internal AttachmentRoutes =
         {
             RouteReply.Response = RouteBody.Json(Endpoint.reply Api.operationExecute represented)
             RecordedBy = ApiRoutes.executionActor outcome
-            ExpireBrowserSession = false
         }
 
     let private framingFailure (token: CancellationToken) =
@@ -155,7 +153,6 @@ module internal AttachmentRoutes =
                                     RouteReply.Response =
                                         RouteBody.Attachment(transfer, content, installation)
                                     RecordedBy = None
-                                    ExpireBrowserSession = false
                                 }
                             | Outcome.Rejected refusal ->
                                 failure (
@@ -235,8 +232,8 @@ module internal AttachmentRoutes =
                                             return Error HostFailureReason.InstallationMismatch
                                         else
                                             let core =
-                                                Service.withClaims
-                                                    (AuthenticatedPrincipals.claims principal)
+                                                AuthenticatedPrincipals.serviceContext
+                                                    principal
                                                     core
 
                                             match transfer with

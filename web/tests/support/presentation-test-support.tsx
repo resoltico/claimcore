@@ -29,7 +29,7 @@ export const TestSession = ({
       value={{
         state: { kind: "authenticated", token: credential, epoch: 0 },
         logout,
-        endedBrowserSessions: vi.fn(),
+        refreshAfterTermination: vi.fn(),
         refresh: () => Promise.resolve(),
       }}
     >
@@ -56,7 +56,7 @@ export const TestProviders = ({ children }: { children: ReactNode }) => (
         value={{
           state: testSession,
           logout: () => Promise.resolve(),
-          endedBrowserSessions: vi.fn(),
+          refreshAfterTermination: vi.fn(),
           refresh: () => Promise.resolve(),
         }}
       >

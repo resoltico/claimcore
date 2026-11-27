@@ -33,7 +33,7 @@ module SessionTerminationScreen =
                     ]
         }
 
-    let terminationUnknown () =
+    let private notice messageId tone =
         { HumanDocument.empty HumanDisclosure.Current with
             Screen =
                 Screen.create
@@ -44,10 +44,16 @@ module SessionTerminationScreen =
                             (RegionContent.Notice
                                 [
                                     {
-                                        MessageId = "label.sessionTerminationUnknown"
+                                        MessageId = messageId
                                         Reason = None
-                                        Tone = NoticeTone.Warning
+                                        Tone = tone
                                     }
                                 ])
                     ]
         }
+
+    let terminationUnknown () =
+        notice "label.sessionTerminationUnknown" NoticeTone.Warning
+
+    let retirementConfirmed () =
+        notice "label.sessionRetirementConfirmed" NoticeTone.Info

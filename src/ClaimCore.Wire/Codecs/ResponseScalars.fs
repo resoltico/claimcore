@@ -51,29 +51,7 @@ module ResponseScalars =
     let sequence =
         RequestCodecs.sequence |> map (Sequence.create >> Option.get) Sequence.value
 
-    let operationId =
-        uuid
-        |> restrict
-            (Schema.String(
-                Some
-                    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-                Some "uuid",
-                Some 36,
-                Some 36,
-                None
-            ))
-            (fun path value ->
-                uuid.Read path value
-                |> Result.bind (fun id ->
-                    if OperationId.create id |> Option.isSome then
-                        Ok()
-                    else
-                        Error
-                            {
-                                Path = path
-                                Reason = "Expected an RFC UUIDv7."
-                            }))
-        |> map (OperationId.create >> Option.get) OperationId.value
+    let operationId = RequestCodecs.operationId
 
     let caseId = RequestCodecs.caseId
     let noteId = uuid |> map (NoteId.create >> Option.get) NoteId.value

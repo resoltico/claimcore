@@ -1051,6 +1051,20 @@
       "scalar": null
     },
     {
+      "name": "settleOnly",
+      "labelId": "input.settleOnly.label",
+      "hintId": null,
+      "ruleId": "input.settleOnly.rule",
+      "scalar": null
+    },
+    {
+      "name": "confirmRetirement",
+      "labelId": "input.confirmRetirement.label",
+      "hintId": null,
+      "ruleId": "input.confirmRetirement.rule",
+      "scalar": null
+    },
+    {
       "name": "groupBy",
       "labelId": "input.groupBy.label",
       "hintId": null,

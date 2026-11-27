@@ -62,6 +62,8 @@ module internal RestoreAdmission =
             History: (string * string) option
             RequiredCheckpoint: InstallationCheckpoint
             SealDecision: Guid -> System.Threading.Tasks.Task<bool>
+            CredentialClock:
+                unit -> System.Threading.Tasks.Task<(DateTimeOffset * DateTimeOffset option) option>
         }
 
     let private requireRetainedCheckpoint
@@ -107,6 +109,7 @@ module internal RestoreAdmission =
             Approved: InstallationCheckpoint
             Report: RestoreAdmissionReport
             PublicationGeneration: int64
+            CredentialFloor: DateTimeOffset
         }
 
     let private checkpoint (bytes: byte array) =
@@ -120,7 +123,7 @@ module internal RestoreAdmission =
                 DatabaseSession.rows
                     connection
                     """SELECT primary_id,system_id,timeline,fence_digest,history_digest,
-                              approved_checkpoint,admitted_checkpoint,invalidated_sessions,publication_generation
+                              approved_checkpoint,admitted_checkpoint,invalidated_sessions,publication_generation,credential_floor
                        FROM claimcore.restore_preparations WHERE generation=$1"""
                     [| box transition |]
                     token
@@ -142,6 +145,7 @@ module internal RestoreAdmission =
                                 InvalidatedSessions = DatabaseSession.value 7 row
                             }
                         PublicationGeneration = DatabaseSession.value 8 row
+                        CredentialFloor = DatabaseSession.instant 9 row
                     })
         }
 
@@ -159,8 +163,8 @@ module internal RestoreAdmission =
             connection
             """INSERT INTO claimcore.restore_preparations(
                    generation,primary_id,system_id,timeline,fence_digest,history_digest,
-                   approved_checkpoint,admitted_checkpoint,invalidated_sessions,publication_generation)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"""
+                   approved_checkpoint,admitted_checkpoint,invalidated_sessions,publication_generation,credential_floor)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"""
             [|
                 box generation
                 box primary.PrimaryId
@@ -172,6 +176,7 @@ module internal RestoreAdmission =
                 box (CheckpointRecord.encode report.Checkpoint)
                 box report.InvalidatedSessions
                 box publicationGeneration
+                box (Option.get primary.CredentialFloor)
             |]
             token
 
@@ -195,6 +200,7 @@ module internal RestoreAdmission =
                 preparation.Report.Checkpoint |> CheckpointRecord.codec.Write
                 scalar preparation.Report.InvalidatedSessions
                 scalar preparation.PublicationGeneration
+                scalar preparation.CredentialFloor.UtcTicks
             ]
         |> CanonicalWriter.bytes
         |> SHA256.HashData
@@ -295,6 +301,25 @@ module internal RestoreAdmission =
                         | _ -> return None
                     }
 
+                let! independentFloor =
+                    task {
+                        match approval with
+                        | None -> return None
+                        | Some approved ->
+                            let start = TimeProvider.System.GetUtcNow()
+                            let! evidence = approved.CredentialClock()
+                            let finish = TimeProvider.System.GetUtcNow()
+
+                            match evidence with
+                            | Some(observed, prior) when
+                                finish >= start
+                                && observed >= start - CredentialFreshness.maximumLead
+                                && observed <= finish + CredentialFreshness.maximumLead
+                                ->
+                                return Some(max finish (prior |> Option.fold max observed))
+                            | _ -> return notAdmitted ()
+                    }
+
                 return!
                     RegisterMaintenanceStore.publish
                         source
@@ -309,21 +334,41 @@ module internal RestoreAdmission =
 
                                 match recoveryGeneration with
                                 | Some generation ->
-                                    do!
+                                    let! _ =
                                         Baseline.rotateEncryptionGeneration
                                             connection
-                                            generation
+                                            (Some generation)
+                                            token
+
+                                    let! _ = SessionRows.advanceOrder connection token
+                                    let! local = SessionRows.now connection token
+                                    let host = TimeProvider.System.GetUtcNow()
+
+                                    if
+                                        (local - host).Duration() > CredentialFreshness.maximumLead
+                                    then
+                                        notAdmitted ()
+
+                                    let cutoff =
+                                        independentFloor |> Option.fold max (max local host)
+
+                                    let! _ =
+                                        DatabaseSession.execute
+                                            connection
+                                            "UPDATE claimcore.recovery_generation SET generation=$1, primary_id=coalesce($2::uuid,gen_random_uuid()), reopen_pending=$3, credential_floor=greatest(credential_floor,$4) WHERE singleton"
+                                            [|
+                                                box generation
+                                                DatabaseSession.parameter target
+                                                box approval.IsSome
+                                                box cutoff
+                                            |]
                                             token
 
                                     let! _ =
                                         DatabaseSession.execute
                                             connection
-                                            "UPDATE claimcore.recovery_generation SET generation=$1, primary_id=coalesce($2::uuid,gen_random_uuid()), reopen_pending=$3 WHERE singleton"
-                                            [|
-                                                box generation
-                                                DatabaseSession.parameter target
-                                                box approval.IsSome
-                                            |]
+                                            "DELETE FROM claimcore.browser_flows; DELETE FROM claimcore.browser_session_cuts"
+                                            [||]
                                             token
 
                                     ()
@@ -377,7 +422,10 @@ module internal RestoreAdmission =
         }
 
     let admit source masterKey trusted handle token =
-        admitTarget None (Some(Guid.NewGuid())) source masterKey trusted handle token
+        task {
+            let generation = Guid.NewGuid()
+            return! admitTarget None (Some generation) source masterKey trusted handle token
+        }
 
     let admitWitnessed
         source
@@ -429,6 +477,7 @@ module internal RestoreAdmission =
                 && saved.Archive = archive
                 && saved.Report.Checkpoint = publication.Checkpoint
                 && saved.PublicationGeneration = publication.Generation
+                && primary.CredentialFloor = Some saved.CredentialFloor
                 ->
                 saved
             | _ -> notAdmitted ()
@@ -507,6 +556,7 @@ module internal RestoreAdmission =
                         || current.SystemId <> fence.SystemId
                         || current.Timeline <> fence.Timeline
                         || fence.Preparation <> Some seal
+                        || fence.CredentialFloor <> current.CredentialFloor
                     then
                         return notAdmitted ()
                     else
@@ -526,6 +576,7 @@ module internal RestoreAdmission =
                             saved.Fence
                             seal
                             saved.Report.Checkpoint
+                            saved.CredentialFloor
                             token
 
                     if not bound then
@@ -586,6 +637,14 @@ module internal RestoreAdmission =
                             Archive = archive
                             History = history
                             RequiredCheckpoint = fence.RequiredCheckpoint
+                            CredentialClock =
+                                fun () ->
+                                    WitnessRestore.credentialClock
+                                        witness
+                                        primary.SystemId
+                                        installation
+                                        transition
+                                        token
                             SealDecision =
                                 fun target ->
                                     WitnessRestore.sealFence

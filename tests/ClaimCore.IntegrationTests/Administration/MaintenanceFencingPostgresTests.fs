@@ -239,7 +239,8 @@ let private queuedCommand rebuild (database: PostgresFixture.Database) =
         let! _ =
             store.Create(
                 principal,
-                [| 1uy |],
+                None,
+                (fun _ -> [| 1uy |]),
                 None,
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,

@@ -35,6 +35,7 @@ let private cancelsBlockedStartup () =
             ClientSecret = "synthetic"
             ApiAudience = "api"
             CliClientId = "cli"
+            ServiceClientIds = Set.singleton "service"
         }
 
     use issuer = new IssuerMetadata(configuration, client, TimeProvider.System)

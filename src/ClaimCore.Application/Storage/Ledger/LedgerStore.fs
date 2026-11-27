@@ -34,45 +34,57 @@ type internal LedgerStore
 
     interface IStore with
         member _.Context query =
-            Transactions.write source settings query.CancellationToken (fun connection ->
+            Transactions.read source query.CancellationToken (fun connection observedAt ->
                 task {
                     do! Baseline.requireExpected installation connection query.CancellationToken
-                    // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
-                    // The following single access query must acquire a fresh snapshot after that wait.
-                    let! _ =
-                        PrincipalLock.acquire connection query.Principal query.CancellationToken
 
-                    let! observed =
-                        DatabaseSession.rows
-                            connection
-                            "SELECT clock_timestamp()"
-                            [||]
+                    let tx =
+                        ReadTx(
+                            connection,
+                            installation,
+                            cipher,
+                            observedAt,
                             query.CancellationToken
-
-                    let observedAt = DatabaseSession.instant 0 observed.Head
+                        )
 
                     let! facts =
                         Projections.globalReadFacts
-                            connection
+                            tx.Connection
                             query.Principal
-                            query.CancellationToken
+                            tx.CancellationToken
 
-                    if facts.People.Actor.IsNone then
-                        do!
-                            AccessRequests.refresh
-                                connection
-                                query.Principal
-                                query.Claims
-                                observedAt
-                                query.CancellationToken
+                    tx.Credential <- query.Credential
+                    let! usable = Credentials.admits tx query.Principal
+
+                    let! association =
+                        PersonAcquisition.association tx query.Principal facts.People.Actor
+
+                    let! pending =
+                        match association with
+                        | PrincipalAssociation.NeverBound ->
+                            AccessRequests.pending tx query.Principal
+                        | _ -> System.Threading.Tasks.Task.FromResult false
+
+                    let! authorityVersion =
+                        match association with
+                        | PrincipalAssociation.Current actor when actor.Enabled && usable ->
+                            PersonAcquisition.authorityVersion tx actor.ActorId
+                        | _ -> System.Threading.Tasks.Task.FromResult 0L
+
+                    let! terminationCutoff =
+                        SessionRows.terminationCutoff connection query.CancellationToken
 
                     return
                         {
+                            TerminationCutoff = terminationCutoff
                             ContextFacts.Facts = facts
+                            Association = association
+                            RequestPending = pending
+                            CredentialUsable = usable
+                            AuthorityVersion = authorityVersion
                             ObservedAt = observedAt
                             CaseReferencePolicy = installation.CaseReferencePolicy
-                        },
-                        true
+                        }
                 })
 
         member _.Read
@@ -131,58 +143,81 @@ type internal LedgerStore
             let token = operation.CancellationToken
 
             let run () =
-                Transactions.write source settings token (fun connection ->
-                    task {
-                        do! Baseline.requireExpected installation connection token
-                        let! head, observedAt = Transactions.head connection token
-                        FailureDiagnostics.phase FailurePhase.Read
+                task {
+                    let mutable personProjected = false
 
-                        if operation.RequiresEncryption then
-                            let! current =
-                                Baseline.currentEncryptionGeneration
-                                    connection
-                                    cipher.Generation
-                                    token
-
-                            if not current then
-                                raise (
-                                    RecordCorruptException
-                                        "The write reservation belongs to a retired encryption generation."
-                                )
-
-                        let invoke scope =
-                            operation.Work(
-                                WriteTx(
-                                    connection,
-                                    installation,
-                                    scope,
-                                    head,
-                                    observedAt,
-                                    caseReferenceEntropy,
-                                    token
-                                )
-                            )
-
-                        let! verdict =
+                    let! result =
+                        Transactions.write source settings token (fun connection ->
                             task {
+                                do! Baseline.requireExpected installation connection token
+                                let! head, observedAt = Transactions.head connection token
+                                FailureDiagnostics.phase FailurePhase.Read
+
                                 if operation.RequiresEncryption then
-                                    use allocated =
-                                        cipher.ForEncryption InstallationCipher.operationAllowance
+                                    let! current =
+                                        Baseline.currentEncryptionGeneration
+                                            connection
+                                            cipher.Generation
+                                            token
 
-                                    return! invoke allocated
-                                else
-                                    return! invoke cipher
-                            }
+                                    if not current then
+                                        raise (
+                                            RecordCorruptException
+                                                "The write reservation belongs to a retired encryption generation."
+                                        )
 
-                        let commit =
-                            match verdict with
-                            | Verdict.Proceed _ -> true
-                            | Verdict.Replay _
-                            | Verdict.Refuse _
-                            | Verdict.Fail _ -> false
+                                let invoke scope =
+                                    task {
+                                        let tx =
+                                            WriteTx(
+                                                connection,
+                                                installation,
+                                                scope,
+                                                head,
+                                                observedAt,
+                                                caseReferenceEntropy,
+                                                token
+                                            )
 
-                        return verdict, commit
-                    })
+                                        let! outcome = operation.Work tx
+                                        personProjected <- tx.PersonProjected
+                                        return outcome
+                                    }
+
+                                let! verdict =
+                                    task {
+                                        if operation.RequiresEncryption then
+                                            use allocated =
+                                                cipher.ForEncryption
+                                                    InstallationCipher.operationAllowance
+
+                                            return! invoke allocated
+                                        else
+                                            return! invoke cipher
+                                    }
+
+                                let commit =
+                                    match verdict with
+                                    | Verdict.Proceed _ -> true
+                                    | Verdict.Replay _
+                                    | Verdict.Refuse _
+                                    | Verdict.Fail _ -> false
+
+                                return verdict, commit
+                            })
+
+                    match result with
+                    | Ok(Verdict.Proceed _) when personProjected ->
+                        do!
+                            Transactions.settleCredentials
+                                source
+                                settings
+                                (Baseline.requireExpected installation)
+                                token
+                    | _ -> ()
+
+                    return result
+                }
 
             if not operation.RequiresEncryption then
                 run ()

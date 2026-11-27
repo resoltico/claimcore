@@ -7,6 +7,11 @@ open ScreenEntries
 open PeopleScreen
 
 module ContextScreen =
+    let private unregisteredKind =
+        function
+        | RequesterState.AccessPending _ -> RequesterKind.AccessPending
+        | _ -> RequesterKind.NotRegistered
+
     let context (reply: ContextReply) =
         let state, details =
             match reply.Requester with
@@ -63,8 +68,10 @@ module ContextScreen =
             | RequesterState.Disabled item ->
                 RequesterKind.Disabled,
                 [ value "self" "label.account" Prominence.Primary (PresentedValue.Actor item) ]
-            | RequesterState.NotRegistered item ->
-                RequesterKind.NotRegistered,
+            | RequesterState.SignInRequired -> RequesterKind.SignInRequired, []
+            | RequesterState.FormerIdentity -> RequesterKind.FormerIdentity, []
+            | (RequesterState.NotRegistered item | RequesterState.AccessPending item) as state ->
+                unregisteredKind state,
                 claims item.Claims
                 @ [
                     value
@@ -102,6 +109,9 @@ module ContextScreen =
            | RequesterState.Active item -> roleSections item.Roles
            | RequesterState.NoRoles _
            | RequesterState.Disabled _
+           | RequesterState.AccessPending _
+           | RequesterState.SignInRequired
+           | RequesterState.FormerIdentity
            | RequesterState.NotRegistered _ -> [])
 
     let session authenticated contractIdentity =
@@ -216,8 +226,10 @@ module ContextScreen =
                 [ value "self" "label.account" Prominence.Primary (PresentedValue.Actor item) ],
                 [],
                 []
-            | RequesterState.NotRegistered item ->
-                RequesterKind.NotRegistered,
+            | RequesterState.SignInRequired -> RequesterKind.SignInRequired, [], [], []
+            | RequesterState.FormerIdentity -> RequesterKind.FormerIdentity, [], [], []
+            | (RequesterState.NotRegistered item | RequesterState.AccessPending item) as state ->
+                unregisteredKind state,
                 claims item.Claims,
                 [],
                 [
@@ -254,13 +266,16 @@ module ContextScreen =
             match state with
             | RequesterKind.Active -> None
             | RequesterKind.Disabled -> Some "label.accessDisabled"
+            | RequesterKind.SignInRequired -> Some "requesterState.SIGN_IN_REQUIRED.label"
+            | RequesterKind.FormerIdentity -> Some "requesterState.FORMER_IDENTITY.label"
+            | RequesterKind.NotRegistered -> Some "requesterState.NOT_REGISTERED.label"
             | _ -> Some "label.accessPending"
 
         Screen.create
             [
                 entryRegion RegionRole.Identity heading identity
                 match reply.Requester with
-                | RequesterState.NotRegistered _ ->
+                | RequesterState.AccessPending _ ->
                     region
                         RegionRole.Notice
                         None
@@ -388,6 +403,8 @@ module ContextScreen =
 
                 {
                     State = RequesterKind.Active
+                    TerminationScope = value.TerminationScope
+                    AuthorityVersion = Some actor.AuthorityVersion
                     InstallationId = Some actor.InstallationId
                     ActorId = Some actor.ActorId
                 },
@@ -397,6 +414,8 @@ module ContextScreen =
             | RequesterState.NoRoles actor ->
                 {
                     State = RequesterKind.NoRoles
+                    TerminationScope = value.TerminationScope
+                    AuthorityVersion = None
                     InstallationId = Some actor.InstallationId
                     ActorId = Some actor.Self.ActorId
                 },
@@ -406,26 +425,42 @@ module ContextScreen =
             | RequesterState.Disabled actor ->
                 {
                     State = RequesterKind.Disabled
+                    TerminationScope = value.TerminationScope
+                    AuthorityVersion = None
                     InstallationId = None
                     ActorId = Some actor.ActorId
                 },
                 ObservationBasis.Unavailable,
                 [],
                 []
-            | RequesterState.NotRegistered _ ->
+            | (RequesterState.NotRegistered _ | RequesterState.AccessPending _ | RequesterState.FormerIdentity | RequesterState.SignInRequired) as state ->
                 {
-                    State = RequesterKind.NotRegistered
+                    TerminationScope = value.TerminationScope
+                    AuthorityVersion = None
+                    State =
+                        match state with
+                        | RequesterState.SignInRequired -> RequesterKind.SignInRequired
+                        | RequesterState.FormerIdentity -> RequesterKind.FormerIdentity
+                        | _ -> unregisteredKind state
                     InstallationId = None
                     ActorId = None
                 },
                 ObservationBasis.Unavailable,
-                [],
+                (match state with
+                 | RequesterState.NotRegistered _
+                 | RequesterState.AccessPending _ ->
+                     [ Affordance.command CommandRequest.RequestAccess ]
+                 | _ -> []),
                 []
 
         HumanDocument.create
             (DocumentSubject.Requester identity)
             (view value)
-            (actions @ [ Affordance.command CommandRequest.TerminateOwnSessions ])
+            (actions
+             @ [
+                 if RequesterState.offersOwnSessionTermination value.Requester then
+                     Affordance.command CommandRequest.TerminateOwnSessions
+             ])
             links
             None
             basis

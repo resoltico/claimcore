@@ -102,7 +102,11 @@ module TaskInputDeclaration =
                     || input = TaskInputId.Target InputTarget.Limit
                 then
                     TaskAtom.Integer
-                elif input = TaskInputId.IncludeInactive then
+                elif
+                    input = TaskInputId.IncludeInactive
+                    || input = TaskInputId.SettleOnly
+                    || input = TaskInputId.ConfirmRetirement
+                then
                     TaskAtom.Boolean
                 else
                     TaskAtom.Text

@@ -21,6 +21,26 @@ let declaration =
          :: signInIdentity)
         []
 
+let private handover (environment: PersonEnvironment) (target: Person) =
+    if
+        PersonRules.owner target
+        && (environment.Requester.Actor
+            |> Option.exists (fun actor -> actor.ActorId = target.Id))
+    then
+        Error(Refusal.People PeopleRefusal.DistinctOwnerRequired)
+    else
+        Ok()
+
+let private availability environment state binding =
+    let offered = PersonRules.availability declaration environment state binding
+
+    match offered.Blocked, state with
+    | None, Some target ->
+        match handover environment target with
+        | Ok() -> offered
+        | Error refusal -> { offered with Blocked = Some refusal }
+    | _ -> offered
+
 let private decide context environment state binding inputs =
     PersonRules.admit
         context
@@ -37,6 +57,8 @@ let private decide context environment state binding inputs =
                 Error(Refusal.People PeopleRefusal.NoChanges)
             else
                 PersonRules.signInIdentity state principal environment
+                |> Result.bind (fun naturalKey ->
+                    handover environment state |> Result.map (fun () -> naturalKey))
                 |> Result.map (fun naturalKey ->
                     [
                         PersonRules.changeIdentity
@@ -57,7 +79,7 @@ let task =
             Authorize =
                 fun principal access _ -> PersonRules.permissionFor declaration principal access
             Check = Parsing.check (PersonInputs.identity PrincipalKind.Human)
-            Availability = PersonRules.availability declaration
+            Availability = availability
             DecisionFactsAvailable = fun _ _ -> true
             Describe = ClaimCore.Domain.Changes.PartDescriptions.person
             Decide = decide

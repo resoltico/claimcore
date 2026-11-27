@@ -89,8 +89,8 @@ cp "${configuration}/ca.pem" "${configuration}/administration/ca.pem"
 cat >"${configuration}/identity/realm/claimcore.json" <<JSON
 {"realm":"claimcore","enabled":true,"sslRequired":"all","loginWithEmailAllowed":false,"displayName":"ClaimCore","loginTheme":"claimcore","internationalizationEnabled":true,"supportedLocales":["en","lv","ar","ko","zh-Hans","zh-Hant","ja","es","de"],"defaultLocale":"en","clients":[
 {"clientId":"claimcore-web","enabled":true,"publicClient":false,"secret":"${web_secret}","standardFlowEnabled":true,"directAccessGrantsEnabled":false,"redirectUris":["https://localhost:${web_port}/signin-oidc"],"attributes":{"pkce.code.challenge.method":"S256","post.logout.redirect.uris":"https://localhost:${web_port}/"}},
-{"clientId":"claimcore-cli","enabled":true,"publicClient":true,"standardFlowEnabled":true,"directAccessGrantsEnabled":false,"redirectUris":["http://127.0.0.1"],"attributes":{"pkce.code.challenge.method":"S256"},"protocolMappers":[{"name":"api","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"claimcore-api","id.token.claim":"false","access.token.claim":"true"}}]},
-{"clientId":"claimcore-service","enabled":true,"publicClient":false,"secret":"${service_secret}","serviceAccountsEnabled":true,"standardFlowEnabled":false,"directAccessGrantsEnabled":false,"protocolMappers":[{"name":"api","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"claimcore-api","id.token.claim":"false","access.token.claim":"true"}}]}
+{"clientId":"claimcore-cli","enabled":true,"publicClient":true,"standardFlowEnabled":true,"directAccessGrantsEnabled":false,"redirectUris":["http://127.0.0.1"],"attributes":{"pkce.code.challenge.method":"S256"},"protocolMappers":[{"name":"api","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"claimcore-api","id.token.claim":"false","access.token.claim":"true"}},{"name":"claimcore-principal","protocol":"openid-connect","protocolMapper":"oidc-hardcoded-claim-mapper","config":{"claim.name":"claimcore_principal","claim.value":"human","jsonType.label":"String","id.token.claim":"false","access.token.claim":"true"}}]},
+{"clientId":"claimcore-service","enabled":true,"publicClient":false,"secret":"${service_secret}","serviceAccountsEnabled":true,"standardFlowEnabled":false,"directAccessGrantsEnabled":false,"protocolMappers":[{"name":"api","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"claimcore-api","id.token.claim":"false","access.token.claim":"true"}},{"name":"claimcore-principal","protocol":"openid-connect","protocolMapper":"oidc-hardcoded-claim-mapper","config":{"claim.name":"claimcore_principal","claim.value":"service","jsonType.label":"String","id.token.claim":"false","access.token.claim":"true"}}]}
 ],"users":[{"id":"${owner_subject}","username":"owner","enabled":true,"email":"owner@example.test","emailVerified":true,"firstName":"Local","lastName":"Owner","requiredActions":[],"credentials":[{"type":"password","value":"${owner_login}","temporary":false}]}]}
 JSON
 cat >"${configuration}/web.env" <<ENV
@@ -108,6 +108,7 @@ CLAIMCORE_OIDC_CLIENT_ID=claimcore-web
 CLAIMCORE_OIDC_CLIENT_SECRET_FILE=/etc/claimcore/runtime/client.secret
 CLAIMCORE_OIDC_API_AUDIENCE=claimcore-api
 CLAIMCORE_OIDC_CLI_CLIENT_ID=claimcore-cli
+CLAIMCORE_OIDC_SERVICE_CLIENT_IDS=claimcore-service
 CLAIMCORE_OIDC_CA_CERT_FILE=/etc/claimcore/runtime/ca.pem
 ENV
 # Escape dotenv syntax and interpolation while retaining the exact host path.

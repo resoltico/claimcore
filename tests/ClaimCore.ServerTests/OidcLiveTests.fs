@@ -48,7 +48,11 @@ let private wrongRoot issuer =
         Expect.isTrue denied "Unrelated issuer CA refused"
     }
 
-let private qualify (server: IdentityServer.Identity) (stage: string -> unit) token =
+let private qualify
+    (server: IdentityServer.Identity)
+    (stage: string -> unit)
+    (token: CancellationToken)
+    =
     task {
         use credentials = JsonDocument.Parse server.Credentials
 
@@ -63,6 +67,7 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
                 ClientSecret = text "webClientSecret"
                 ApiAudience = text "apiAudience"
                 CliClientId = text "publicClientId"
+                ServiceClientIds = set [ text "serviceClientId"; text "secondServiceClientId" ]
             }
 
         stage "TLS refusal"
@@ -85,6 +90,9 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
         let! status = bearerRequest host.Client idToken
         Expect.equal status 401 "An ID token is not API access"
         stage "bearer controls"
+        // The service was admitted just before the synthetic browser flow. A real newly
+        // issued credential needs an unambiguous whole second beyond the clock lead.
+        do! Task.Delay(TimeSpan.FromSeconds 3., token)
         do! qualifyBearers server.Issuer identity host.Client credentials.RootElement cookies
         stage "CLI client credentials"
         do! CliIdentityClient.qualify server host.Client core.InstallationId stage token

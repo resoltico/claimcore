@@ -343,7 +343,12 @@ const fillOidcCredentials = async (
     password: string;
   }>,
 ): Promise<void> => {
-  await page.locator('input[name="username"]').fill(owner.username);
+  const username = page.locator('input[name="username"]');
+  if (await username.isVisible()) {
+    await username.fill(owner.username);
+  } else {
+    await expect(page.getByRole("textbox").first()).toHaveValue(owner.username);
+  }
   await progress("oidc-username-filled");
   await page.locator('input[name="password"]').fill(owner.password);
   await progress("oidc-password-filled");
@@ -475,7 +480,7 @@ export const login = async (
           level: 1,
         });
   const requestedAddress = applicationAddress(page);
-  const providerForm = page.locator('input[name="username"]');
+  const providerForm = page.locator('input[name="password"]');
   const visible = authenticated
     .or(providerForm)
     .or(page.locator(".login-card h1, #sign-in-incomplete"))
@@ -504,7 +509,7 @@ export const login = async (
     const label = (await explicit.textContent())?.trim() ?? signIn;
     await awaitLoginAdmission(page, label, applicationOrigin);
   }
-  await page.locator('input[name="username"]').or(authenticated).first().waitFor();
+  await providerForm.or(authenticated).first().waitFor();
   if (await authenticated.isVisible()) {
     await progress("login-ready");
     return;

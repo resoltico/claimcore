@@ -221,6 +221,7 @@ let private csrf () =
                 ClientSecret = "synthetic-client-secret"
                 ApiAudience = "claimcore-api"
                 CliClientId = "claimcore-cli"
+                ServiceClientIds = Set.singleton "service"
             }
 
         let antiforgery =
@@ -774,7 +775,14 @@ let private maximumKestrelFrame () =
                     then
                         let identity =
                             ClaimsIdentity(
-                                [ Claim("sub", "synthetic-kestrel"); Claim("azp", "cli") ],
+                                [
+                                    Claim("sub", "synthetic-kestrel")
+                                    Claim("azp", "cli")
+                                    Claim("typ", "Bearer")
+                                    Claim("claimcore_principal", "human")
+                                    Claim("iat", "1800000000", ClaimValueTypes.Integer64)
+                                    Claim("auth_time", "1800000000", ClaimValueTypes.Integer64)
+                                ],
                                 scheme
                             )
 

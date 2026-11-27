@@ -775,5 +775,50 @@
     "text": "重置保存的偏好设置",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "继续未确认的会话结束请求",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "发起新的会话结束请求",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "查询之前请求的已保存结果。之后创建的会话将保持打开。",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "新请求可能结束较晚开启的会话。只要还能恢复结果，先前的请求 ID 就会保留。",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "先前的请求超出了当前恢复时限。已保存的请求 ID 会保留。",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "之前的请求已过期，结果仍未确认。",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "有一条已保存的请求属于其他账户、安装或目标。返回对应选项即可继续。",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "忘记已过期的请求",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "有些已保存的会话结束请求无法读取。",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

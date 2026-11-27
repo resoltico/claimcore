@@ -15,17 +15,6 @@ open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Server.Composition
 
 module internal ApiRoutes =
-    let private terminate invoke services input token =
-        task {
-            let! result = invoke services input token
-
-            match result with
-            | SessionTerminationResult.Succeeded value -> WebMetrics.sessionsTerminated value.Count
-            | _ -> ()
-
-            return result
-        }
-
     let internal executionActor (reply: ExecuteReply) =
         match reply.Outcome with
         | ExecuteResult.Accepted receipt ->
@@ -80,7 +69,6 @@ module internal ApiRoutes =
                 Api.operationGetUnavailable
                 (fun _ reply -> HumanReplies.lookup reply)
                 (fun _ -> None)
-                (fun _ -> false)
                 Service.operationGet
         | ActorEndpoint.Query QueryTaskId.PeopleList ->
             Route.representedRead Api.peopleList PeopleScreen.document Service.actors
@@ -101,6 +89,11 @@ module internal ApiRoutes =
                 Api.disclosureTrail
                 DisclosureTrailScreen.document
                 Service.disclosureTrail
+        | ActorEndpoint.Command CommandTaskId.RequestAccess ->
+            Route.representedRead
+                Api.peopleRequestsSubmit
+                AccessRequestsScreen.submittedDocument
+                Service.requestAccess
         | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             Route.representedRead
                 Api.peopleRequestsDismiss
@@ -112,27 +105,20 @@ module internal ApiRoutes =
                 (fun _ -> SessionTerminationResult.Failed CoreFault.StoreUnavailable)
                 (fun _ -> HumanReplies.sessionTermination)
                 (fun _ -> None)
-                (function
-                | SessionTerminationResult.Succeeded value -> value.Self
-                | _ -> false)
-                (terminate Service.terminateOwnSessions)
+                Service.terminateOwnSessions
         | ActorEndpoint.Command CommandTaskId.TerminatePersonSessions ->
             Route.represented
                 Api.terminatePersonSessions
                 (fun _ -> SessionTerminationResult.Failed CoreFault.StoreUnavailable)
                 (fun _ -> HumanReplies.sessionTermination)
                 (fun _ -> None)
-                (function
-                | SessionTerminationResult.Succeeded value -> value.Self
-                | _ -> false)
-                (terminate Service.terminatePersonSessions)
+                Service.terminatePersonSessions
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.represented
                 Api.operationPreview
                 Api.operationPreviewUnavailable
                 HumanReplies.previewSubmission
                 (fun _ -> None)
-                (fun _ -> false)
                 Service.previewSubmission
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.represented
@@ -140,7 +126,6 @@ module internal ApiRoutes =
                 Api.operationExecuteUnavailable
                 (fun _ reply -> HumanReplies.execute reply)
                 executionActor
-                (fun _ -> false)
                 Service.executeSubmission
 
     let handshake (context: HttpContext) =
@@ -243,6 +228,7 @@ module internal ApiRoutes =
         | true, values when values.Count = 1 ->
             Codec.uuid.Read "$.installation" (JsonValue.String(string values[0]))
             |> Result.toOption
+            |> Option.filter ((<>) System.Guid.Empty)
 
         | _ -> None
 
@@ -339,8 +325,8 @@ module internal ApiRoutes =
                                         cancellation
                                         (fun core ->
                                             let core =
-                                                Service.withClaims
-                                                    (AuthenticatedPrincipals.claims principal)
+                                                AuthenticatedPrincipals.serviceContext
+                                                    principal
                                                     core
 
                                             let core =

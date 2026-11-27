@@ -108,7 +108,7 @@ module Grammar =
             match (TaskRouting.endpoint entry) with
             | ActorEndpoint.Query _
             | ActorEndpoint.Command _ ->
-                QueryArguments.build entry options operands problems |> Choice1Of2
+                QueryArguments.build entry allocate options operands problems |> Choice1Of2
             | ActorEndpoint.Operation _ -> invalidOp "An operation verb requires its semantic task."
 
     let private prepareWith incomplete admit finish newId arguments =
@@ -268,6 +268,19 @@ module Grammar =
                     problems.Add(UsageError.InvalidChoice("--confirm", value, [ "yes" ]))
                 | _ -> ()
 
+            let installation =
+                match options.TryGetValue "--installation-id" with
+                | true, [ Some value ] when CommandGrammar.terminatesSessions entry ->
+                    match uuid "--installation-id" value with
+                    | Ok id -> Some id
+                    | Error error ->
+                        problems.Add error
+                        None
+                | true, _ when not (CommandGrammar.terminatesSessions entry) ->
+                    problems.Add(UsageError.NotApplicable("--installation-id", entry))
+                    None
+                | _ -> None
+
             let found = errors problems
 
             if not found.IsEmpty then
@@ -292,6 +305,7 @@ module Grammar =
                         (match options.TryGetValue "--confirm" with
                          | true, [ Some value ] -> Some value
                          | _ -> None)
+                        installation
 
     let prepare newId arguments =
         let admit endpoint =
@@ -314,9 +328,26 @@ module Grammar =
                         }
                 )
 
-        let finish input dryRun format all language preview details upload confirmation =
+        let finish
+            input
+            dryRun
+            format
+            all
+            language
+            preview
+            details
+            upload
+            confirmation
+            installation
+            =
             Frames.fromInput input
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
+            |> Result.bind (fun invocation ->
+                match installation with
+                | None -> Ok invocation
+                | Some id ->
+                    Frames.bindInstallation id invocation
+                    |> Result.mapError (fun _ -> [ UsageError.InvalidUuid "--installation-id" ]))
             |> Result.map (fun invocation ->
                 {
                     Invocation =
@@ -365,7 +396,7 @@ module Grammar =
                             Reason = "An operation draft is required."
                         }
 
-            let finish (endpoint, intent) _ format _ language _ _ _ _ =
+            let finish (endpoint, intent) _ format _ language _ _ _ _ _ =
                 Ok
                     {
                         Bytes =
@@ -406,7 +437,7 @@ module Grammar =
                         Reason = "An operation draft is required."
                     }
 
-        let finish input _ _ _ language preview _ upload _ = Ok(input, language, preview, upload)
+        let finish input _ _ _ language preview _ upload _ _ = Ok(input, language, preview, upload)
 
         prepareWith
             true

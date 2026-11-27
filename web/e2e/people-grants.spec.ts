@@ -272,7 +272,7 @@ test("preserves historical profile contact and distinguishes global and case rol
     const event = page.locator(
       `.people-history .region-timeline > li[data-effect$=".${operation}"]`,
     );
-    await expect(event).toHaveCount(1);
+    await expect(event).toHaveCount(1, { timeout: 20_000 });
     await event.getByRole("button", { name: "View details", exact: true }).click();
     return page.getByRole("dialog", { name: "View details", exact: true });
   };

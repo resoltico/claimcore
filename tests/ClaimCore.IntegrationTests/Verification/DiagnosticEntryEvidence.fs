@@ -503,6 +503,15 @@ let authoredIdentityAndClosureEvidence () =
 
         witnesses.Add(refused unchanged)
 
+        let proposed =
+            PrincipalKey.human "https://issuer.example/" "fresh-owner-diagnostic"
+            |> Result.defaultWith (string >> failtest)
+
+        let! requiresDeputy =
+            person 8620 fixture.Owner "people.changeSignInIdentity" (identity proposed)
+
+        witnesses.Add(refused requiresDeputy)
+
         let! invalidEmail =
             person
                 8611

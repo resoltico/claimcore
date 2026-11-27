@@ -360,9 +360,17 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
             |> Result.defaultWith (fun _ ->
                 failtest "Setup output is an admitted closed reply frame")
 
-        Expect.equal (ClaimCore.Cli.Frames.exitCode admitted) 0 "Setup frame exit"
         use document = JsonDocument.Parse(line)
         let reply = document.RootElement
+
+        if ClaimCore.Cli.Frames.exitCode admitted <> 0 then
+            let resultKind =
+                match reply.GetProperty("result").TryGetProperty "outcome" with
+                | true, outcome -> outcome.GetProperty("kind").GetString()
+                | _ -> "local or host failure"
+
+            failtestf "Setup frame exit %d (%s)" (ClaimCore.Cli.Frames.exitCode admitted) resultKind
+
         let receipt = reply |> require "ACCEPTED"
 
         Expect.equal
@@ -378,6 +386,9 @@ let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
             "Setup receipt identity"
 
 let setup fixture =
+    // The published owner credential must postdate bootstrap publication by more
+    // than the allowed clock lead. The issuer stamps it in whole seconds.
+    System.Threading.Thread.Sleep(TimeSpan.FromSeconds 3.)
     let frames = setupFrames fixture
 
     let source =
@@ -389,3 +400,7 @@ let setup fixture =
 
     invoke fixture environment [ "batch" ] source 0
     |> requireAcceptedReplies frames.Length
+
+    // Automation begins with new service tokens. Let their whole-second issuance
+    // exceed the maximum provider clock lead after the fixture's admissions commit.
+    System.Threading.Thread.Sleep(TimeSpan.FromSeconds 3.)

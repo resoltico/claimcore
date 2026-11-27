@@ -62,7 +62,7 @@ module AuthMiddleware =
     let internal productionTrustHandler () =
         new HttpClientHandler(AllowAutoRedirect = false, CheckCertificateRevocationList = true)
 
-    let internal idTokenProperty = "ClaimCore.IdToken"
+    let internal idTokenProperty = BrowserTicket.idTokenProperty
 
     let private requireHuman (configuration: OidcConfiguration) (context: TokenValidatedContext) =
         match context.Principal |> Option.ofObj with
@@ -77,8 +77,14 @@ module AuthMiddleware =
                         .Get(CookieAuthenticationDefaults.AuthenticationScheme)
 
                 if not (isNull cookies.SessionStore) then
-                    match context.Properties, context.TokenEndpointResponse with
-                    | NonNull properties, NonNull response ->
+                    match
+                        context.Properties,
+                        context.TokenEndpointResponse,
+                        PrincipalIdentity.browserAuthentication principal
+                    with
+                    | NonNull properties, NonNull response, Some proof ->
+                        BrowserTicket.recordProof properties proof
+
                         match response.IdToken with
                         | NonNull token when not (String.IsNullOrWhiteSpace token) ->
                             properties.Items[idTokenProperty] <- token
@@ -103,6 +109,25 @@ module AuthMiddleware =
         options.Cookie.Path <- "/"
         options.SlidingExpiration <- false
         options.ExpireTimeSpan <- absolute
+
+        // A completed OIDC challenge creates a new ticket, even if this browser
+        // still holds a previous session cookie. Correlation and nonce cookies are unchanged.
+        let cookies = Microsoft.AspNetCore.Authentication.Cookies.ChunkingCookieManager()
+
+        options.CookieManager <-
+            { new Microsoft.AspNetCore.Authentication.Cookies.ICookieManager with
+                member _.GetRequestCookie(context, key) =
+                    if context.Request.Path = callbackPath then
+                        null
+                    else
+                        cookies.GetRequestCookie(context, key)
+
+                member _.AppendResponseCookie(context, key, value, settings) =
+                    cookies.AppendResponseCookie(context, key, value, settings)
+
+                member _.DeleteCookie(context, key, settings) =
+                    cookies.DeleteCookie(context, key, settings)
+            }
 
         options.Events.OnRedirectToLogin <-
             Func<RedirectContext<CookieAuthenticationOptions>, Task>(fun context ->
@@ -160,11 +185,25 @@ module AuthMiddleware =
 
         options.Events.OnRedirectToIdentityProvider <-
             Func<RedirectContext, Task>(fun context ->
-                match context.Properties.Items.TryGetValue "ui_locales" with
-                | true, language -> context.ProtocolMessage.UiLocales <- language
-                | _ -> ()
+                task {
+                    match context.Properties.Items.TryGetValue "ui_locales" with
+                    | true, language -> context.ProtocolMessage.UiLocales <- language
+                    | _ -> ()
 
-                Task.CompletedTask)
+                    context.ProtocolMessage.Prompt <- "login"
+                    context.ProtocolMessage.MaxAge <- "0"
+
+                    let cookies =
+                        context.HttpContext.RequestServices
+                            .GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+                            .Get(CookieAuthenticationDefaults.AuthenticationScheme)
+
+                    match cookies.SessionStore with
+                    | :? OidcTicketStore as store ->
+                        let! flow = store.StartFlow context.HttpContext.RequestAborted
+                        context.Properties.Items[BrowserTicket.flowProperty] <- flow.ToString("D")
+                    | _ -> ()
+                })
 
         options.Events.OnRemoteFailure <-
             Func<RemoteFailureContext, Task>(fun context ->

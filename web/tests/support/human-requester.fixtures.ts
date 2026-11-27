@@ -8,6 +8,13 @@ export const activeRequester: ActiveRequester = {
   subject: {
     kind: "REQUESTER",
     state: "ACTIVE",
+    authorityVersion: 1,
+    terminationScope: {
+      installationId: "90000000-0000-4000-8000-000000000001",
+      requesterKey: "10000000-0000-4000-8000-000000000001",
+      observedAt: new Date().toISOString().replace("Z", "000Z"),
+      retirementCutoff: null as string | null,
+    },
     installationId: "90000000-0000-4000-8000-000000000001",
     actorId: "10000000-0000-4000-8000-000000000001",
   },

@@ -16,6 +16,7 @@ export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
 
 type RequesterState_ACTIVESeed = Omit<
   RequesterState_ACTIVE,
+  | "authorityVersion"
   | "hasScopedCases"
   | "actorId"
   | "installationId"
@@ -29,6 +30,7 @@ type RequesterState_ACTIVESeed = Omit<
   Partial<
     Pick<
       RequesterState_ACTIVE,
+      | "authorityVersion"
       | "hasScopedCases"
       | "actorId"
       | "installationId"
@@ -42,6 +44,7 @@ type RequesterState_ACTIVESeed = Omit<
   >;
 export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T) => ({
   ...value,
+  authorityVersion: value.authorityVersion ?? 1,
   observedAt: value.observedAt ?? `${value.businessDate}T12:00:00.000000Z`,
   issuer: value.issuer ?? "https://issuer.example/",
   roles: value.roles ?? [],

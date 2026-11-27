@@ -128,10 +128,31 @@ let all () : IEndpointInput list =
                     AfterCursor = None
                     Limit = 10
                 }
+        yield EndpointValues.input Api.peopleRequestsSubmit ()
         yield EndpointValues.input Api.peopleRequestsDismiss DomainInputs.principal
-        yield EndpointValues.input Api.terminateOwnSessions ()
-        yield EndpointValues.input Api.terminatePersonSessions { ActorId = targetId }
+        let requestId = OperationIds.fresh () |> OperationId.create |> Option.get
+
+        yield
+            EndpointValues.input
+                Api.terminateOwnSessions
+                {
+                    OperationId = requestId
+                    SettleOnly = None
+                    ConfirmRetirement = None
+                }
+
+        yield
+            EndpointValues.input
+                Api.terminatePersonSessions
+                {
+                    ActorId = targetId
+                    OperationId = requestId
+                    SettleOnly = None
+                    ConfirmRetirement = None
+                }
+
         yield EndpointValues.input Api.operationGet { OperationId = targetId }
+
         for preview in [ true; false ] do
             let bind value =
                 if preview then

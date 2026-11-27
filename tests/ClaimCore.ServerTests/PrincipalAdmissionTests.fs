@@ -16,7 +16,26 @@ let private principal claims =
     ClaimsPrincipal(ClaimsIdentity(claims, "verified-bearer"))
 
 let private bearer claims =
-    PrincipalIdentity.fromAccessToken issuer "cli" (principal claims)
+    let client =
+        claims
+        |> List.tryFind (fun (claim: Claim) -> claim.Type = "azp")
+        |> Option.map _.Value
+
+    let profile = if client = Some "cli" then "human" else "service"
+
+    let evidence =
+        [
+            Claim("typ", "Bearer")
+            Claim("claimcore_principal", profile)
+            Claim("iat", "1800000000", ClaimValueTypes.Integer64)
+            Claim("auth_time", "1800000000", ClaimValueTypes.Integer64)
+        ]
+
+    PrincipalIdentity.fromAccessToken
+        issuer
+        "cli"
+        (set [ "service-a"; "service-b" ])
+        (principal (claims @ evidence))
 
 let private ambiguousClaims () =
     for first, second in [ "cli", "service"; "service", "cli"; "cli", "cli" ] do
@@ -54,20 +73,17 @@ let private exactClaimNames () =
         ]
 
     Expect.equal
-        (bearer exact)
-        (PrincipalIdentity.human issuer "human")
+        (bearer exact |> Result.map AuthenticatedPrincipals.key)
+        (PrincipalKey.human issuer.AbsoluteUri "human"
+         |> Result.mapError (fun _ -> AuthenticationFailure.PrincipalInvalid))
         "Distinct extensions cannot replace exact identity claims"
 
 let private clientClaims () =
-    for claims in
-        [
-            [ Claim("client_id", "cli"); Claim("sub", "human") ]
-            [ Claim("azp", "cli"); Claim("client_id", "cli"); Claim("sub", "human") ]
-        ] do
+    for claims in [ [ Claim("azp", "cli"); Claim("client_id", "cli"); Claim("sub", "human") ] ] do
         Expect.equal
-            (bearer claims)
-            (PrincipalIdentity.human issuer "human")
-            "Fallback and matching client claims select the CLI human"
+            (bearer claims |> Result.map AuthenticatedPrincipals.key)
+            (PrincipalIdentity.human issuer "human" |> Result.map AuthenticatedPrincipals.key)
+            "Matching client claims select the CLI human"
 
     for claims in
         [
@@ -80,8 +96,9 @@ let private clientClaims () =
         Expect.isError (bearer claims) "Conflicting duplicate blank and absent clients refuse"
 
     Expect.equal
-        (bearer [ Claim("client_id", "service-a") ])
-        (PrincipalIdentity.service issuer "service-a")
+        (bearer [ Claim("azp", "service-a") ] |> Result.map AuthenticatedPrincipals.key)
+        (PrincipalIdentity.service issuer "service-a"
+         |> Result.map AuthenticatedPrincipals.key)
         "Client credentials need no human subject"
 
     Expect.notEqual
@@ -103,7 +120,7 @@ let private multipleIdentities () =
     let combined = ClaimsPrincipal(identities)
 
     Expect.isError
-        (PrincipalIdentity.fromAccessToken issuer "cli" combined)
+        (PrincipalIdentity.fromAccessToken issuer "cli" (Set.singleton "service-a") combined)
         "A composite principal has no single actor identity"
 
     Expect.isError
@@ -217,11 +234,74 @@ let private boundedHints () =
         (Some "Browser hint")
         "Verified browser-session hints follow the same admission"
 
+let private providerProof () =
+    let issued = DateTimeOffset.FromUnixTimeSeconds 1800000020L
+
+    let signed purpose profile client issuedType =
+        principal
+            [
+                Claim("typ", purpose)
+                Claim("claimcore_principal", profile)
+                Claim("azp", client)
+                Claim("sub", "human")
+                Claim("iat", "1800000020", issuedType)
+                Claim("auth_time", "1800000010", ClaimValueTypes.Integer64)
+            ]
+
+    let classify =
+        PrincipalIdentity.fromAccessToken issuer "cli" (Set.singleton "service-a")
+
+    Expect.isOk
+        (classify (signed "Bearer" "human" "cli" ClaimValueTypes.Integer64))
+        "Pinned human profile"
+
+    Expect.isOk
+        (classify (signed "Bearer" "service" "service-a" ClaimValueTypes.Integer64))
+        "Pinned service profile"
+
+    for fixture in
+        [
+            signed "ID" "human" "cli" ClaimValueTypes.Integer64
+            signed "Bearer" "human" "web" ClaimValueTypes.Integer64
+            signed "Bearer" "service" "cli" ClaimValueTypes.Integer64
+            signed "Bearer" "service" "unrelated" ClaimValueTypes.Integer64
+            signed "Bearer" "human" "cli" ClaimValueTypes.String
+        ] do
+        Expect.isError
+            (classify fixture)
+            "Purpose, configured client, kind and proof are all required"
+
+    let cut = DateTimeOffset.FromUnixTimeSeconds 1800000010L
+    let before = cut.AddSeconds(-1.)
+    let after = cut.AddSeconds(3.)
+
+    let floor observed stamp =
+        ClaimCore.Application.CredentialFreshness.after observed cut stamp
+
+    Expect.isFalse (floor issued cut) "Equality and same-second issuance fail closed"
+    Expect.isFalse (floor issued (cut.AddSeconds 2.)) "The maximum possible lead is ambiguous"
+    Expect.isFalse (floor issued (issued.AddSeconds 3.)) "An implausible future issuer time fails"
+    Expect.isFalse (floor before after) "A database clock before the cut fails"
+    Expect.isTrue (floor issued after) "Post-cut machine issuance with enough separation qualifies"
+
+    let proof auth : ClaimCore.Application.HumanAuthentication =
+        {
+            IssuedAt = issued
+            AuthenticatedAt = auth
+        }
+
+    let human auth =
+        ClaimCore.Application.CredentialFreshness.human issued cut (proof auth)
+
+    Expect.isFalse (human before) "Refresh with an earlier human authentication fails"
+    Expect.isTrue (human after) "Both human evidence fields are post-cut"
+
 [<Tests>]
 let tests =
     testList
         "exact principal admission"
         [
+            testCase "token profiles and bounded credential freshness fail closed" providerProof
             testCase
                 "authenticated optional hints have scalar caps and never change identity"
                 boundedHints

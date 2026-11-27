@@ -1303,6 +1303,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
       subject: {
         kind: "REQUESTER",
         state: kind,
+        authorityVersion: null,
         installationId: kind === "NO_ROLES" ? "90000000-0000-4000-8000-000000000001" : null,
         actorId: kind === "NOT_REGISTERED" ? null : "10000000-0000-4000-8000-000000000001",
       },
@@ -1402,6 +1403,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
                 subject: {
                   kind: "REQUESTER",
                   state: "NO_ROLES",
+                  authorityVersion: null,
                   installationId: active.subject.installationId,
                   actorId: active.subject.actorId,
                 },

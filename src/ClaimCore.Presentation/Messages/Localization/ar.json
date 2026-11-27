@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "تم طلب الوصول",
-    "source": "119387f35ffc"
+    "text": "طلب الوصول",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
-    "source": "9f93027815d5"
+    "text": "أرسل طلبًا ليتمكن أحد المالكين من قبول هوية تسجيل الدخول هذه.",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "سجل الوصول والتصدير",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "لم يتم تأكيد الطلب. ربما أنهى جلسات متصفح ClaimCore. قد يؤدي تكراره أيضًا إلى إنهاء جلسات أحدث.",
-    "source": "1ef989edf86f"
+    "text": "ربما أنهى الطلب جلسات المتصفح. كرّر الطلب باستخدام معرّف الطلب نفسه لاسترداد النتيجة. قد يؤدي استخدام معرّف جديد إلى إنهاء جلسات أحدث.",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "يتجاوز التصدير حد حجم التنزيل. ضيّق نطاق الاختيار أو استخدم التصفح عبر سطر الأوامر.",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "قبول خادم الترحيل غير معلوم",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "يلزم أن يسجّل مالك آخر دخوله لتغيير هوية تسجيل الدخول لهذا المالك.",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "طلب الوصول",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "أرسل طلب الوصول أو حدّثه.",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "تم استبدال هوية تسجيل الدخول",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "سجّل الخروج واستخدم هوية تسجيل الدخول الحالية، أو اطلب المساعدة من أحد المالكين.",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "تسجيل الدخول مجددًا",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "سجّل الخروج ثم ادخل مجددًا لمتابعة استخدام هذا الحساب.",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "تم طلب الوصول",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "استرداد النتيجة المحفوظة فقط",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "اعرض النتيجة المحفوظة لمعرّف الطلب هذا. اترك جلسات المتصفح كما هي.",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "تأكيد إزالة النتائج المنتهية الصلاحية",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "قدّم الحدّ المحفوظ لإزالة النتائج واترك جلسات المتصفح كما هي.",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "تأكدت إزالة نتائج إنهاء الجلسات المنتهية الصلاحية.",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

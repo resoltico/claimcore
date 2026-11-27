@@ -7,6 +7,8 @@ open ClaimCore.Presentation
 open System
 open System.Text.Json
 open System.Security.Claims
+open System.Globalization
+open ClaimCore.Application
 
 module OidcAuthority =
     let private httpsUri allowQuery (value: string) =
@@ -139,19 +141,71 @@ module PrincipalIdentity =
 
     let private clientIdentity identity =
         match optionalClaim "azp" identity, optionalClaim "client_id" identity with
-        | Ok(Some first), Ok(Some second) when first = second -> Ok first
-        | Ok(Some value), Ok None
-        | Ok None, Ok(Some value) -> Ok value
-        | _ -> Error AuthenticationFailure.ClientInvalid
+        | Ok(Some first), Ok(Some second) when first = second -> Some first
+        | Ok(Some value), Ok None -> Some value
+        | _ -> None
 
-    let fromAccessToken issuer cliClient principal =
+    let private instant name identity =
+        let numeric =
+            [
+                ClaimValueTypes.Integer
+                ClaimValueTypes.Integer32
+                ClaimValueTypes.Integer64
+            ]
+
+        uniqueClaim name identity
+        |> Option.bind (fun claim ->
+            match Int64.TryParse(claim.Value, NumberStyles.None, CultureInfo.InvariantCulture) with
+            | true, seconds when
+                List.contains claim.ValueType numeric
+                && seconds >= 0L
+                && seconds <= DateTimeOffset.MaxValue.ToUnixTimeSeconds()
+                ->
+                Some(DateTimeOffset.FromUnixTimeSeconds seconds)
+            | _ -> None)
+
+    let private humanProof identity =
+        match instant "iat" identity, instant "auth_time" identity with
+        | Some issued, Some authenticated when authenticated <= issued ->
+            Some
+                {
+                    IssuedAt = issued
+                    AuthenticatedAt = authenticated
+                }
+        | _ -> None
+
+    let browserAuthentication principal =
+        authenticatedIdentity principal
+        |> Option.bind (fun identity ->
+            if singleClaim "typ" identity = Some "ID" then
+                humanProof identity
+            else
+                None)
+
+    let fromAccessToken issuer cliClient serviceClients principal =
         match authenticatedIdentity principal with
         | None -> Error AuthenticationFailure.PrincipalUnauthenticated
         | Some identity ->
-            let admitted =
-                match clientIdentity identity, optionalClaim "sub" identity with
-                | Ok client, Ok(Some subject) when client = cliClient -> human issuer subject
-                | Ok client, Ok _ when client <> cliClient -> service issuer client
-                | _ -> Error AuthenticationFailure.PrincipalInvalid
+            let admit principal proof =
+                principal
+                |> Result.map (
+                    AuthenticatedPrincipals.withClaims (claims identity)
+                    >> AuthenticatedPrincipals.withCredential proof
+                )
 
-            admitted |> Result.map (AuthenticatedPrincipals.withClaims (claims identity))
+            match
+                singleClaim "typ" identity,
+                clientIdentity identity,
+                singleClaim "claimcore_principal" identity
+            with
+            | Some "Bearer", Some client, Some "human" when client = cliClient ->
+                match singleClaim "sub" identity, humanProof identity with
+                | Some subject, Some proof ->
+                    admit (human issuer subject) (VerifiedCredential.HumanBearer proof)
+                | _ -> Error AuthenticationFailure.PrincipalInvalid
+            | Some "Bearer", Some client, Some "service" when Set.contains client serviceClients ->
+                match instant "iat" identity with
+                | Some issued ->
+                    admit (service issuer client) (VerifiedCredential.MachineBearer issued)
+                | None -> Error AuthenticationFailure.PrincipalInvalid
+            | _ -> Error AuthenticationFailure.PrincipalInvalid

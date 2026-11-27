@@ -396,7 +396,11 @@ const WorkspaceRoute = (props: WorkspaceRouteProps) => (
     {(route) => <WorkspaceArea {...props} route={route} />}
   </SettingsWorkspace>
 );
-type WorkspaceOwner = OwnerScope & { credential: string };
+type WorkspaceOwner = OwnerScope & {
+  credential: string;
+  authorityVersion: number | null;
+  authorityEpoch: number;
+};
 const BusinessDateNotice = ({ date, refresh }: { date: string; refresh: () => void }) => {
   const p = usePresentation();
   return (
@@ -409,6 +413,16 @@ const BusinessDateNotice = ({ date, refresh }: { date: string; refresh: () => vo
   );
 };
 
+const nextAuthorityEpoch = (owner: WorkspaceOwner | null, requester: ActiveRequester) =>
+  owner === null
+    ? 0
+    : owner.authorityEpoch +
+      Number(
+        owner.actorId === requester.subject.actorId &&
+          owner.installationId === requester.subject.installationId &&
+          owner.authorityVersion !== requester.subject.authorityVersion,
+      );
+
 const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
   const { state: session } = useSessionContext();
   const [owner, setOwner] = useState<WorkspaceOwner | null>(null);
@@ -418,6 +432,7 @@ const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
     (owner === null ||
       owner.actorId !== requester.subject.actorId ||
       owner.installationId !== requester.subject.installationId ||
+      owner.authorityVersion !== requester.subject.authorityVersion ||
       owner.sessionEpoch !== session.epoch ||
       owner.credential !== session.token)
   ) {
@@ -427,33 +442,11 @@ const useVerifiedWorkspaceOwner = (requester: ActiveRequester | null) => {
       installationId: requester.subject.installationId,
       sessionEpoch: session.epoch,
       credential: session.token,
+      authorityVersion: requester.subject.authorityVersion,
+      authorityEpoch: nextAuthorityEpoch(owner, requester),
     });
   }
   return { owner, session };
-};
-/** Retain local consent only for the same verified actor and authenticated session. */
-const retainInactiveWorkspace = (
-  requester: RequesterDocument | null,
-  owner: WorkspaceOwner | null,
-  session: SessionState,
-) => {
-  if (requester === null || requester.subject.state === "ACTIVE") {
-    return true;
-  }
-  if (
-    requester.subject.state === "NOT_REGISTERED" ||
-    owner === null ||
-    session.kind !== "authenticated"
-  ) {
-    return false;
-  }
-  return (
-    requester.subject.actorId === owner.actorId &&
-    session.epoch === owner.sessionEpoch &&
-    session.token === owner.credential &&
-    (requester.subject.state !== "NO_ROLES" ||
-      requester.subject.installationId === owner.installationId)
-  );
 };
 const WorkspacePresence = ({
   inactive,
@@ -498,6 +491,9 @@ const matchingLockOwner = (
   if (requester === null) {
     return owner;
   }
+  if (requester.subject.state !== "ACTIVE") {
+    return null;
+  }
   return requester.subject.actorId === owner.actorId &&
     (requester.subject.installationId === null ||
       requester.subject.installationId === owner.installationId)
@@ -512,6 +508,9 @@ const requesterTasks = (requester: ActiveRequester | null): ReadonlyArray<TaskId
         ...requester.actions.map((action) => action.task),
         ...requester.links.map((named) => named.link.endpoint),
       ];
+const inactiveRequester = (requester: RequesterDocument | null) =>
+  requester?.subject.state === "ACTIVE" ? null : requester;
+const draftScope = (owner: WorkspaceOwner | null) => owner?.authorityEpoch ?? 0;
 export const Dashboard = () => {
   const route = useRoute();
   const { context, requester, actorContext, presentation, views, active, noViews } =
@@ -573,13 +572,13 @@ export const Dashboard = () => {
     setRefresh((value) => value + 1);
     navigate(casePath(receipt.caseId));
   };
-  const inactive = requester !== null && requester.subject.state !== "ACTIVE" ? requester : null;
+  const inactive = inactiveRequester(requester);
   return (
-    <InlineNoteDraftProvider owner={lockOwner}>
+    <InlineNoteDraftProvider key={draftScope(owner)} owner={lockOwner}>
       <RequesterContext value={requester}>
         <WorkspacePresence
           inactive={inactive}
-          retained={retainInactiveWorkspace(requester, owner, session)}
+          retained={inactive === null}
           locked={locked}
           onCheck={context.reload}
           feedback={{ message: context.message, loading: context.loading }}

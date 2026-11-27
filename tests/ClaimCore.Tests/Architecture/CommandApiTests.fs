@@ -54,7 +54,7 @@ let tests =
                     compile
                         directory.FullName
                         "complete"
-                        "let control (principal:PrincipalKey) = CommandRequest.DismissAccessRequest principal\nlet handler = function CommandTaskId.DismissAccessRequest -> () | CommandTaskId.TerminateOwnSessions -> () | CommandTaskId.TerminatePersonSessions -> ()"
+                        "let control (principal:PrincipalKey) = CommandRequest.DismissAccessRequest principal\nlet handler = function CommandTaskId.RequestAccess -> () | CommandTaskId.DismissAccessRequest -> () | CommandTaskId.TerminateOwnSessions -> () | CommandTaskId.TerminatePersonSessions -> ()"
 
                 Expect.equal code 0 ("Valid complete control and handler: " + error)
 

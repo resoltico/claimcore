@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "Piekļuve pieprasīta",
-    "source": "119387f35ffc"
+    "text": "Pieprasīt piekļuvi",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "Īpašniekam jāuzņem šis konts, pirms tas var piekļūt ClaimCore.",
-    "source": "9f93027815d5"
+    "text": "Nosūtiet pieprasījumu, lai īpašnieks varētu apstiprināt šo pierakstīšanās identitāti.",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "Piekļuves un eksporta žurnāls",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "Pieprasījums netika apstiprināts. Iespējams, ClaimCore pārlūka sesijas tika beigtas. Atkārtojot to, var beigt arī jaunākas sesijas.",
-    "source": "1ef989edf86f"
+    "text": "Iespējams, pieprasījums pārtrauca pārlūka sesijas. Atkārtojiet to ar to pašu pieprasījuma ID, lai saņemtu rezultātu. Jauns pieprasījuma ID var pārtraukt jaunākas sesijas.",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "Eksports pārsniedz lejupielādes lieluma ierobežojumu. Sašauriniet atlasi vai izmantojiet CLI lapošanu.",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "Nav zināms, vai relejs pieņēma",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "Lai mainītu šī īpašnieka pierakstīšanās identitāti, jāpierakstās citam īpašniekam.",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "Pieprasīt piekļuvi",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "Nosūtiet vai atjauniniet savu piekļuves pieprasījumu.",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "Pierakstīšanās identitāte aizstāta",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "Izrakstieties un izmantojiet pašreizējo pierakstīšanās identitāti vai lūdziet palīdzību īpašniekam.",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "Pierakstīties vēlreiz",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "Lai turpinātu lietot šo kontu, izrakstieties un pierakstieties vēlreiz.",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "Piekļuve pieprasīta",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "Īpašniekam jāuzņem šis konts, pirms tas var piekļūt ClaimCore.",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "Saņemt tikai saglabāto rezultātu",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "Atgrieziet šā pieprasījuma ID saglabāto rezultātu. Pārlūka sesijas nemainās.",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "Apstiprināt rezultātu izņemšanu pēc termiņa beigām",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "Pavirziet uz priekšu apstiprināto rezultātu izņemšanas robežu. Pārlūka sesijas netiek mainītas.",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "Apstiprināta sesiju izbeigšanas rezultātu izņemšana pēc termiņa beigām.",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

@@ -29,12 +29,12 @@ let private prepare database =
         do!
             execute
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800,repeat('b',64) FROM generate_series(1,10000) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key,recovery_generation) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),2,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800,repeat('b',64),(SELECT generation FROM claimcore.recovery_generation) FROM generate_series(1,10000) n"
 
         do!
             execute
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) VALUES (repeat('f',64),decode('01','hex'),1,clock_timestamp()-interval '2 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64))"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key,recovery_generation) VALUES (repeat('f',64),decode('01','hex'),2,clock_timestamp()-interval '2 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64),(SELECT generation FROM claimcore.recovery_generation))"
 
         do!
             execute
@@ -88,7 +88,8 @@ let run (database: PostgresFixture.Database) =
         let creation =
             store.Create(
                 SessionResults.principal,
-                [| 1uy |],
+                None,
+                (fun _ -> [| 1uy |]),
                 None,
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,

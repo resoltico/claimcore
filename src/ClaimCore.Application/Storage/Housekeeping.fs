@@ -39,6 +39,9 @@ module internal Housekeeping =
                     FailureDiagnostics.phase FailurePhase.Housekeeping
                     do! Baseline.requireExpected installation connection token
                     let! instant = SessionRows.now connection token
+                    // Acquire the browser order before ticket rows, without taking the head here.
+                    do! SessionRows.pruneResults connection instant token
+                    do! SessionRows.pruneFlows connection instant token
 
                     let sessionsSql =
                         "WITH candidates AS MATERIALIZED (SELECT session_key FROM claimcore.sessions WHERE "

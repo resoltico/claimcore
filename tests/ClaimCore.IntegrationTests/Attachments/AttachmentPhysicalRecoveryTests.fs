@@ -2119,7 +2119,7 @@ let private decisionRace (source: NpgsqlDataSource) gapFirst =
         let! unsealedBinding =
             call
                 first
-                "SELECT claimcore_witness.prepare_target($1,$2,$3,19,'00000002',$4,$5,1,decode(repeat('00',32),'hex'),NULL)"
+                "SELECT claimcore_witness.prepare_target($1,$2,$3,19,'00000002',$4,$5,1,decode(repeat('00',32),'hex'),NULL,'2030-01-01'::timestamptz)"
                 [|
                     box installation
                     box transition
@@ -2236,7 +2236,7 @@ let private supersessionRace (source: NpgsqlDataSource) replacementFirst =
             call
                 connection
                 """SELECT claimcore_witness.prepare_target($1,$2,$3,19,'00000002',
-                           claimcore_witness.fence_digest($1,$2),$4,$5,$6,$7)"""
+                           claimcore_witness.fence_digest($1,$2),$4,$5,$6,$7,'2030-01-01'::timestamptz)"""
                 [|
                     box installation
                     box transition
@@ -2345,7 +2345,7 @@ let private supersessionRace (source: NpgsqlDataSource) replacementFirst =
             let! stillActive =
                 call
                     first
-                    "SELECT claimcore_witness.is_active($1,$2,19,'00000002',$3)"
+                    "SELECT claimcore_witness.is_active($1,$2,19,'00000002',$3,'2030-01-01'::timestamptz)"
                     [| box installation; box attempt; box target |]
 
             Expect.isTrue stillActive "Refused supersession leaves the winning activation available"

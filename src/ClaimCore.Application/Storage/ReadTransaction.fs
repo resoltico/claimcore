@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.Domain
 
 /// A provider snapshot and its supplied observation instant, scoped to one store callback.
 type internal ReadTx
@@ -15,8 +16,14 @@ type internal ReadTx
         token: CancellationToken,
         ?exportSnapshot: bool
     ) =
-    member _.ForExport =
-        ReadTx(connection, installation, cipher, observedAt, token, exportSnapshot = true)
+    member this.ForExport =
+        let export =
+            ReadTx(connection, installation, cipher, observedAt, token, exportSnapshot = true)
+
+        export.Credential <- this.Credential
+        export
+
+    member val Credential: (PrincipalKey * VerifiedCredential) option = None with get, set
 
     member _.ExportSnapshot = defaultArg exportSnapshot false
     member _.Connection = connection
