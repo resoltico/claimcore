@@ -632,7 +632,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
                     values: [
                       {
                         kind: "REFERENCE",
-                        value: "VISIBLE-MATCH",
+                        value: caseFields.caseReference,
                       },
                       {
                         kind: "STATE",
@@ -667,7 +667,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
                     key: "exactReference",
                     labelId: "field.caseReference.label",
                     prominence: "PRIMARY",
-                    value: { kind: "REFERENCE", value: "VISIBLE-MATCH" },
+                    value: { kind: "REFERENCE", value: caseFields.caseReference },
                   },
                 ],
               },
@@ -1644,7 +1644,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                   prominence: "PRIMARY",
                   value: {
                     kind: "REFERENCE",
-                    value: "CASE-1",
+                    value: caseFields.caseReference,
                   },
                 },
                 {
@@ -1810,7 +1810,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
           },
           confirmation: {
             kind: "CASE_REFERENCE",
-            reference: "CASE-1",
+            reference: caseFields.caseReference,
           },
         },
         basis,
@@ -1997,7 +1997,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
         {
           "input:role": "CASE_READER",
           "input:scope": "CASE",
-          "field:caseReference": "SYNTHETIC-1",
+          "field:caseReference": caseFields.caseReference,
         },
       ]);
       const reply = humanReviewEnvelope(
@@ -2071,7 +2071,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
                     prominence: "PRIMARY" as const,
                     value: {
                       kind: "REFERENCE" as const,
-                      value: "SYNTHETIC-1",
+                      value: caseFields.caseReference,
                     },
                   },
                 ],
@@ -2175,7 +2175,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
               },
               after: {
                 kind: "REFERENCE",
-                value: "SYNTHETIC-1",
+                value: caseFields.caseReference,
               },
             },
           ],
@@ -2227,7 +2227,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       .getByRole("textbox", {
         name: /Case reference/u,
       })
-      .fill("SYNTHETIC-1");
+      .fill(caseFields.caseReference);
     await expectAccessible(page);
     expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
     expect(reads.filter((url) => url.endsWith("/api/people.list"))).toHaveLength(1);
@@ -2270,7 +2270,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
         .getByRole("textbox", {
           name: /Case reference/u,
         }),
-    ).toHaveValue("SYNTHETIC-1");
+    ).toHaveValue(caseFields.caseReference);
     expect(reads).toEqual(beforeSettingsReads);
     expect(previews).toBe(0);
     expect(writes).toBe(0);
@@ -2289,7 +2289,7 @@ for (const reviewLanguage of ["en", "ar"] as const) {
       "All cases",
       "Case reader",
       "One case",
-      "SYNTHETIC-1",
+      caseFields.caseReference,
     ]);
     if (reviewLanguage === "ar") {
       await review.locator("[data-open-settings]").click();

@@ -134,8 +134,9 @@ test("offline Settings navigation guard preserves raw entry, review identity and
   await page.locator("[data-return-workspace]").click();
   await expect(page).toHaveURL(editorUrl);
   await expect(page.locator(".settings-panel")).toHaveCount(0);
-  await expect(amount).toHaveValue("1,234");
+  await expect(amount).toHaveCount(0);
   await page.context().setOffline(false);
+  await expect(amount).toHaveValue("1,234");
   const event = page.waitForRequest(
     (request) => new URL(request.url()).pathname === "/api/operation.preview",
   );

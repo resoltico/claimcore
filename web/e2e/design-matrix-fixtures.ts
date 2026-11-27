@@ -843,7 +843,7 @@ const seedLimits = async (page: Page, marker: string, date: string, issuer: stri
   ] satisfies MatrixRoute[];
 };
 export type DesignDataset = {
-  caseMarker: string;
+  caseReferences?: ReadonlyArray<string>;
   routes: ReadonlyArray<MatrixRoute>;
   businessDate: string;
   cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
@@ -880,7 +880,6 @@ export const prepareDesignDataset = async (
     if (fixture === "limits") {
       const limitRoutes = await seedLimits(page, marker, date, stewardship.inventory.issuer);
       return {
-        caseMarker: marker,
         routes: limitRoutes,
         businessDate: date,
         cookies: await context.cookies(),
@@ -913,7 +912,7 @@ export const prepareDesignDataset = async (
       cases.references.undecided,
     );
     return {
-      caseMarker: marker,
+      caseReferences: Object.values(cases.references),
       routes: routes({
         ...cases,
         marker,
@@ -961,6 +960,7 @@ export const prepareWorklistDensity = async (browser: Browser, baseURL: string) 
       incidentDate: businessDate,
       receivedDate: businessDate,
       incidentCountry: "LV",
+      policyNumber: marker,
       claimedAmount: "1234.56",
       claimedCurrency: "EUR",
     });
@@ -979,8 +979,8 @@ export const prepareWorklistDensity = async (browser: Browser, baseURL: string) 
     await workAct(page, first, 0, { "field:responsibleActor": actorId });
     await planReminder(page, first, businessDate, `Review ${marker}`);
     await planReminder(page, second, businessDate, `Review ${marker}`);
-    await registerActor(page, issuer, `${marker}-1`, `Analyst ${marker}`);
-    return { marker, cookies: await context.cookies() };
+    await registerActor(page, issuer, first, `Analyst ${marker}`);
+    return { marker, references, cookies: await context.cookies() };
   } finally {
     await context.close();
   }

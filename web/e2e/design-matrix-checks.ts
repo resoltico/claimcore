@@ -414,12 +414,12 @@ export const checkFrame = async (
   dimension: Dimension,
   frame: string,
   _info: TestInfo,
-  caseMarker: string,
+  caseReferences: ReadonlyArray<string> | undefined,
 ) => {
   const { violations, splitWords, firstRowTop, overflowingRegions, pageSpill } =
     await geometryReport(page, {
       limits: dimension.fixture === "limits",
-      caseMarker,
+      caseReferences,
       chipDensity: false,
     });
   if (violations.length > 0) {

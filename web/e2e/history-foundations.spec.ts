@@ -191,7 +191,7 @@ test("@engine preserves dirty drafts and the Forward branch through Settings and
   await openAuthenticated(page);
   const reference = `HISTORY-${randomUUID().slice(0, 8)}`;
   await startOpen(page, reference);
-  const draft = page.getByRole("textbox", { name: "Case reference", exact: true });
+  const draft = page.getByRole("textbox", { name: "Incident description", exact: true });
   await expect(draft).toHaveValue(reference);
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page).toHaveURL(/\/settings$/u);
@@ -236,9 +236,9 @@ test("@engine requests a native reload warning after activation and preserves th
   const dialog = await warning;
   expect(dialog.type()).toBe("beforeunload");
   await dialog.dismiss();
-  await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveValue(
-    reference,
-  );
+  await expect(
+    page.getByRole("textbox", { name: "Incident description", exact: true }),
+  ).toHaveValue(reference);
 });
 
 test("@engine preserves the intended multi-entry target during repeated pending traversals", async ({

@@ -569,7 +569,7 @@ test("a first explicit non-start keeps the draft and leaves no unconfirmed recor
   await expect(
     page.getByText("ClaimCore is busy. Try again in a moment.", { exact: true }),
   ).toBeVisible();
-  await expect(page.locator('input[data-field-name="caseReference"]')).toHaveValue(reference);
+  await expect(page.locator('[data-field-name="incidentDescription"]')).toHaveValue(reference);
   expect(intercepted).toBe(1);
   expect(await recoveryRecords(page)).toEqual([]);
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);

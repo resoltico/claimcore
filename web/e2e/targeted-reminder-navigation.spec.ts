@@ -76,7 +76,7 @@ test("discovers a case reminder queue, retains visible context through filters a
   expect(new URL(page.url()).searchParams.has("caseReference")).toBe(false);
 });
 
-test("focus and visibility revalidate the open reminder queue only once @engine", async ({
+test("successive foreground events obtain fresh reminder queue results @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -101,13 +101,11 @@ test("focus and visibility revalidate the open reminder queue only once @engine"
   await expect.poll(() => updated.getAttribute("datetime")).not.toBe(beforeFocus);
   await expect.poll(() => [...reads].sort()).toEqual([...readPaths].sort());
 
-  const secondPass = page.waitForRequest(
-    (request) => readPaths.includes(new URL(request.url()).pathname),
-    { timeout: 1_000 },
-  );
+  const afterFocus = await updated.getAttribute("datetime");
+  reads.length = 0;
   await page.evaluate(() => {
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await expect(secondPass).rejects.toThrow(/Timeout/u);
-  expect([...reads].sort()).toEqual([...readPaths].sort());
+  await expect.poll(() => updated.getAttribute("datetime")).not.toBe(afterFocus);
+  await expect.poll(() => [...reads].sort()).toEqual([...readPaths].sort());
 });

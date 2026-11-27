@@ -64,12 +64,12 @@ test("stores exact optional LF incident text and clears it without a financial a
   await expect(page.locator('textarea[data-field-name="incidentDescription"]')).not.toHaveAttribute(
     "maxlength",
   );
-  await reviewDraft(page);
+  const { operationId: caseId } = await reviewDraft(page);
   await recordReviewed(page);
   const recorded = await workRequest(page, "case.get", {
     target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+      kind: "ID",
+      caseId,
     },
   });
   if (recorded.outcome.kind !== "SUCCEEDED" || recorded.outcome.data.state.kind === "ERASED") {
@@ -96,8 +96,8 @@ test("stores exact optional LF incident text and clears it without a financial a
   await recordReviewed(page);
   const cleared = await workRequest(page, "case.get", {
     target: {
-      kind: "REFERENCE",
-      caseReference: reference,
+      kind: "ID",
+      caseId,
     },
   });
   if (cleared.outcome.kind !== "SUCCEEDED" || cleared.outcome.data.state.kind === "ERASED") {
@@ -366,7 +366,10 @@ for (const language of ["en", "lv", "ar"] as const) {
           ),
         },
       });
-      expect(opened.outcome.kind).toBe("ACCEPTED");
+      if (opened.outcome.kind !== "ACCEPTED" || opened.outcome.data.subject.kind !== "CASE") {
+        throw new Error("Expected issued case receipt.");
+      }
+      const issued = opened.outcome.data.subject.caseReference;
       await page.goto(casePath(caseId));
       if (mode === "zoom-dark") {
         await page.evaluate(() => {
@@ -415,9 +418,9 @@ for (const language of ["en", "lv", "ar"] as const) {
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
       const title = page.locator("#case-detail-title");
-      await expect(title).toHaveText(reference);
+      await expect(title).toHaveText(issued);
       if (mode === "narrow-dark") {
-        await expect(page.locator(".phone-app-bar")).toContainText(reference);
+        await expect(page.locator(".phone-app-bar")).toContainText(issued);
       } else {
         await expect(title).toBeVisible();
       }

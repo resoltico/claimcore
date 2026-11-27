@@ -43,7 +43,7 @@ export type GeometryId =
 
 type GeometryOptions = {
   limits?: boolean;
-  caseMarker?: string | undefined;
+  caseReferences?: ReadonlyArray<string> | undefined;
   densityMarker?: string;
   rowDensity?: boolean;
   chipDensity?: boolean;
@@ -58,7 +58,7 @@ const evaluateOptions = (options: GeometryOptions) => ({
 
 export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
   page.evaluate((frame) => {
-    const { limits, caseMarker, densityMarker, rowDensity, chipDensity } = frame;
+    const { limits, caseReferences, densityMarker, rowDensity, chipDensity } = frame;
     const visible = (element: Element) => {
       const rect = element.getBoundingClientRect();
       if (rect.width <= 1 || rect.height <= 1) {
@@ -125,10 +125,12 @@ export const geometryReport = (page: Page, options: GeometryOptions = {}) =>
       [...table.querySelectorAll("tbody tr:not(.table-group)")].filter(
         (row) =>
           visible(row) &&
-          (densityMarker === undefined || row.textContent.includes(densityMarker)) &&
-          (caseMarker === undefined ||
+          (densityMarker === undefined ||
+            (caseReferences !== undefined && table.closest(".worklist") !== null) ||
+            row.textContent.includes(densityMarker)) &&
+          (caseReferences === undefined ||
             table.closest(".worklist") === null ||
-            row.querySelector("a .identifier-value")?.textContent.includes(caseMarker) === true),
+            caseReferences.includes(row.querySelector("a .identifier-value")?.textContent ?? "")),
       );
     const inflatedRows = (table: HTMLElement) =>
       fixtureRows(table).some((row) => row.getBoundingClientRect().height > 72);
@@ -1054,8 +1056,8 @@ export const focusFailures = (page: Page) =>
 export const geometryFailures = async (
   page: Page,
   limits = false,
-  caseMarker?: string,
-): Promise<GeometryId[]> => (await geometryReport(page, { limits, caseMarker })).violations;
+  caseReferences?: ReadonlyArray<string>,
+): Promise<GeometryId[]> => (await geometryReport(page, { limits, caseReferences })).violations;
 
 export const narrowTableFailures = (page: Page): Promise<string[]> =>
   page.evaluate(async () => {

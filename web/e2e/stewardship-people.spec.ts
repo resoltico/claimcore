@@ -72,7 +72,7 @@ const stewardAct = async (
   const action = dialog.locator("button[data-confirm-operation]");
   if (kind === "case.erase") {
     await expect(dialog).toContainText(
-      "This permanently removes current and retained case details, payments, work, reminders and notes.",
+      "This permanently clears private details, attachments and related-case notes and targets from the live register. The case ID, reference and record of changes remain. Copies held elsewhere are unaffected.",
     );
     const challenge = dialog.getByRole("textbox", {
       name: "Case reference (exact)",
@@ -146,7 +146,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await stewardAct(steward, reference, "case.reinstate", "Synthetic correction");
     await stewardAct(steward, reference, "case.erase");
     await expect(steward.locator('.region-notice[data-tone="FINAL"]')).toContainText(
-      "Erased. Only",
+      "Case erased. The case ID, reference and record of changes remain.",
     );
     await expect(steward.locator(".entries-view [data-entry='policyNumber']")).toHaveCount(0);
     const history = steward.locator(".case-timeline-panel");
