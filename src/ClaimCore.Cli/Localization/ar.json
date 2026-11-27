@@ -397,10 +397,6 @@
     "text": "توقف واطلب من المسؤول فحص المشكلة.",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "اختر مرجعًا آخر.",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "اطلب من مالك مراجعة صلاحياتك.",
     "source": "a18257b39d89"

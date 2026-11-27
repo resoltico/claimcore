@@ -26,14 +26,15 @@ let private stamp =
         RecordedAt = DateTimeOffset(2026, 11, 15, 10, 0, 0, TimeSpan.Zero)
     }
 
-let private reference = CaseReference.parse "APPLY-1" |> accepted
+let private reference =
+    ClaimCore.TestSupport.DomainInputs.reference "CC-4EC7-ED40-E2TN-DYM1-74"
 
 let private initial =
     {
         Aggregate = AggregateReference.Family caseId
         PartId = CaseId.value caseId
         Revision = Revision.first
-        NaturalKey = Some "APPLY-1"
+        NaturalKey = Some(CaseReference.format reference)
         Value =
             PartValue.Case
                 {

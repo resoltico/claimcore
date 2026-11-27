@@ -129,7 +129,7 @@ let private setup fixture =
                         "work.update"
                         (id fixture number)
                         (ClaimCore.Application.Contracts.OperationBinding.Work(
-                            (CaseSelector.Reference reference),
+                            ((caseTarget fixture reference)),
                             (0L)
                         ))
                         (ClaimCore.TestSupport.Submissions.work (
@@ -204,7 +204,7 @@ let private setup fixture =
                     fixture.Owner
                     {
                         Role = Role.CaseReader
-                        Scope = GrantTarget.CaseReference reference
+                        Scope = (caseGrant fixture reference)
                     }
                     true
 
@@ -295,7 +295,7 @@ let internal exactTotals fixture =
             Service.get
                 owner
                 {
-                    Target = CaseSelector.Reference("TRIAGE-B")
+                    Target = (caseTarget fixture "TRIAGE-B")
                 }
                 token
 
@@ -342,8 +342,11 @@ let internal oldestPaging fixture =
         let rows = [ first; second; third; fourth; fifth; sixth ] |> List.collect _.Items
 
         Expect.equal
-            (rows |> List.map (fun row -> CaseReference.format row.Reference))
-            [ "TRIAGE-B"; "TRIAGE-C"; "TRIAGE-A"; "TRIAGE-0"; "TRIAGE-D"; "TRIAGE-E" ]
+            (rows |> List.map (fun row -> caseAlias fixture row.CaseId))
+            (([ "TRIAGE-B"; "TRIAGE-C" ] |> List.sortBy (issuedCaseReference fixture))
+             @ [ "TRIAGE-A" ]
+             @ ([ "TRIAGE-0"; "TRIAGE-D"; "TRIAGE-E" ]
+                |> List.sortBy (issuedCaseReference fixture)))
             "Dated rows precede active undated and erased rows across page boundaries"
 
         Expect.isNone sixth.NextCursor "The final active undated case completes the keyset"
@@ -399,8 +402,8 @@ let internal assignmentExcludesForbiddenRoles fixture =
         for number, scope in
             [
                 101, GrantTarget.Installation
-                102, GrantTarget.CaseReference "TRIAGE-B"
-                103, GrantTarget.CaseReference "TRIAGE-C"
+                102, (caseGrant fixture "TRIAGE-B")
+                103, (caseGrant fixture "TRIAGE-C")
             ] do
             let! granted =
                 grant
@@ -501,7 +504,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
             Service.get
                 viewer
                 {
-                    Target = CaseSelector.Reference("TRIAGE-B")
+                    Target = (caseTarget fixture "TRIAGE-B")
                 }
                 token
 
@@ -536,7 +539,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 service
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference "TRIAGE-C"
+                    Scope = (caseGrant fixture "TRIAGE-C")
                 }
                 false
 

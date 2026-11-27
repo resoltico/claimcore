@@ -276,6 +276,7 @@ module internal TextTable =
                         let value = definition.Read row
 
                         match value with
+                        | PresentedValue.Reference _
                         | PresentedValue.Date _
                         | PresentedValue.DateWithCode _
                         | PresentedValue.Instant _

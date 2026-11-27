@@ -36,7 +36,7 @@ let private commandPath () =
 
         try
             let fixture = database.Fixture
-            let! _ = caseWorker fixture |> Async.AwaitTask
+            let! _ = bootstrap fixture |> Async.AwaitTask
 
             let connection =
                 AdministrationProcess.privateText

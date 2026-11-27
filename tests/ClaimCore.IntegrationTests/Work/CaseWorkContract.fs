@@ -585,7 +585,7 @@ let internal dueFiltersAndOrder fixture =
                     "reminder.create"
                     (id fixture operation)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference reference),
+                        ((caseTarget fixture reference)),
                         None
                     ))
                     (ClaimCore.TestSupport.Submissions.reminderPlan (text) (due)))
@@ -635,7 +635,7 @@ let internal dueFiltersAndOrder fixture =
                     "work.update"
                     (id fixture 64)
                     (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "WORK-TODAY"),
+                        ((caseTarget fixture "WORK-TODAY")),
                         (0L)
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
@@ -663,7 +663,7 @@ let internal dueFiltersAndOrder fixture =
                     }
 
             Expect.equal
-                ((read page).Items |> List.map (fun row -> CaseReference.format row.Reference))
+                ((read page).Items |> List.map (fun row -> caseAlias fixture row.CaseId))
                 [ expected ]
                 "Case minimum classification is mutually exclusive"
 
@@ -745,7 +745,7 @@ let internal dueFiltersAndOrder fixture =
                     "reminder.complete"
                     (id fixture 65)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "WORK-TODAY"),
+                        ((caseTarget fixture "WORK-TODAY")),
                         Some((id fixture 61), (1L))
                     ))
                     (Map.empty))
@@ -766,7 +766,7 @@ let internal dueFiltersAndOrder fixture =
                     "reminder.completeAndPlanNext"
                     (id fixture 66)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "WORK-OVERDUE"),
+                        ((caseTarget fixture "WORK-OVERDUE")),
                         Some((id fixture 60), (1L))
                     ))
                     (ClaimCore.TestSupport.Submissions.reminderPlan (" ") (date 1)))
@@ -782,7 +782,7 @@ let internal dueFiltersAndOrder fixture =
             Service.reminders
                 owner
                 { request with
-                    Target = Some(CaseSelector.Reference "WORK-OVERDUE")
+                    Target = Some((caseTarget fixture "WORK-OVERDUE"))
                     Due = None
                     Limit = 50
                 }
@@ -824,7 +824,6 @@ let internal reminderTiming fixture =
 
         let owner = core { fixture with Calendar = calendar } fixture.Owner
         let reference = "REMINDER-TIMING"
-        let target = CaseSelector.Reference reference
 
         let! opened =
             execute
@@ -837,6 +836,7 @@ let internal reminderTiming fixture =
                 (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values (registration)))
 
         let caseId = accepted opened |> caseReceipt |> _.CaseId
+        let target = CaseSelector.Id caseId
 
         for operation, offset in [ 701, -1; 702, 0; 703, 1; 704, 0; 705, 0 ] do
             let! created =
@@ -1696,7 +1696,7 @@ let internal finiteDateRange fixture =
                         "reminder.create"
                         (id fixture number)
                         (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                            (CaseSelector.Reference reference),
+                            ((caseTarget fixture reference)),
                             None
                         ))
                         (ClaimCore.TestSupport.Submissions.reminderPlan
@@ -1708,7 +1708,7 @@ let internal finiteDateRange fixture =
 
         let request: ReminderListRequest =
             {
-                Target = Some(CaseSelector.Reference "DATE-MIN")
+                Target = Some((caseTarget fixture "DATE-MIN"))
                 State = Some(ReminderStateSelection.State ReminderState.Pending)
                 Kind = None
                 DeadlineOutcome = None
@@ -1755,12 +1755,13 @@ let internal finiteDateRange fixture =
 
             let page = read response
             Expect.equal page.Items.Length 1 "Follow-up pages preserve exact finite boundaries"
-            references.Add(CaseReference.format page.Items.Head.Reference)
+            references.Add(caseAlias fixture page.Items.Head.CaseId)
             caseCursor <- page.NextCursor
 
         Expect.equal
             (List.ofSeq references)
-            [ "DATE-MIN"; "DATE-MAX-A"; "DATE-MAX-B" ]
+            ("DATE-MIN"
+             :: ([ "DATE-MAX-A"; "DATE-MAX-B" ] |> List.sortBy (issuedCaseReference fixture)))
             "No infinity conflation in derived case keysets"
 
         Expect.isNone caseCursor "No duplicate case at maximum date"
@@ -1785,16 +1786,18 @@ let internal pairedPage fixture =
 
             accepted opened |> ignore
 
+        let parents =
+            [ "PAGE-A"; "PAGE-B"; "PAGE-C" ] |> List.sortBy (issuedCaseReference fixture)
+
+        let featured = caseTarget fixture parents.Head
+
         let! updated =
             Service.executeSubmission
                 owner
                 ((ClaimCore.TestSupport.Submissions.createRaw)
                     "work.update"
                     (id fixture 1103)
-                    (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "PAGE-A"),
-                        (0L)
-                    ))
+                    (ClaimCore.Application.Contracts.OperationBinding.Work(((featured)), (0L)))
                     (ClaimCore.TestSupport.Submissions.work (
                         {
                             Summary = WorkValue.Set "Page-owned summary\nالعربية"
@@ -1819,7 +1822,7 @@ let internal pairedPage fixture =
                 Submissions.createRaw
                     "reminder.create"
                     (id fixture operation)
-                    (OperationBinding.Reminder(CaseSelector.Reference "PAGE-A", None))
+                    (OperationBinding.Reminder((featured), None))
                     (Submissions.reminderPlan action due)
 
             let! created = Service.executeSubmission owner submission token
@@ -1840,8 +1843,8 @@ let internal pairedPage fixture =
             let page = read response
 
             Expect.equal
-                (page.Items |> List.map (_.Reference >> CaseReference.format))
-                [ "PAGE-A"; "PAGE-B" ]
+                (page.Items |> List.map (fun row -> caseAlias fixture row.CaseId))
+                (List.take 2 parents)
                 "The parent limit applies before reminder fan-out"
 
             Expect.isSome page.NextCursor "The third parent supplies a continuation"
@@ -1916,8 +1919,8 @@ let internal pairedPage fixture =
             let continued = read continued
 
             Expect.equal
-                (continued.Items |> List.map (_.Reference >> CaseReference.format))
-                [ "PAGE-C" ]
+                (continued.Items |> List.map (fun row -> caseAlias fixture row.CaseId))
+                [ parents[2] ]
                 "Continuation visits the remaining parent exactly once"
 
             Expect.isNone continued.NextCursor "All three parents have been visited"

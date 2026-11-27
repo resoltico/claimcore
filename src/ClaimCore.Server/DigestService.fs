@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Text.Json
 open ClaimCore.Domain
+open ClaimCore.Application
 open ClaimCore.Presentation
 open ClaimCore.Server.Composition
 open Microsoft.Extensions.Hosting
@@ -40,7 +41,8 @@ module internal DigestService =
         let catalog = Messages.catalog (Map.toList entries) |> Result.defaultWith invalidOp
         let link = Uri(origin, "/reminders?view=" + ReminderView.token ReminderView.Mine)
 
-        let send recipient counts ct =
+        let send (released: Released<EmailAddress * Map<DigestCountKind, int64>>) ct =
+            let recipient, counts = released.Value
             let subject, body = DigestMessage.format catalog language link counts
             DigestSmtp.send config.Smtp (EmailAddress.format recipient) subject body ct
 

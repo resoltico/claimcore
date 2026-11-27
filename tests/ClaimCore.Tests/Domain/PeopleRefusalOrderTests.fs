@@ -167,7 +167,7 @@ let private ordering () =
         }
 
     let knownCase = CaseId.ofOperationId (T.operation 604)
-    let caseScope = GrantTarget.CaseReference "AUTH-SCOPE"
+    let caseScope = GrantTarget.CaseReference "CC-ZF59-62BK-V5XW-TKKS-32"
 
     let grantInputs role scope =
         [
@@ -220,10 +220,7 @@ let private ordering () =
     let provision =
         {
             Task = "people.provisionOwner"
-            Inputs =
-                T.inputs (
-                    T.text InputTarget.CaseReferencePolicy "CUSTOM_ALLOWED" :: T.profileInputs
-                )
+            Inputs = T.inputs (T.profileInputs)
         }
     // Hand-authored expectations pin refusal priority, not the current implementation's output.
     // Actor counts include other unloaded actors; last-owner rows target the requesting owner itself.
@@ -549,7 +546,7 @@ let private ordering () =
                 Map.ofList
                     [
                         GrantTarget.CaseId caseId, caseId
-                        GrantTarget.CaseReference "AUTH-SCOPE", caseId
+                        GrantTarget.CaseReference "CC-ZF59-62BK-V5XW-TKKS-32", caseId
                     ])
             |> Option.defaultValue Map.empty
 

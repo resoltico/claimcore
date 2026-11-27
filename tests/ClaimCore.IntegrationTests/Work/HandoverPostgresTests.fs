@@ -22,7 +22,7 @@ let private work fixture number reference revision responsible summary =
         "work.update"
         (id fixture number)
         (ClaimCore.Application.Contracts.OperationBinding.Work(
-            (CaseSelector.Reference reference),
+            (caseTarget fixture reference),
             (revision)
         ))
         (ClaimCore.TestSupport.Submissions.work (

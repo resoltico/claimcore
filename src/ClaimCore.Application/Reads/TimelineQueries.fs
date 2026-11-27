@@ -96,15 +96,22 @@ module internal TimelineQueries =
             | _ -> return QueryResults.unavailable
         }
 
-    let private readWith audit (services: ServiceContext) (request: CaseTimelineRequest) token =
+    let private readWith
+        audit
+        finalize
+        reject
+        (services: ServiceContext)
+        (request: CaseTimelineRequest)
+        token
+        =
         let pageLimit = min request.Limit Paging.MaximumTimelinePageSize
 
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! reject services token QueryResults.invalidLimitRefusal
             else
                 match CaseRecords.validateSelector request.Target with
-                | Error refusal -> return! RequestRefusals.read services token refusal
+                | Error refusal -> return! reject services token refusal
                 | Ok() ->
                     let! result =
                         services.Store.Read
@@ -119,10 +126,9 @@ module internal TimelineQueries =
                                             let! outcome =
                                                 readInSnapshot services request pageLimit tx view
 
-                                            match outcome with
-                                            | Outcome.Succeeded _ when not audit ->
+                                            if not audit then
                                                 return outcome, None
-                                            | _ ->
+                                            else
                                                 let caseId =
                                                     DisclosureReads.target
                                                         request.Target
@@ -132,15 +138,26 @@ module internal TimelineQueries =
                                                     DisclosureReads.observe
                                                         services.Principal
                                                         view.Actor
-                                                        DisclosureKind.CaseRead
+                                                        DisclosureKind.CaseTimeline
                                                         caseId
                                                         None
                                                         outcome
+                                                    |> DisclosureReads.withPage (fun page ->
+                                                        DisclosureReads.rows page.Items)
                                         }
                             }
 
-                    return! DisclosureReads.complete services token result
+                    return! finalize services token result
         }
 
-    let read = readWith true
-    let forExport = readWith false
+    let read services request token =
+        readWith true DisclosureReads.complete RequestRefusals.protectedRead services request token
+
+    let forExport services request token =
+        readWith
+            false
+            DisclosureReads.completePreparation
+            RequestRefusals.read
+            services
+            request
+            token

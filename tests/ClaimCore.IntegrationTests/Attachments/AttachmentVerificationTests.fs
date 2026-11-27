@@ -927,7 +927,7 @@ let private addVerificationCases fixture actor =
                     (Binding.CaseNew Revision.zero)
                     (Map.ofList
                         [
-                            Submissions.field BusinessField.CaseReference,
+                            Submissions.field BusinessField.PolicyNumber,
                             SubmissionValue.Text $"VERIFY-{number}"
                         ])
 
@@ -1022,7 +1022,7 @@ let private publicationWork () =
                         do!
                             sql
                                 database
-                                "UPDATE claimcore.cases SET search_text='synthetic projection corruption' WHERE case_reference='synthetic-a'"
+                                "UPDATE claimcore.cases SET search_text='synthetic projection corruption' WHERE snapshot IS NOT NULL"
                                 [||]
 
                     let! _ =

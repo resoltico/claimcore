@@ -24,7 +24,7 @@ let private finding expected result =
     | Ok _ -> failtestf "Expected verification finding %A" expected
 
 let private append state record =
-    Replay.append installation CaseReferencePolicy.CustomAllowed None state record
+    Replay.append installation None state record
 
 let private initial () =
     let root, _ = owner ()
@@ -162,12 +162,7 @@ let tests =
                     let expected = Some root.Root.Position
 
                     let witnessed =
-                        Replay.append
-                            installation
-                            CaseReferencePolicy.CustomAllowed
-                            expected
-                            (Replay.initial expected)
-                            root
+                        Replay.append installation expected (Replay.initial expected) root
                         |> required
 
                     Expect.equal
@@ -181,12 +176,7 @@ let tests =
 
                     finding
                         VerificationFinding.PayloadFormat
-                        (Replay.append
-                            Guid.Empty
-                            CaseReferencePolicy.CustomAllowed
-                            None
-                            (Replay.initial None)
-                            root)
+                        (Replay.append Guid.Empty None (Replay.initial None) root)
 
                     let state = Replay.initial None
 

@@ -168,28 +168,14 @@ type FamilyTask =
                 -> Result<PartChange list, Rejection>
     }
 
-[<RequireQualifiedAccess>]
-type OpeningIntent =
-    | Automatic
-    | Custom of CaseReference
-
-module OpeningIntent =
-    let requested =
-        function
-        | OpeningIntent.Automatic -> None
-        | OpeningIntent.Custom reference -> Some reference
-
 [<NoComparison>]
 type AdmittedOpening =
     internal
         {
             Context: TaskContext
-            ReferenceIntent: OpeningIntent
             Registration: Registration
             Parties: (int * PartyContent) list
         }
-
-    member this.Intent = this.ReferenceIntent
 
 [<NoEquality; NoComparison>]
 type OpeningTask =
@@ -198,7 +184,7 @@ type OpeningTask =
         Check: InputMap -> TaskInputIssue list
         Authorize: PrincipalKey -> AccessView -> CaseId option -> InputMap -> Result<unit, Refusal>
         Availability: FamilyEnvironment -> DecisionFacts option -> Binding -> Availability
-        EditableInputs: CaseReferencePolicy -> TaskInputId list
+        EditableInputs: TaskInputId list
         Admit:
             TaskContext
                 -> FamilyEnvironment

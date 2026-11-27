@@ -37,7 +37,7 @@ const view: Extract<RegionContent, { kind: "TABLE" }> = {
     {
       key: "case",
       values: [
-        { kind: "REFERENCE", value: "CASE-1" },
+        { kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         { kind: "ABSENT", reasonId: "label.notRecorded" },
         { kind: "IDENTIFIER", value: "unlisted-revision" },
       ],
@@ -104,7 +104,7 @@ it("uses the supplied empty message for a table section with no recorded entries
 it("shows the selected row's details in a dialog and removes them when the read withdraws the row", async () => {
   const user = userEvent.setup();
   const { rerender } = render(<DataTable view={view} />);
-  await user.click(screen.getByRole("button", { name: "Actions for CASE-1" }));
+  await user.click(screen.getByRole("button", { name: "Actions for CC-55KW-SSJ4-8HMS-G1BH-73" }));
   await user.click(screen.getByRole("menuitem", { name: "View details" }));
   expect(
     within(screen.getByRole("dialog")).getByText("Authorized retained row detail"),
@@ -119,7 +119,7 @@ it("keeps blocked row actions in the menu with visible and accessible core advic
   const onAction = vi.fn();
   const binding = {
     kind: "CASE",
-    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+    target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
     expectedRevision: 1,
   } as const;
   const action = operationAffordance("case.close", binding);
@@ -135,7 +135,7 @@ it("keeps blocked row actions in the menu with visible and accessible core advic
     actions: [blocked, operationAffordance("case.decide", binding)],
   };
   render(<DataTable view={{ ...view, rows: [row] }} onAction={onAction} />);
-  await user.click(screen.getByRole("button", { name: "Actions for CASE-1" }));
+  await user.click(screen.getByRole("button", { name: "Actions for CC-55KW-SSJ4-8HMS-G1BH-73" }));
   const close = screen.getByRole("menuitem", { name: "Close the case" });
   const advice = "This item does not exist, or you do not have access to it.";
   expect(close).toHaveAttribute("aria-disabled", "true");

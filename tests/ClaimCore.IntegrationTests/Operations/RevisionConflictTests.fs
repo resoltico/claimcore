@@ -142,7 +142,7 @@ let tests =
                         Service.timeline
                             owner
                             {
-                                Target = CaseSelector.Reference "CONFLICT-1"
+                                Target = caseTarget fixture "CONFLICT-1"
                                 Filter = None
                                 AfterCursor = nextCursor
                                 Limit = 50
@@ -217,7 +217,7 @@ let tests =
                      |> List.forall (fun entry -> entry.Changes = TimelineChanges.Withheld))
                     "Revision conflicts keep full-history disclosure separate from write permission"
 
-                let target = CaseSelector.Reference "CONFLICT-1"
+                let target = caseTarget fixture "CONFLICT-1"
 
                 for number, expected, summary in
                     [ 77200, 0L, "First summary"; 77201, 1L, "Second summary" ] do

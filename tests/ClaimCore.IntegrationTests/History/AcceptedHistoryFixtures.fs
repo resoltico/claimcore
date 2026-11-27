@@ -50,7 +50,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                             task {
                                 let command = Submissions.command submission
 
-                                let reference = CaseFixtures.reference "HISTORICAL-1"
+                                let reference = tx.DrawCaseReference()
                                 let! current = PersonAcquisition.principal tx fixture.Owner
                                 let actor = current |> Option.get |> _.Id
                                 let operation = CaseFixtures.operationId submission.OperationId
@@ -74,7 +74,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                                             )
                                         PartId = OperationId.value operation
                                         Revision = Revision.first
-                                        NaturalKey = Some "HISTORICAL-1"
+                                        NaturalKey = Some(CaseReference.identity reference)
                                         Erases = None
                                         Stamp =
                                             {
@@ -167,7 +167,7 @@ let private acceptedBoundary (database: PostgresFixture.Database) =
             (Service.get
                 actor
                 ({
-                    Target = CaseSelector.Reference("historical-1")
+                    Target = CaseSelector.Id(CaseFixtures.caseId (id database.Fixture 10))
                 })
                 (token))
 
@@ -274,7 +274,7 @@ let private retainedPages (database: PostgresFixture.Database) =
 
         let query: CaseTimelineRequest =
             {
-                Target = CaseSelector.Reference "HISTORICAL-1"
+                Target = CaseSelector.Id(CaseFixtures.caseId (id database.Fixture 10))
                 Filter = Some TimelineFilter.Facts
                 AfterCursor = None
                 Limit = 50

@@ -53,7 +53,7 @@ afterEach(() => {
 });
 const binding = {
   kind: "REMINDER",
-  target: { kind: "REFERENCE", caseReference: "CASE-1" },
+  target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
   reminderId: "30000000-0000-4000-8000-000000000003",
   expectedRevision: 3,
 } as const;

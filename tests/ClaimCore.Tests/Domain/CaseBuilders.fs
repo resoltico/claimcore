@@ -27,7 +27,8 @@ let opened () =
         |> OperationId.create
         |> Option.get
 
-    let reference = CaseReference.parse "UNIT-001" |> accepted
+    let reference =
+        ClaimCore.TestSupport.DomainInputs.reference "CC-ZQ16-FT6R-54T8-E39K-67"
 
     let content =
         {
@@ -39,7 +40,7 @@ let opened () =
         { original with
             Aggregate = AggregateReference.Family(CaseId.ofOperationId id)
             PartId = OperationId.value id
-            NaturalKey = Some "UNIT-001"
+            NaturalKey = Some(CaseReference.format reference)
             Stamp = { original.Stamp with OperationId = id }
             Value =
                 PartValue.Case

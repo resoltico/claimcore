@@ -1,6 +1,5 @@
 import { expectCaseReadsSettled } from "./case-readiness";
 import { choiceGroup } from "./workspace-navigation";
-import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "./fixtures";
 import { openAuthenticated } from "./session-helpers";
 import {
@@ -100,12 +99,12 @@ const preserveChoice = async (page: Page, modes: Modes) => {
   }
   expect(requests).toHaveLength(0);
 };
-const paidInStatus = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
-  await paidCase(page, reference, status);
+const paidInStatus = async (page: Page, status: "OPENED" | "CLOSED") => {
+  const reference = await paidCase(page, status);
   const before = await currentCase(page, reference);
   expect(before.revision).toBe(status === "CLOSED" ? 4 : 3);
   expect(before.fields.handling.kind).toBe(status === "CLOSED" ? "CLOSED" : "OPEN");
-  return before;
+  return { before, reference };
 };
 for (const status of ["CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
@@ -114,10 +113,9 @@ for (const status of ["CLOSED"] as const) {
         page,
         browserName,
       }, testInfo) => {
-        const reference = `GROUP-${randomUUID().slice(0, 8)}-A`;
         const modes = { registration, decision, payable };
         await openAuthenticated(page);
-        const before = await paidInStatus(page, reference, status);
+        const { before, reference } = await paidInStatus(page, status);
         await chooseGroups(page, modes, language);
         await preserveChoice(page, modes);
         await selectLanguage(page, language);

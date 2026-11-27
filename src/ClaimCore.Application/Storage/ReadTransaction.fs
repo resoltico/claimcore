@@ -28,7 +28,6 @@ type internal ReadTx
     member _.ExportSnapshot = defaultArg exportSnapshot false
     member _.Connection = connection
     member _.InstallationId = installation.InstallationId
-    member _.CaseReferencePolicy = installation.CaseReferencePolicy
     member _.Cipher = cipher
     member _.CancellationToken = token
     member val ObservedAt = observedAt with get, set

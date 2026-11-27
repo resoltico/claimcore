@@ -339,14 +339,14 @@ it("opens a row revocation with the exact supplied principal, role and case hand
                         {
                           "input:role": "CASE_READER",
                           "input:scope": "CASE",
-                          "field:caseReference": "CASE-FROM-GRANT",
+                          "field:caseReference": "CC-NBCN-BQZH-AZX2-0H3Q-75",
                         },
                         [],
                       ),
                     ],
                     values: [
                       { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
-                      { kind: "REFERENCE", value: "CASE-FROM-GRANT" },
+                      { kind: "REFERENCE", value: "CC-NBCN-BQZH-AZX2-0H3Q-75" },
                     ],
                   },
                 ],
@@ -362,7 +362,7 @@ it("opens a row revocation with the exact supplied principal, role and case hand
   const user = userEvent.setup();
   await selectRowAction(
     user,
-    await screen.findByRole("row", { name: /CASE-FROM-GRANT/u }),
+    await screen.findByRole("row", { name: /CC-NBCN-BQZH-AZX2-0H3Q-75/u }),
     "Revoke role",
   );
   expect(document.querySelector('[name="field:caseReference"]')).toBeNull();
@@ -376,7 +376,7 @@ it("opens a row revocation with the exact supplied principal, role and case hand
     inputs: {
       "input:role": "CASE_READER",
       "input:scope": "CASE",
-      "field:caseReference": "CASE-FROM-GRANT",
+      "field:caseReference": "CC-NBCN-BQZH-AZX2-0H3Q-75",
     },
   });
   expect(getEndpointMock("people.grants")).toHaveBeenCalledOnce();

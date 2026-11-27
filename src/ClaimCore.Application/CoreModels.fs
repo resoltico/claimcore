@@ -25,26 +25,9 @@ type RuntimeOpenFault =
 [<RequireQualifiedAccess; NoComparison>]
 type internal Verdict<'proceed> =
     | Proceed of 'proceed
-    | Replay of OperationReceipt
+    | Replay of 'proceed
     | Refuse of Refusal
     | Fail of CoreFault
-
-module internal Verdict =
-    let bind next =
-        function
-        | Verdict.Proceed value -> next value
-        | Verdict.Replay receipt -> Verdict.Replay receipt
-        | Verdict.Refuse refusal -> Verdict.Refuse refusal
-        | Verdict.Fail fault -> Verdict.Fail fault
-
-    let map mapping value = bind (mapping >> Verdict.Proceed) value
-
-    let outcome proceeded replayed =
-        function
-        | Verdict.Proceed value -> Outcome.Succeeded(proceeded value)
-        | Verdict.Replay receipt -> Outcome.Succeeded(replayed receipt)
-        | Verdict.Refuse refusal -> Outcome.Rejected refusal
-        | Verdict.Fail fault -> Outcome.Failed fault
 
 type IBusinessCalendar =
     abstract TimeZoneId: string

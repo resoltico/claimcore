@@ -66,10 +66,7 @@ let private opening operation values =
     Submissions.create "case.open" operation (Binding.CaseNew Revision.zero) values
 
 let private registration =
-    DomainInputs.registration
-    |> RegistrationInput.values
-    |> Submissions.fields
-    |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text "BOUNDARY")
+    DomainInputs.registration |> RegistrationInput.values |> Submissions.fields
 
 let private inputs () =
     [

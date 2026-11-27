@@ -33,7 +33,7 @@ open Microsoft.Extensions.Logging
 let private boundary = "claimcore-test-boundary"
 
 let private uploadManifest length digest =
-    $"""{{"operationId":"10000000-0000-7000-8000-000000000001","task":"attachment.add","binding":{{"kind":"ATTACHMENT","target":{{"kind":"REFERENCE","caseReference":"CASE-1"}}}},"inputs":{{"input:attachmentName":"Arrival Photo.jpg","input:attachmentLength":"{length}","input:attachmentDigest":"{digest}"}}}}"""
+    $"""{{"operationId":"10000000-0000-7000-8000-000000000001","task":"attachment.add","binding":{{"kind":"ATTACHMENT","target":{{"kind":"REFERENCE","caseReference":"CC-55KW-SSJ4-8HMS-G1BH-73"}}}},"inputs":{{"input:attachmentName":"Arrival Photo.jpg","input:attachmentLength":"{length}","input:attachmentDigest":"{digest}"}}}}"""
 
 let private abcDigest =
     "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
@@ -909,10 +909,13 @@ let private maximumKestrelFrame () =
             application.StopAsync().GetAwaiter().GetResult()
     }
 
-let private uploadOperation (operation: Guid) =
+let private uploadOperation caseId (operation: Guid) =
     (uploadManifest 3 abcDigest)
         .Replace("10000000-0000-7000-8000-000000000001", operation.ToString "D")
-        .Replace("CASE-1", "SYNTHETIC-001")
+        .Replace(
+            "\"kind\":\"REFERENCE\",\"caseReference\":\"CC-55KW-SSJ4-8HMS-G1BH-73\"",
+            "\"kind\":\"ID\",\"caseId\":\"" + CaseId.format caseId + "\""
+        )
 
 let private hostTransfer () =
     task {
@@ -973,7 +976,7 @@ let private hostTransfer () =
             }
 
         let encode operation body =
-            manifest (uploadOperation operation) + file body + final
+            manifest (uploadOperation database.CaseId operation) + file body + final
             |> Encoding.UTF8.GetBytes
 
         let upload operation body installation =
@@ -1095,7 +1098,8 @@ let private hostTransfer () =
         let blockedOperation = Guid.CreateVersion7()
 
         let blockedManifest =
-            (uploadOperation blockedOperation).Replace("Arrival Photo.jpg", "Arrival.exe")
+            (uploadOperation database.CaseId blockedOperation)
+                .Replace("Arrival Photo.jpg", "Arrival.exe")
 
         let blockedFrame =
             manifest blockedManifest + file "abc" + final |> Encoding.UTF8.GetBytes
@@ -1160,7 +1164,7 @@ let private hostTransfer () =
         let selector =
             AttachmentTransport.request.Write
                 {
-                    Target = CaseSelector.Reference "SYNTHETIC-001"
+                    Target = CaseSelector.Id database.CaseId
                     AttachmentId = AttachmentId.create operation |> Option.get
                 }
             |> WireWriter.bytes

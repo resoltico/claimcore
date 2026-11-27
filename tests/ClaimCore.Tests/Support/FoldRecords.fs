@@ -46,11 +46,8 @@ let registration name =
             input InputTarget.ProfileDisplayName name
         ]
 
-let private ownerInputsFor policy =
-    let key, token =
-        input InputTarget.CaseReferencePolicy (CaseReferencePolicy.token policy)
-
-    let values = (registration "owner").Values |> Map.add key token
+let ownerInputs =
+    let values = (registration "owner").Values
     let roles = [ "CASE_HANDLER"; "PAYMENT_RECORDER"; "DATA_STEWARD" ]
 
     let rows =
@@ -65,12 +62,9 @@ let private ownerInputsFor policy =
     InputMap.create values (Map.ofList [ TaskCollectionId.PeopleGrants, rows ])
     |> Option.get
 
-let ownerInputs = ownerInputsFor CaseReferencePolicy.CustomAllowed
-
-let opening reference =
+let opening _ =
     fields
         [
-            BusinessField.CaseReference, reference
             BusinessField.IncidentDate, "2026-01-01"
             BusinessField.ReceivedDate, "2026-01-02"
             BusinessField.IncidentCountry, "LV"
@@ -80,7 +74,7 @@ let opening reference =
             BusinessField.ClaimedCurrency, "EUR"
         ]
 
-let private decide policy state (context: TaskContext) selected binding inputs =
+let private decide state (context: TaskContext) selected binding inputs =
     match selected with
     | Task.Opening opening ->
         let id = CaseId.ofOperationId context.Stamp.OperationId
@@ -88,7 +82,6 @@ let private decide policy state (context: TaskContext) selected binding inputs =
 
         let environment =
             Fold.familyEnvironment
-                policy
                 state
                 context.Decision.Principal
                 context.Decision.Maintenance
@@ -97,15 +90,13 @@ let private decide policy state (context: TaskContext) selected binding inputs =
         opening.Admit context environment before binding inputs
         |> Result.bind (fun facts ->
             let candidate =
-                match facts.Intent with
-                | OpeningIntent.Custom reference -> reference
-                | OpeningIntent.Automatic ->
-                    invalidOp "Recorded opening requires its accepted assignment."
+                context.Stamp.OperationId
+                |> OperationId.format
+                |> ClaimCore.TestSupport.DomainInputs.reference
 
             Case.Open.accept candidate (environment.ReferenceOwner candidate) facts)
     | _ ->
         (Fold.snapshot
-            policy
             state
             context.Decision.Principal
             context.Decision.Maintenance
@@ -166,10 +157,7 @@ let buildWith mutate (state: FoldState) number requester token binding values =
                 }
         }
 
-    let changes =
-        decide CaseReferencePolicy.CustomAllowed state context selected binding values
-        |> required
-        |> mutate
+    let changes = decide state context selected binding values |> required |> mutate
 
     let header =
         {
@@ -197,17 +185,14 @@ let buildWith mutate (state: FoldState) number requester token binding values =
 let build state number requester token binding values =
     buildWith id state number requester token binding values
 
-let ownerWithPolicy policy =
+let owner () =
     build
         Fold.initial
         1
         principal
         "people.provisionOwner"
         (Binding.PeopleNew Revision.zero)
-        (ownerInputsFor policy)
-
-let owner () =
-    ownerWithPolicy CaseReferencePolicy.CustomAllowed
+        ownerInputs
 
 let private restoreCompartments transform (record: RetainedOperation) =
     let root = record.Root
@@ -228,12 +213,9 @@ let restore record = restoreCompartments id record
 let clear record =
     restoreCompartments Compartment.withoutContent record
 
-let scanWithPolicy policy records =
+let scan records =
     records
     |> List.fold
         (fun state record ->
-            state |> Result.bind (fun state -> Fold.append installation policy state record))
+            state |> Result.bind (fun state -> Fold.append installation state record))
         (Ok Fold.initial)
-
-let scan records =
-    scanWithPolicy CaseReferencePolicy.CustomAllowed records

@@ -46,17 +46,20 @@ module internal WorkQueries =
             match
                 CaseRecords.validateSelector request.Target, ReminderId.create request.ReminderId
             with
-            | Error refusal, _ -> return! RequestRefusals.read services token refusal
+            | Error refusal, _ -> return! RequestRefusals.protectedRead services token refusal
             | _, None ->
                 return!
-                    RequestRefusals.read
+                    RequestRefusals.protectedRead
                         services
                         token
                         (Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired))
             | Ok(), Some id ->
                 let! result =
-                    services.Store.Read(
-                        {
+                    DisclosureReads.read
+                        services
+                        DisclosureKind.ReminderRead
+                        (fun _ -> None)
+                        ({
                             Work =
                                 fun tx ->
                                     task {
@@ -147,8 +150,6 @@ module internal WorkQueries =
                                                                             Offers =
                                                                                 CaseWorkReads
                                                                                     .reminderActs
-                                                                                    tx
-                                                                                        .CaseReferencePolicy
                                                                                     services
                                                                                         .Principal
                                                                                     view.Actor
@@ -172,16 +173,21 @@ module internal WorkQueries =
                                         | _ -> return QueryResults.unavailable
                                     }
                             CancellationToken = token
-                        }
-                    )
+                        })
 
-                return QueryResults.readResult result
+                return result
         }
 
-    let reminders (services: ServiceContext) (request: ReminderListRequest) token =
+    let private remindersWith
+        finalize
+        reject
+        (services: ServiceContext)
+        (request: ReminderListRequest)
+        token
+        =
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! reject services token QueryResults.invalidLimitRefusal
             else
                 let text =
                     match request.Text with
@@ -198,11 +204,17 @@ module internal WorkQueries =
                     |> Option.defaultValue (Ok())
 
                 match Admission.map2 (fun () text -> text) selector text with
-                | Error refusal -> return! RequestRefusals.read services token refusal
+                | Error refusal -> return! reject services token refusal
                 | Ok text ->
                     let! result =
-                        services.Store.Read(
-                            {
+                        DisclosureReads.pageReadWith
+                            finalize
+                            services
+                            DisclosureKind.ReminderList
+                            (fun _ -> None)
+                            (fun (page: ReminderPage) ->
+                                DisclosureReads.cases (_.Reminder >> Reminder.caseId) page.Items)
+                            ({
                                 Work =
                                     fun tx ->
                                         task {
@@ -459,8 +471,6 @@ module internal WorkQueries =
                                                                         Offers =
                                                                             CaseWorkReads
                                                                                 .reminderActs
-                                                                                tx
-                                                                                    .CaseReferencePolicy
                                                                                 services.Principal
                                                                                 pageActor
                                                                                 maintenance.Active
@@ -492,8 +502,18 @@ module internal WorkQueries =
                                                         |> Result.defaultWith Outcome.Failed
                                         }
                                 CancellationToken = token
-                            }
-                        )
+                            })
 
-                    return QueryResults.readResult result
+                    return result
         }
+
+    let reminders services request token =
+        remindersWith DisclosureReads.complete RequestRefusals.protectedRead services request token
+
+    let remindersForExport services request token =
+        remindersWith
+            DisclosureReads.completePreparation
+            RequestRefusals.read
+            services
+            request
+            token

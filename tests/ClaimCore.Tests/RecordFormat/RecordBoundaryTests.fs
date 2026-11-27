@@ -79,6 +79,7 @@ let tests =
 
                     for escaped in [ "\\u0000"; "\\ufdd0"; "\\ud800"; "\\udfff" ] do
                         let source = Encoding.UTF8.GetString encoded
+
                         let altered = source.Replace("A\u202eB", "A" + escaped + "B") |> utf8
 
                         Expect.notEqual

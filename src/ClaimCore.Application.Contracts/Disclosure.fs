@@ -5,12 +5,33 @@ open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type DisclosureKind =
+    | OperationPreview
+    | RequesterContext
+    | SessionTermination
+    | OperationLookup
+    | OperationReceipt
     | CaseRead
+    | CaseTimeline
+    | RevisionConflict
+    | CaseList
+    | CaseSummary
+    | CaseAssignees
+    | CaseParties
+    | CaseNotes
+    | CasePayments
+    | AttachmentList
+    | ReminderRead
+    | ReminderList
+    | WorkViews
+    | PeopleDirectory
+    | PeopleGrants
+    | PeopleHistory
+    | AccessRequests
     | AttachmentDownload
     | AttachmentPreview
     | Export
+    | Digest
     | TrailRead
-    | AccessRefused
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module DisclosureKind =
@@ -27,12 +48,68 @@ module DisclosureOutcome =
     let vocabulary =
         Vocabulary.ofUnion<DisclosureOutcome> "disclosureOutcome" TokenCasing.ScreamingSnake None
 
+[<RequireQualifiedAccess>]
+type DisclosureExportQuery =
+    | Cases
+    | CaseSummary
+    | Timeline
+    | Reminders
+    | PeopleHistory
+
+module DisclosureExportQuery =
+    let task =
+        function
+        | DisclosureExportQuery.Cases -> QueryTaskId.CaseList
+        | DisclosureExportQuery.CaseSummary -> QueryTaskId.CaseSummary
+        | DisclosureExportQuery.Timeline -> QueryTaskId.CaseTimeline
+        | DisclosureExportQuery.Reminders -> QueryTaskId.ReminderList
+        | DisclosureExportQuery.PeopleHistory -> QueryTaskId.PeopleHistory
+
+    let vocabulary =
+        Vocabulary.ofUnion<DisclosureExportQuery> "exportQueryCases" TokenCasing.CamelCase None
+        |> Vocabulary.all
+        |> fun cases -> Vocabulary.define "disclosureExportQuery" cases (task >> QueryTaskId.key)
+
+    let token = Vocabulary.token vocabulary
+
+type DisclosureExportSelection =
+    {
+        Filtered: bool
+        Paged: bool
+        Order: CaseListOrder option
+        Grouping: CaseGrouping option
+    }
+
 type DisclosureExport =
     {
-        Query: string
-        Selection: Map<string, string>
+        Query: DisclosureExportQuery
+        Selection: DisclosureExportSelection
         RowCount: int
     }
+
+/// Evidence describes returned rows and subjects of this response only.
+type DisclosurePageEvidence =
+    {
+        RowCount: int
+        Cases: CaseId list
+        People: ActorId list
+    }
+
+module DisclosurePageEvidence =
+    let maximumSubjects = Paging.MaximumPageSize + 1
+
+    let create count cases people =
+        let cases = List.distinct cases
+        let people = List.distinct people
+
+        if count < 0 || cases.Length > maximumSubjects || people.Length > maximumSubjects then
+            invalidArg (nameof count) "Disclosure evidence exceeds its bound."
+
+        {
+            RowCount = count
+            Cases = cases
+            People = people
+        }
 
 type DisclosureEvent =
     {
@@ -42,6 +119,7 @@ type DisclosureEvent =
         AttachmentId: AttachmentId option
         Outcome: DisclosureOutcome
         Export: DisclosureExport option
+        Page: DisclosurePageEvidence option
     }
 
 type RecordedDisclosure =

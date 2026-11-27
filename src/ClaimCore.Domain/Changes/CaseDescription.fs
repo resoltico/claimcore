@@ -37,12 +37,12 @@ module CaseDescription =
                     Change = change
                 }))
 
-    let opening requested registration =
+    let opening registration =
         let values = Registration.values registration |> Map.ofList
 
         let value =
             function
-            | BusinessField.CaseReference -> requested |> Option.map CaseFieldValue.Reference
+            | BusinessField.CaseReference -> None
             | BusinessField.Status -> Some(CaseFieldValue.Status CaseStatus.Opened)
             | field -> Map.tryFind field values |> Option.map CaseFieldValue.Business
 

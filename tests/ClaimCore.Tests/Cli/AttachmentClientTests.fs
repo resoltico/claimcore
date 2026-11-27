@@ -149,7 +149,14 @@ let tests =
                             | Error(AttachmentCaptureFailure.TooLarge 26_214_401L) -> ()
                             | _ -> failtest "The known regular-file length was not reported."
 
-                            let arguments = [ "attachment"; "add"; "SYNTHETIC"; "--file"; path ]
+                            let arguments =
+                                [
+                                    "attachment"
+                                    "add"
+                                    "CC-DZXV-W4P3-TR4W-QN99-83"
+                                    "--file"
+                                    path
+                                ]
 
                             match
                                 Grammar.prepare

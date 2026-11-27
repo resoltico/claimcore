@@ -43,7 +43,7 @@ let internal erasureReadback fixture (actor: ServiceContext) =
         let! other =
             fixture.Store.Read
                 {
-                    Work = fun tx -> FamilyReads.findCaseByReference tx "CONTRACT-002"
+                    Work = fun tx -> FamilyReads.findCase tx (CaseFixtures.caseId (id fixture 11))
                     CancellationToken = CancellationToken.None
                 }
 
@@ -74,13 +74,15 @@ let internal erasureReadback fixture (actor: ServiceContext) =
             (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Erased requests cannot replay"
 
+        let oldReference = issuedCaseReference fixture "CONTRACT-001"
+
         let! reopen =
             (Service.executeSubmission
                 actor
                 (((request
                     (fixture)
                     (13)
-                    ("contract-001")
+                    ("CONTRACT-FRESH")
                     (0L)
                     "case.open"
                     (ClaimCore.TestSupport.Submissions.fields (
@@ -88,10 +90,10 @@ let internal erasureReadback fixture (actor: ServiceContext) =
                     )))))
                 (CancellationToken.None))
 
-        Expect.equal
-            reopen.Outcome
-            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
-            "Folded reference remains reserved"
+        Expect.notEqual
+            (CaseReference.format (accepted reopen |> caseReceipt).Reference)
+            oldReference
+            "Opening an independent case cannot claim the erased case's identity"
     }
 
 let internal caseErasure fixture =
@@ -161,18 +163,20 @@ let internal caseVisibility fixture =
 
             accepted result |> ignore
 
+        let key = issuedCaseReference fixture
+        let expected = [ key "A"; key "B"; key "C" ] |> List.sort
         let! first = listCases fixture CaseVisibility.Every None 2
         let first = storedPage first
 
         Expect.equal
             (first.Items
              |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
-            [ "A"; "B" ]
+            (List.take 2 expected)
             "Reference-key order"
 
         Expect.equal
             first.Next
-            (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "B"))
+            (Some(ClaimCore.RecordFormat.CaseListPosition.Reference expected[1]))
             "Last visible key"
 
         let! principal = assignedReader fixture actor
@@ -182,20 +186,20 @@ let internal caseVisibility fixture =
         Expect.equal
             ((storedPage only).Items
              |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
-            [ "C" ]
+            [ key "C" ]
             "Visibility precedes limit"
 
         let! next =
             listCases
                 fixture
                 CaseVisibility.Every
-                (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "B"))
+                (Some(ClaimCore.RecordFormat.CaseListPosition.Reference expected[1]))
                 2
 
         Expect.equal
             ((storedPage next).Items
              |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
-            [ "C" ]
+            [ expected[2] ]
             "Continuation"
     }
 
@@ -220,18 +224,23 @@ let internal foldedOrdering fixture =
 
             accepted result |> ignore
 
+        let expected =
+            [ "Ref-b"; "ref-A"; "REF-C" ]
+            |> List.map (issuedCaseReference fixture)
+            |> List.sort
+
         let! first = listCases fixture CaseVisibility.Every None 1
         let first = storedPage first
 
         Expect.equal
             (first.Items
              |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
-            [ "ref-A" ]
-            "Authored spelling with ASCII-key order"
+            [ expected[0] ]
+            "Canonical issued spelling follows ASCII-key order"
 
         Expect.equal
             first.Next
-            (Some(ClaimCore.RecordFormat.CaseListPosition.Reference "REF-A"))
+            (Some(ClaimCore.RecordFormat.CaseListPosition.Reference expected[0]))
             "Continuation is folded"
 
         let! second = listCases fixture CaseVisibility.Every first.Next 1
@@ -239,6 +248,6 @@ let internal foldedOrdering fixture =
         Expect.equal
             ((storedPage second).Items
              |> List.map (fun record -> CaseReference.format record.Case.Snapshot.Reference))
-            [ "Ref-b" ]
+            [ expected[1] ]
             "Continuation uses the same order"
     }

@@ -51,14 +51,11 @@ let private authored (fixture: PublishedFixture.Fixture) =
 
     let input = request["input"] |> nonNull
     let operation = id ()
-    let reference = "NATIVE-OUTPUT-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create operation
-
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     let values = input["inputs"] |> nonNull
     values["field:policyNumber"] <- JsonValue.Create "Rīga مطالبة 😀"
-    Encoding.UTF8.GetBytes(request.ToJsonString()), operation, reference
+    Encoding.UTF8.GetBytes(request.ToJsonString()), operation
 
 let private head (fixture: PublishedFixture.Fixture) =
     let result = fixture.Administration [ "head" ]
@@ -66,17 +63,13 @@ let private head (fixture: PublishedFixture.Fixture) =
     use document = JsonDocument.Parse result.StandardOutput
     document.RootElement.GetProperty("operationSequence").GetInt64()
 
-let private accepted fixture reference =
+let private accepted fixture caseId =
     let current =
         automation
             fixture
             "case.get"
             {|
-                target =
-                    {|
-                        kind = "REFERENCE"
-                        caseReference = reference
-                    |}
+                target = {| kind = "ID"; caseId = caseId |}
             |}
             0
         |> require "SUCCEEDED"
@@ -88,11 +81,7 @@ let private accepted fixture reference =
             fixture
             "case.timeline"
             {|
-                target =
-                    {|
-                        kind = "REFERENCE"
-                        caseReference = reference
-                    |}
+                target = {| kind = "ID"; caseId = caseId |}
                 filter = "FACTS"
                 limit = 50
             |}
@@ -127,8 +116,8 @@ let private mutations fixture =
 
     for command in [ "call"; "batch" ] do
         for destination in destinations do
-            let source, operation, reference = authored fixture
-            let later, _, laterReference = authored fixture
+            let source, operation = authored fixture
+            let later, laterId = authored fixture
 
             let input =
                 if command = "batch" then
@@ -150,18 +139,14 @@ let private mutations fixture =
                 (before + 1L)
                 "Output failure cannot dispatch a later session frame"
 
-            accepted fixture reference
+            accepted fixture operation
 
             if command = "batch" then
                 automation
                     fixture
                     "case.get"
                     {|
-                        target =
-                            {|
-                                kind = "REFERENCE"
-                                caseReference = laterReference
-                            |}
+                        target = {| kind = "ID"; caseId = laterId |}
                     |}
                     2
                 |> require "REJECTED"
@@ -198,18 +183,14 @@ let private noMutation fixture =
     Expect.equal (head fixture) before "Read and discovery controls append nothing"
 
 let private unicodeFrames fixture =
-    let source, _, reference = authored fixture
+    let source, caseId = authored fixture
     CliCalls.run fixture fixture.Environment source 0 |> ignore
 
     let request =
         frame
             "case.get"
             {|
-                target =
-                    {|
-                        kind = "REFERENCE"
-                        caseReference = reference
-                    |}
+                target = {| kind = "ID"; caseId = caseId |}
             |}
 
     let result =
@@ -436,8 +417,8 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
         "Literal escape-like strings remain distinguishable"
 
 let qualify fixture =
-    let source, _, reference = authored fixture
-    CliNarrativeOutput.qualify fixture source reference (fun () -> head fixture)
+    let source, _ = authored fixture
+    CliNarrativeOutput.qualify fixture source (fun () -> head fixture)
     humanActorData fixture
     mutations fixture
     noMutation fixture
@@ -462,35 +443,43 @@ let summaryCsv (fixture: PublishedFixture.Fixture) =
     let reference index = prefix + "-" + string index
     let start = DateOnly(2018, 1, 1)
 
+    let mutable issued = ""
+
     for index in 0..50 do
         let received =
             start
                 .AddMonths(index)
                 .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
 
-        automation
-            fixture
-            "operation.execute"
-            {|
-                operationId = id ()
-                task = "case.open"
-                binding =
-                    {|
-                        kind = "CASE"
-                        expectedRevision = 0
-                    |}
-                inputs =
-                    dict
-                        [
-                            "field:caseReference", reference index
-                            "field:receivedDate", received
-                            "field:claimedAmount", "1"
-                            "field:claimedCurrency", "EUR"
-                        ]
-            |}
-            0
-        |> require "ACCEPTED"
-        |> ignore
+        let opened =
+            automation
+                fixture
+                "operation.execute"
+                {|
+                    operationId = id ()
+                    task = "case.open"
+                    binding =
+                        {|
+                            kind = "CASE"
+                            expectedRevision = 0
+                        |}
+                    inputs =
+                        dict
+                            [
+                                "field:policyNumber", reference index
+                                "field:receivedDate", received
+                                "field:claimedAmount", "1"
+                                "field:claimedCurrency", "EUR"
+                            ]
+                |}
+                0
+            |> require "ACCEPTED"
+
+
+        if index = 50 then
+            issued <-
+                opened.GetProperty("subject").GetProperty("caseReference").GetString()
+                |> nonNull
 
     let header =
         "group,count,currency,claimed,claimedCases,payable,payableCases,netPaid,netPaidCases"
@@ -529,13 +518,102 @@ let summaryCsv (fixture: PublishedFixture.Fixture) =
         "Grouped CSV matches the HTTP row independently"
 
     let page = runSummary prefix [ "--group-by"; "received-month" ]
-    Expect.equal page.Length 51 "Without --all only the first 50 data rows are emitted"
-    Expect.equal (Array.last page) "2022-02,1,EUR,1,1,,,," "The first-page boundary"
+    Expect.equal page.Length 52 "Bounded export includes the complete report"
+    Expect.equal (Array.last page) "2022-03,1,EUR,1,1,,,," "The final report record"
 
     let all = runSummary prefix [ "--group-by"; "received-month"; "--all" ]
     Expect.equal all.Length 52 "The established paging option emits all 51 rows"
     Expect.equal all[1] "2018-01,1,EUR,1,1,,,," "The first HTTP-equivalent record"
     Expect.equal (Array.last all) "2022-03,1,EUR,1,1,,,," "The final HTTP-equivalent record"
+
+
+    let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
+
+    for arguments, columnPrefix in
+        [
+            [ "case"; "list"; "--text"; issued ], "caseReference,revision,workRevision,"
+            [ "case"; "timeline"; issued ], "caseReference,operationId,sequence,effectIndex,"
+            [ "reminder"; "list"; "--case-reference"; issued ],
+            "caseId,caseReference,reminderId,revision,"
+            [ "people"; "history" ], "operationId,sequence,effectIndex,operationHash,recordedAt,"
+        ] do
+        let result =
+            invoke fixture environment (arguments @ [ "--format"; "csv" ]) Array.empty 0
+
+        let selection = arguments |> List.take 2 |> String.concat " "
+        Expect.equal result.ExitCode 0 (selection + " CSV exit status")
+        let content = Encoding.UTF8.GetString result.StandardOutput
+
+        Expect.isTrue
+            (content.StartsWith(columnPrefix, StringComparison.Ordinal))
+            (selection + " CSV uses its declared schema")
+
+    let serviceActor =
+        selectedActorId
+            fixture
+            {|
+                kind = "SERVICE"
+                issuer = fixture.Issuer
+                subject = "service"
+            |}
+
+    let disable =
+        frame
+            "operation.execute"
+            {|
+                operationId = id ()
+                task = "people.disable"
+                binding =
+                    {|
+                        kind = "PEOPLE"
+                        actorId = serviceActor
+                        expectedRevision = reviewedActorRevision fixture serviceActor
+                    |}
+                inputs = dict []
+            |}
+
+    // Permit the first page to finish, then remove the reader's authority before continuation.
+    fixture.TransformNextReply(
+        ExportTransport.path,
+        fun first ->
+            CliCalls.run fixture environment disable 0 |> require "ACCEPTED" |> ignore
+            first
+    )
+
+    let interrupted =
+        invoke
+            fixture
+            fixture.Environment
+            [
+                "case"
+                "summary"
+                "--format"
+                "csv"
+                "--text"
+                prefix
+                "--group-by"
+                "received-month"
+                "--all"
+            ]
+            Array.empty
+            2
+
+    Expect.equal interrupted.ExitCode 2 "Authorization changed between the first and second pages"
+
+    let delivered =
+        Encoding.UTF8
+            .GetString(interrupted.StandardOutput)
+            .Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
+
+    Expect.sequenceEqual
+        delivered
+        all[..50]
+        "The first audited page remains complete with one header"
+
+    Expect.stringContains
+        (Encoding.UTF8.GetString interrupted.StandardError)
+        "The CSV export ended before all rows were delivered."
+        "Partial output is marked incomplete"
 
 let publishedRelatedDirections =
     testCaseAsync
@@ -547,27 +625,36 @@ let publishedRelatedDirections =
                     do! fixture.Start()
                     setup fixture
                     let prefix = "NATIVELINK-" + String.replicate 19 "R"
-                    let a, b, c = prefix + "-A", prefix + "-B", prefix + "-C"
-                    let hidden = "UNREADABLE-RELATED-" + (id ()).Substring(24)
-                    let cases = [ a; b; c; hidden ] |> List.map (fun reference -> reference, id ())
 
-                    for reference, operation in cases do
-                        automation
-                            fixture
-                            "operation.execute"
-                            {|
-                                operationId = operation
-                                task = "case.open"
-                                binding =
-                                    {|
-                                        kind = "CASE"
-                                        expectedRevision = 0
-                                    |}
-                                inputs = dict [ "field:caseReference", reference ]
-                            |}
-                            0
-                        |> require "ACCEPTED"
-                        |> ignore
+                    let openCase policy =
+                        let operation = id ()
+
+                        let receipt =
+                            automation
+                                fixture
+                                "operation.execute"
+                                {|
+                                    operationId = operation
+                                    task = "case.open"
+                                    binding =
+                                        {|
+                                            kind = "CASE"
+                                            expectedRevision = 0
+                                        |}
+                                    inputs = dict [ "field:policyNumber", policy ]
+                                |}
+                                0
+                            |> require "ACCEPTED"
+
+                        (receipt.GetProperty("subject").GetProperty("caseReference").GetString()
+                         |> nonNull),
+                        operation
+
+                    let a, aId = openCase (prefix + "-A")
+                    let b, bId = openCase (prefix + "-B")
+                    let c, cId = openCase (prefix + "-C")
+                    let hidden, hiddenId = openCase ("UNREADABLE-RELATED-" + (id ()).Substring(24))
+                    let cases = [ a, aId; b, bId; c, cId; hidden, hiddenId ]
 
                     let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
 

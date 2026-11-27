@@ -28,7 +28,7 @@ let peopleRequest =
 let snapshot =
     let fields: CaseFields =
         {
-            CaseReference = CaseFixtures.reference "x"
+            CaseReference = CaseFixtures.reference "CC-5NRH-CGNQ-4TR4-80B2-30"
             Handling = Handling.Open
             Registration =
                 CaseFixtures.registration (
@@ -45,7 +45,7 @@ let snapshot =
 
     {
         CaseId = CaseFixtures.caseId id
-        Reference = CaseFixtures.reference "x"
+        Reference = CaseFixtures.reference "CC-5NRH-CGNQ-4TR4-80B2-30"
         Revision = CaseFixtures.revision 1L
         State = CaseState.Active(fields)
     }
@@ -66,7 +66,7 @@ let receipt: OperationReceipt =
             ReceiptSubject.Case
                 {
                     CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
-                    Reference = CaseFixtures.reference "x"
+                    Reference = CaseFixtures.reference "CC-5NRH-CGNQ-4TR4-80B2-30"
                     Revision = CaseFixtures.revision 1L
                     Act = (TaskId.ofLiteral "case.open")
                     Snapshot = SnapshotDisclosure.Withheld

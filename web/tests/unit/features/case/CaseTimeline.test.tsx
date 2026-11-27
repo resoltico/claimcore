@@ -12,7 +12,7 @@ const requestText = (body: unknown): string => {
   }
   return body;
 };
-const target = { kind: "REFERENCE", caseReference: "CASE-1" } as const;
+const target = { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" } as const;
 it("requests one unfiltered timeline, shows names and core differences, and resets on server filter selection", async () => {
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((_url, init) => {
     const input = JSON.parse(requestText(init?.body)) as { filter?: string };
@@ -167,7 +167,7 @@ it("uses the supplied event timeline and appends pages in core order", async () 
 });
 
 it.each([
-  { kind: "REFERENCE", caseReference: "CASE-1" },
+  { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
   { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
 ] as const)(
   "retains the same supplied row for equivalent $kind selectors and reloads changed selectors",
@@ -207,7 +207,7 @@ it.each([
     const changed =
       selector.kind === "ID"
         ? { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000002" }
-        : { kind: "REFERENCE" as const, caseReference: "CASE-2" };
+        : { kind: "REFERENCE" as const, caseReference: "CC-6XBX-RTDQ-XE13-CG4W-91" };
     await act(async () => {
       view.rerender(<CaseTimeline target={changed} />);
       await Promise.resolve();

@@ -31,17 +31,14 @@ let lifecycleEmptyView =
             let emptyScope = "There are no cases in your accessible scope."
             Expect.stringContains (render []) emptyScope "The fresh register has no readable cases"
 
-            let reference = "CLI-LIFECYCLE"
+            let opened =
+                invoke fixture environment [ "case"; "open"; "--format"; "json" ] Array.empty 0
+                |> parse 0
+                |> require "ACCEPTED"
 
-            invoke
-                fixture
-                environment
-                [ "case"; "open"; "--format"; "json"; "--case-reference"; reference ]
-                Array.empty
-                0
-            |> parse 0
-            |> require "ACCEPTED"
-            |> ignore
+            let reference =
+                opened.GetProperty("subject").GetProperty("caseReference").GetString()
+                |> nonNull
 
             Expect.stringContains
                 (render [ "--limit"; "1" ])
@@ -63,106 +60,9 @@ let lifecycleEmptyView =
             fixture.Complete()
         })
 
-let private historicalReference (fixture: PublishedFixture.Fixture) environment =
-    let earlier = "CLI-EARLIER-" + (id ()).Substring(24)
-    let current = "CLI-CURRENT-" + (id ()).Substring(24)
-
-    let opened =
-        invoke
-            fixture
-            environment
-            [
-                "case"
-                "open"
-                "--operation-id"
-                id ()
-                "--format"
-                "json"
-                "--case-reference"
-                earlier
-            ]
-            Array.empty
-            0
-        |> parse 0
-        |> require "ACCEPTED"
-
-    invoke
-        fixture
-        environment
-        [
-            "case"
-            "change-reference"
-            "--operation-id"
-            id ()
-            "--expected-revision"
-            "1"
-            "--new-reference"
-            current
-            "--format"
-            "json"
-            "--"
-            earlier
-        ]
-        Array.empty
-        0
-    |> parse 0
-    |> require "ACCEPTED"
-    |> ignore
-
-    let search = [ "case"; "list"; "--text=" + earlier ]
-    let data = verb fixture environment search 0 |> require "SUCCEEDED"
-    let exact = data.GetProperty "exactReference"
-
-    Expect.equal
-        (exact.GetProperty("caseId").GetString())
-        (opened.GetProperty("subject").GetProperty("caseId").GetString())
-        "The authorized exact DATA result identifies the same case"
-
-    Expect.equal (exact.GetProperty("caseReference").GetString()) current "Current reference"
-    Expect.equal (exact.GetProperty("matchedReference").GetString()) earlier "Historical reference"
-
-    let render arguments =
-        invoke
-            fixture
-            environment
-            (arguments @ [ "--format"; "text"; "--language"; "en" ])
-            Array.empty
-            0
-        |> _.StandardOutput
-        |> Encoding.UTF8.GetString
-
-    let text = render search
-    let prefix = "claimcore case get "
-    let position = text.IndexOf(prefix, StringComparison.Ordinal)
-
-    Expect.isGreaterThanOrEqual position 0 "Native hints include the historical selector"
-
-    let command = text.Substring(position).Split('\n') |> Array.head |> _.TrimEnd('\r')
-    Expect.equal command (prefix + earlier) "Copy the exact historical hint"
-
-    let operand = command.Substring(prefix.Length)
-
-    let followed =
-        invoke
-            fixture
-            environment
-            [ "case"; "get"; "--format"; "text"; "--language"; "en"; "--"; operand ]
-            Array.empty
-            0
-        |> _.StandardOutput
-        |> Encoding.UTF8.GetString
-
-    Expect.stringContains followed current "Following the hint renders the current reference"
-
-    Expect.stringContains
-        followed
-        ("Reference changed from: " + earlier)
-        "Following the hint preserves the same historical context"
-
 let qualify (fixture: PublishedFixture.Fixture) =
     let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
-    let reference = "CLI-WORK-" + (id ()).Substring(24)
-    historicalReference fixture environment
+    let mutable reference = ""
 
     let context =
         human fixture "synthetic-owner" "context" {| |} 0 |> require "SUCCEEDED"
@@ -241,8 +141,6 @@ let qualify (fixture: PublishedFixture.Fixture) =
             [
                 "case"
                 "open"
-                "--case-reference"
-                reference
                 "--operation-id"
                 id ()
                 "--incident-date"
@@ -264,6 +162,10 @@ let qualify (fixture: PublishedFixture.Fixture) =
             ]
             0
         |> require "ACCEPTED"
+
+    reference <-
+        opened.GetProperty("subject").GetProperty("caseReference").GetString()
+        |> nonNull
 
     Expect.equal
         (opened.GetProperty("subject").GetProperty("revision").GetInt64())

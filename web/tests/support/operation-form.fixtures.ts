@@ -86,7 +86,7 @@ export const bindingFor = (kind = "case.close"): OperationBinding =>
         kind: "CASE",
         target: {
           kind: "REFERENCE",
-          caseReference: "CASE-SERIALIZATION",
+          caseReference: "CC-3PBY-1JRP-Z70W-2VXH-71",
         },
         expectedRevision: current.subject.revision,
       };

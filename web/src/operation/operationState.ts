@@ -127,7 +127,7 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     return state;
   }
   const reviewed = reviewedForExecution(state);
-  if (operationBusy(state) || (phase.kind !== "UNRESOLVED" && !reviewed)) {
+  if (operationBusy(state) || (phase.kind === "UNRESOLVED" ? phase.recoveryOnly : !reviewed)) {
     return state;
   }
   const source = operationSource(phase);
@@ -286,11 +286,13 @@ type RefuseAction = Extract<
 >;
 const refusedPhase = (
   retainUncertainty: boolean,
+  recoveryOnly: boolean,
   source: ReturnType<typeof operationSource>,
 ): OperationPhase =>
   retainUncertainty && source !== null
     ? {
         kind: "UNRESOLVED",
+        recoveryOnly,
         source,
         pending: null,
       }
@@ -338,12 +340,16 @@ const refuse = (state: OperationState, action: RefuseAction): OperationState => 
     return state;
   }
   const source = operationSource(state.delivery.phase);
-  const sticky = uncertain(state.delivery.phase) || action.uncertain;
+  const { phase } = state.delivery;
+  const sticky = uncertain(phase) || action.uncertain;
+  const recoveryOnly =
+    (phase.kind === "UNRESOLVED" && phase.recoveryOnly) ||
+    (action.notice.kind === "local" && action.notice.reason === "receiptUnavailable");
   const next = {
     ...state,
     delivery: {
       ...state.delivery,
-      phase: refusedPhase(sticky, source),
+      phase: refusedPhase(sticky, recoveryOnly, source),
       notice: deliveryStatus(action.notice),
     },
     disclosed: {
@@ -916,6 +922,7 @@ export const operationView = (state: OperationState) => {
     phase: phase.kind,
     busy: operationBusy(state),
     priorUncertain: uncertain(phase),
+    recoveryOnly: phase.kind === "UNRESOLVED" && phase.recoveryOnly,
     protectsIntent: protectsIntent(state),
     prepared: source?.prepared ?? null,
     review,

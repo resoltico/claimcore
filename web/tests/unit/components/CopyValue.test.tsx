@@ -22,13 +22,13 @@ const clipboard = (writeText: (value: string) => Promise<void>) => {
 it("clears clipboard success when the value or presentation label changes", async () => {
   const user = userEvent.setup();
   clipboard(vi.fn().mockResolvedValue(undefined));
-  const view = render(<CopyValue label="reference" value="CASE-1" />);
+  const view = render(<CopyValue label="reference" value="CC-55KW-SSJ4-8HMS-G1BH-73" />);
   await user.click(screen.getByRole("button"));
   expect(screen.getByText("reference copied.")).toBeVisible();
-  view.rerender(<CopyValue label="reference" value="CASE-2" />);
+  view.rerender(<CopyValue label="reference" value="CC-6XBX-RTDQ-XE13-CG4W-91" />);
   expect(screen.queryByText("reference copied.")).toBeNull();
   await user.click(screen.getByRole("button"));
-  view.rerender(<CopyValue label="summary" value="CASE-2" />);
+  view.rerender(<CopyValue label="summary" value="CC-6XBX-RTDQ-XE13-CG4W-91" />);
   expect(screen.queryByText("summary copied.")).toBeNull();
 });
 
@@ -37,15 +37,15 @@ it("ignores late clipboard completion after the displayed value changes away and
   const pending = clipboardAttempt();
   const writeText = vi.fn().mockReturnValue(pending.promise);
   clipboard(writeText);
-  const view = render(<CopyValue label="reference" value="CASE-1" />);
+  const view = render(<CopyValue label="reference" value="CC-55KW-SSJ4-8HMS-G1BH-73" />);
   await user.click(screen.getByRole("button"));
-  view.rerender(<CopyValue label="reference" value="CASE-2" />);
-  view.rerender(<CopyValue label="reference" value="CASE-1" />);
+  view.rerender(<CopyValue label="reference" value="CC-6XBX-RTDQ-XE13-CG4W-91" />);
+  view.rerender(<CopyValue label="reference" value="CC-55KW-SSJ4-8HMS-G1BH-73" />);
   await act(() => {
     pending.resolve();
     return pending.promise;
   });
-  expect(writeText).toHaveBeenCalledWith("CASE-1");
+  expect(writeText).toHaveBeenCalledWith("CC-55KW-SSJ4-8HMS-G1BH-73");
   expect(screen.queryByText("reference copied.")).toBeNull();
 });
 
@@ -54,7 +54,7 @@ it("binds clipboard fallback to the latest attempted exact value", async () => {
   const old = clipboardAttempt();
   const recent = clipboardAttempt();
   clipboard(vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(recent.promise));
-  const view = render(<CopyValue label="reference" value="CASE-1" />);
+  const view = render(<CopyValue label="reference" value="CC-55KW-SSJ4-8HMS-G1BH-73" />);
   await user.click(screen.getByRole("button"));
   await user.click(screen.getByRole("button"));
   await act(() => {

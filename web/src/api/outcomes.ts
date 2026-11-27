@@ -45,6 +45,9 @@ export const resultNotice = (result: ApiResult<EndpointOutcome>): Notice => {
   if (outcome.kind === "NOT_ACCEPTED") {
     return localNotice("notAccepted");
   }
+  if (outcome.kind === "RECEIPT_UNAVAILABLE") {
+    return localNotice("receiptUnavailable");
+  }
   if (outcome.kind === "OUTCOME_UNKNOWN") {
     return localNotice("outcomeUnknown");
   }

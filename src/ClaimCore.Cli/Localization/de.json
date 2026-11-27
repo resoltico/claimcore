@@ -385,10 +385,6 @@
     "text": "Halten Sie an und bitten Sie einen Administrator, die Ursache zu untersuchen.",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "Wählen Sie ein anderes Aktenzeichen.",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "Bitten Sie einen Inhaber, Ihren Zugriff zu prüfen.",
     "source": "a18257b39d89"

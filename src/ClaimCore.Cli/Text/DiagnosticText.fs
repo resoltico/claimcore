@@ -75,7 +75,6 @@ module internal DiagnosticText =
             | RecommendedAction.ReadCurrent -> Some CliMessage.NextReadCurrent
             | RecommendedAction.RetrySafe -> Some CliMessage.NextRetrySafe
             | RecommendedAction.StopAndInvestigate -> Some CliMessage.NextInvestigate
-            | RecommendedAction.ChooseAnotherReference -> Some CliMessage.NextChooseReference
             | RecommendedAction.AskForAccess ->
                 Some(
                     required

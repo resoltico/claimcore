@@ -49,7 +49,6 @@ type ExactCaseReference =
     {
         CaseId: CaseId
         CaseReference: CaseReference
-        MatchedReference: CaseReference option
     }
 
 type CaseSummaryPage =

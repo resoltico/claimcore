@@ -7,7 +7,7 @@ open ClaimCore.TestSupport
 
 let private fields: CaseFields =
     {
-        CaseReference = CaseFixtures.reference "CORE-HISTORY"
+        CaseReference = CaseFixtures.reference "CC-8JBJ-CAB4-7BQ1-WBX7-44"
         Handling = Handling.Open
         Registration = DomainInputs.admittedRegistration DomainInputs.registration
         Finance = FinancialPosition.undecided

@@ -385,10 +385,6 @@
     "text": "操作を中止し、管理者に調査を依頼してください。",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "別の案件番号を選択してください。",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "所有者にアクセス権限の確認を依頼してください。",
     "source": "a18257b39d89"

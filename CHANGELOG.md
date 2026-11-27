@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - Start a [fresh format-12 installation](docs/operating.md#install-a-fresh-register). Settle old attempts or retain their IDs, database, keys, browser profile and matching build.
+- ClaimCore issues permanent case references. Remove custom-reference and reference-change inputs. Record external identifiers in erasable business fields.
 - Provision an independent PostgreSQL recovery witness with separate owner and runtime credentials. Configure both connections before initializing the register.
 - Fence the witness and isolate old hosts and SMTP before restore. Retain WAL and timeline history, or record an explicit disclosure gap before admission seals the decision.
 - If a prepared restore target is permanently lost, the witness owner can [supersede its pending attempt](docs/operating.md#backups-and-restore) without reopening traffic.
@@ -17,6 +18,11 @@
 - Recover healthy operations even when another local record is damaged. CLI JSON listings report the count of unreadable records.
 - Restart cursor traversals after encryption generation rotation. Keep older wrapping keys for retained same-format backups.
 - Scoped continuations reuse unchanged authorized evidence and bounded reports. An operation lookup releases read capacity before queued confirmation.
+- Use the original operation ID to recover when the action settles but its private receipt is unavailable.
+- Audit protected read surfaces and redact refused selectors. Filter timeline reads separately from case detail. The trail fixes its starting upper bound when you page through it.
+- Use bounded server CSV in Web and CLI. Add `--all` to stream audited CLI pages and check the exit status before using the resulting file.
+- Erasing either case closes related-case links and clears their protected notes and targets. Source handlers can detach an active link when the target is inaccessible.
+- Private endpoint views in Web start masked when hidden or offline. Activation and foreground expiry require a fresh authorized result.
 
 ## [0.23.0] - 2026-11-26
 

@@ -38,7 +38,7 @@ let private authoredIntent =
                     Task = (TaskId.ofLiteral "case.amendRegistration")
                     Binding =
                         OperationBinding.Case(
-                            CaseSelector.Reference "SPELLED-Target",
+                            CaseSelector.Reference "CC-28NA-MDGJ-3BR0-ES3F-51",
                             revision,
                             None,
                             None

@@ -162,7 +162,8 @@ let tests =
 
                 let control =
                     { action () with
-                        Seeds = Map.ofList [ reference, InputValue.Text "CASE-1" ]
+                        Seeds =
+                            Map.ofList [ reference, InputValue.Text "CC-55KW-SSJ4-8HMS-G1BH-73" ]
                         Editable = [ closingNote ]
                     }
 

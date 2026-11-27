@@ -27,9 +27,12 @@
                   "outcome": "SUCCEEDED",
                   "export": {
                     "query": "case.list",
-                    "selection": [
-                      { "key": "view", "value": "NEEDS_ATTENTION" }
-                    ],
+                    "selection": {
+                      "filtered": true,
+                      "paged": false,
+                      "order": "REFERENCE",
+                      "grouping": null
+                    },
                     "rowCount": 12
                   }
                 }
@@ -37,6 +40,32 @@
             ],
             "nextCursor": "disclosure-page-two"
           }
+        }
+      }
+    },
+    {
+      "name": "operation.execute-receipt-unavailable",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "outcome": {
+          "kind": "RECEIPT_UNAVAILABLE",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "operation.execute-receipt-unavailable-rejects-private-detail",
+      "endpoint": "operation.execute",
+      "valid": false,
+      "value": {
+        "representation": "DATA",
+        "operationId": "10000000-0000-7000-8000-000000000001",
+        "outcome": {
+          "kind": "RECEIPT_UNAVAILABLE",
+          "data": { "caseReference": "CC-MT7E-RJR6-QWHA-6REM-91" }
         }
       }
     },
@@ -329,12 +358,12 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
-            "caseReference": "x",
+            "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
             "revision": 1,
             "state": {
               "kind": "ACTIVE",
               "fields": {
-                "caseReference": "x",
+                "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
                 "registration": {
                   "incidentDate": "2026-01-01",
                   "receivedDate": "2026-01-01",
@@ -377,14 +406,6 @@
                 },
                 {
                   "act": "case.amendRegistration",
-                  "reason": {
-                    "code": "NOT_AUTHORIZED",
-                    "action": "ASK_FOR_ACCESS",
-                    "required": "REGISTER"
-                  }
-                },
-                {
-                  "act": "case.changeReference",
                   "reason": {
                     "code": "NOT_AUTHORIZED",
                     "action": "ASK_FOR_ACCESS",
@@ -595,7 +616,7 @@
           "data": {
             "items": [
               {
-                "caseReference": "CASE-001",
+                "caseReference": "CC-XE9K-MAK4-MB6P-FXMR-33",
                 "revision": 1,
                 "state": {
                   "kind": "ACTIVE",
@@ -628,7 +649,7 @@
                 "netPaid": null
               },
               {
-                "caseReference": "CASE-002",
+                "caseReference": "CC-DXVB-7GBM-T0DE-MJGH-22",
                 "revision": 2,
                 "state": {
                   "kind": "VOIDED",
@@ -658,7 +679,7 @@
                 "netPaid": null
               },
               {
-                "caseReference": "CASE-003",
+                "caseReference": "CC-PM0N-VGH8-3ZA8-9QE1-08",
                 "revision": 3,
                 "state": {
                   "kind": "ERASED"
@@ -682,7 +703,7 @@
             "offers": [
               {
                 "kind": "case.open",
-                "editable": ["field:incidentDate", "field:caseReference"]
+                "editable": ["field:incidentDate"]
               },
               {
                 "kind": "PEOPLE_ACT",
@@ -712,8 +733,7 @@
             },
             "exactReference": {
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "CASE-001",
-              "matchedReference": null
+              "caseReference": "CC-XE9K-MAK4-MB6P-FXMR-33"
             },
             "authorizedScopeEmpty": false
           }
@@ -842,7 +862,7 @@
               "timeZone": "Etc/UTC"
             },
             "caseId": "40000000-0000-7000-8000-000000000001",
-            "caseReference": "CASE-001",
+            "caseReference": "CC-XE9K-MAK4-MB6P-FXMR-33",
             "items": [
               {
                 "operationId": "20000000-0000-7000-8000-000000000003",
@@ -1103,7 +1123,7 @@
                         "before": null,
                         "after": {
                           "kind": "REFERENCE",
-                          "value": "CASE-001"
+                          "value": "CC-XE9K-MAK4-MB6P-FXMR-33"
                         }
                       }
                     },
@@ -1281,7 +1301,7 @@
             },
             "subject": {
               "kind": "CASE",
-              "caseReference": "x",
+              "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
               "revision": 1,
               "act": "case.open",
               "snapshot": {
@@ -1289,7 +1309,7 @@
                 "state": {
                   "kind": "ACTIVE",
                   "fields": {
-                    "caseReference": "x",
+                    "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
                     "registration": {
                       "incidentDate": "2026-01-01",
                       "receivedDate": "2026-01-01",
@@ -1366,7 +1386,7 @@
               },
               "subject": {
                 "kind": "CASE",
-                "caseReference": "x",
+                "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
                 "revision": 1,
                 "act": "case.open",
                 "snapshot": {
@@ -1374,7 +1394,7 @@
                   "state": {
                     "kind": "ACTIVE",
                     "fields": {
-                      "caseReference": "x",
+                      "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
                       "registration": {
                         "incidentDate": "2026-01-01",
                         "receivedDate": "2026-01-01",
@@ -1440,7 +1460,7 @@
               "target": {
                 "kind": "CASE",
                 "caseId": "10000000-0000-7000-8000-000000000001",
-                "caseReference": "x"
+                "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30"
               },
               "binding": {
                 "kind": "CASE",
@@ -1463,7 +1483,7 @@
                     "changes": {
                       "values": {
                         "before": {
-                          "caseReference": "x",
+                          "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
                           "registration": {
                             "incidentDate": "2026-01-01",
                             "receivedDate": "2026-01-01",
@@ -1487,7 +1507,7 @@
                           }
                         },
                         "after": {
-                          "caseReference": "x",
+                          "caseReference": "CC-5NRH-CGNQ-4TR4-80B2-30",
                           "registration": {
                             "incidentDate": "2025-12-28",
                             "receivedDate": "2025-12-29",
@@ -1659,7 +1679,7 @@
                 "state": "PENDING",
                 "doneOn": null
               },
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
               "recordedBy": {
                 "actorId": "40000000-0000-7000-8000-000000000001",
@@ -1710,7 +1730,7 @@
                   "state": "PENDING",
                   "doneOn": null
                 },
-                "caseReference": "NARRATIVE-REMINDERS",
+                "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
                 "recordedBy": {
                   "actorId": "40000000-0000-7000-8000-000000000001",
@@ -1742,7 +1762,7 @@
                   "state": "COMPLETED",
                   "doneOn": "2026-11-02"
                 },
-                "caseReference": "NARRATIVE-REMINDERS",
+                "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
                 "recordedBy": {
                   "actorId": "40000000-0000-7000-8000-000000000001",
@@ -1769,7 +1789,7 @@
                   "state": "CANCELLED",
                   "doneOn": null
                 },
-                "caseReference": "NARRATIVE-REMINDERS",
+                "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
                 "recordedBy": {
                   "actorId": "40000000-0000-7000-8000-000000000001",
@@ -2019,7 +2039,7 @@
             "subject": {
               "kind": "WORK",
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92",
               "revision": 1,
               "act": "work.update",
               "snapshot": {
@@ -2078,7 +2098,7 @@
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-7000-8000-000000000001",
-              "caseReference": "NARRATIVE-REMINDERS",
+              "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92",
               "act": "reminder.create",
               "effects": {
                 "kind": "SINGLE",
@@ -2166,7 +2186,7 @@
                 "cases": [
                   {
                     "caseId": "20000000-0000-7000-8000-000000000001",
-                    "caseReference": "Case-777"
+                    "caseReference": "CC-29Q9-4EKW-Q9QF-F7RY-47"
                   }
                 ]
               },
@@ -2261,7 +2281,7 @@
               "target": {
                 "kind": "CASE",
                 "caseId": "20000000-0000-7000-8000-000000000001",
-                "caseReference": "NARRATIVE-REMINDERS"
+                "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92"
               },
               "binding": {
                 "kind": "WORK",
@@ -2339,7 +2359,7 @@
               "target": {
                 "kind": "CASE",
                 "caseId": "20000000-0000-7000-8000-000000000001",
-                "caseReference": "NARRATIVE-REMINDERS"
+                "caseReference": "CC-H64K-AT5K-8PMK-NQ81-92"
               },
               "binding": {
                 "kind": "REMINDER",
@@ -2659,7 +2679,7 @@
               "timeZone": "Etc/UTC"
             },
             "caseId": "10000000-0000-7000-8000-000000000001",
-            "reference": "CASE-1",
+            "reference": "CC-55KW-SSJ4-8HMS-G1BH-73",
             "disclosure": 1,
             "items": [],
             "canAdd": false
@@ -2682,7 +2702,7 @@
               "timeZone": "Etc/UTC"
             },
             "caseId": "10000000-0000-7000-8000-000000000001",
-            "caseReference": "CASE-1",
+            "caseReference": "CC-55KW-SSJ4-8HMS-G1BH-73",
             "notes": {
               "items": [],
               "count": 0,
@@ -2812,7 +2832,7 @@
                 "kind": "REVIEW",
                 "confirmation": {
                   "kind": "CASE_REFERENCE",
-                  "reference": "AUTHORED-CASE"
+                  "reference": "CC-0000-0000-0000-0000-98"
                 },
                 "consequence": "ROUTINE"
               }
@@ -3016,7 +3036,7 @@
               "timeZone": "Etc/UTC"
             },
             "caseId": "20000000-0000-7000-8000-000000000001",
-            "caseReference": "PAYMENTS-1",
+            "caseReference": "CC-2M7N-HG9H-CRT3-APZT-07",
             "revision": 1,
             "state": {
               "kind": "ACTIVE",

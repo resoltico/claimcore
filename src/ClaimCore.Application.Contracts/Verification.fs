@@ -47,7 +47,7 @@ type VerificationFinding =
     | Head
     | CheckpointInstallation
     | CheckpointPredatesBootstrap
-    | BootstrapPolicy
+    | Bootstrap
     | ExpiryFrontier
     | ExpectedPosition
 

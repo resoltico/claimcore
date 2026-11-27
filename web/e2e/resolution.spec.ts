@@ -100,8 +100,10 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `STORAGE-REFUSAL-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `STORAGE-REFUSAL-${randomUUID().slice(0, 8)}`,
+  );
   await startClose(page);
   const previewed = page.waitForRequest((request) =>
     request.url().endsWith("/api/operation.preview"),

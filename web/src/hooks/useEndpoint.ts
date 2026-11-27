@@ -48,15 +48,16 @@ export const useEndpoint = <K extends EndpointId>(
   );
   const snapshot = useCallback(() => cache.snapshot(key), [cache, key]);
   const state = useSyncExternalStore(subscribe, snapshot, snapshot);
+  const display = cache.display();
   const request = useCallback(
     (signal: AbortSignal) => requestEndpoint(endpoint, credential, input, signal, installationId),
     [endpoint, credential, input, installationId],
   );
   useEffect(() => {
-    if (active && state.loading) {
+    if (active && state.loading && cache.admitsDisplay(display)) {
       void cache.fetch(key, request);
     }
-  }, [cache, key, request, state.loading, active]);
+  }, [active, cache, display, key, request, state.loading]);
   const screen = window.location.pathname;
   const refreshRequest = useRef(request);
   useLayoutEffect(() => {

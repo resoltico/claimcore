@@ -93,9 +93,18 @@ let private qualify
         // The service was admitted just before the synthetic browser flow. A real newly
         // issued credential needs an unambiguous whole second beyond the clock lead.
         do! Task.Delay(TimeSpan.FromSeconds 3., token)
-        do! qualifyBearers server.Issuer identity host.Client credentials.RootElement cookies
+
+        do!
+            qualifyBearers
+                server.Issuer
+                identity
+                host.Client
+                credentials.RootElement
+                cookies
+                core.CaseId
+
         stage "CLI client credentials"
-        do! CliIdentityClient.qualify server host.Client core.InstallationId stage token
+        do! CliIdentityClient.qualify server host.Client core.InstallationId core.CaseId stage token
         stage "signing-key rotation"
         do! qualifyRotation server.Issuer identity host.Client credentials.RootElement
     }

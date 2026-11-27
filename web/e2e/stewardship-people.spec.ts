@@ -123,8 +123,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   browser,
 }) => {
   await openAuthenticated(page);
-  const reference = `STEWARD-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `STEWARD-${randomUUID().slice(0, 8)}`);
   const ownerHistory = page.locator(".case-timeline-panel");
   await ownerHistory.getByRole("button", { name: "View details", exact: true }).first().click();
   const ownerDetails = page.getByRole("dialog", { name: "View details", exact: true });
@@ -379,8 +378,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
 }, testInfo) => {
   await openAuthenticated(page);
   const source = await syntheticPrincipals();
-  const reference = `PEOPLE-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `PEOPLE-${randomUUID().slice(0, 8)}`);
   await goToView(page, "people");
   const subject = `browser-service-${randomUUID()}`;
   const name = `Authored browser service ${randomUUID()}`;

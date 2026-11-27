@@ -25,32 +25,21 @@ let tests =
                 let! admin = caseWorker database.Fixture |> Async.AwaitTask
                 let token = CancellationToken.None
 
-                let openCase number reference =
+                let openCase number =
                     task {
-                        let! reply =
-                            Service.executeSubmission
-                                admin
-                                ((ClaimCore.TestSupport.Submissions.createRaw
-                                    "case.open"
-                                    (id number)
-                                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
-                                    (ClaimCore.TestSupport.Submissions.fields (
-                                        RegistrationInput.values (registration)
-                                     )
-                                     |> Map.add
-                                         (TaskInputId.Target(
-                                             InputTarget.Field BusinessField.CaseReference
-                                         ))
-                                         (ClaimCore.Application.Contracts.SubmissionValue.Text(
-                                             reference
-                                         )))))
-                                token
+                        let submission =
+                            Submissions.createRaw
+                                "case.open"
+                                (id number)
+                                (OperationBinding.CaseNew 0L)
+                                (Submissions.fields (RegistrationInput.values registration))
 
+                        let! reply = Service.executeSubmission admin submission token
                         return (accepted reply |> caseReceipt).CaseId
                     }
 
-                let! parent = openCase 1002 "ASSIGNMENT-PARENT" |> Async.AwaitTask
-                let! other = openCase 1003 "ASSIGNMENT-OTHER" |> Async.AwaitTask
+                let! parent = openCase 1002 |> Async.AwaitTask
+                let! other = openCase 1003 |> Async.AwaitTask
 
                 let register number name create =
                     task {

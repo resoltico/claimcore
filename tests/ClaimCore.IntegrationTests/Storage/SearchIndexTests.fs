@@ -96,8 +96,7 @@ let private freshOwner () =
                 }
 
             let! installation =
-                administration.Initialize("Etc/UTC", initialOwner, None, token)
-                |> Async.AwaitTask
+                administration.Initialize("Etc/UTC", initialOwner, token) |> Async.AwaitTask
 
             let installed = installation.InstallationId
 
@@ -329,7 +328,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
                     "work.update"
                     (id database.Fixture 103)
                     (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "GIN-WORK"),
+                        (caseTarget database.Fixture "GIN-WORK"),
                         (0L)
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
@@ -354,7 +353,9 @@ let private literalLifecycle (database: PostgresFixture.Database) =
             }
 
         let references (page: CaseSummaryPage) =
-            page.Items |> List.map (fun item -> CaseReference.format item.Reference)
+            page.Items
+            |> List.map (fun item -> caseAlias database.Fixture item.CaseId)
+            |> List.sort
 
         let! before = Service.list actor pageRequest token
 
@@ -456,7 +457,8 @@ let private literalLifecycle (database: PostgresFixture.Database) =
 
         let selected (page: ClaimCore.Application.Storage.Page<CasePageItem, CaseListPosition>) =
             page.Items
-            |> List.map (fun item -> CaseReference.format item.Case.Snapshot.Reference)
+            |> List.map (fun item -> caseAlias database.Fixture item.Case.CaseId)
+            |> List.sort
 
         let! retained =
             database.Fixture.Store.Read
@@ -509,7 +511,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.cases SET search_text='wrong financial projection',work_search_text='wrong work projection' WHERE case_reference=$1"
-                [| box "GIN-WORK" |]
+                [| box (issuedCaseReference database.Fixture "GIN-WORK") |]
 
         let! rebuilt =
             ProjectionRebuild.rebuild
@@ -563,7 +565,9 @@ let private registrationIdentifiers (database: PostgresFixture.Database) =
                         }
                         token
 
-                return (read reply).Items |> List.map (_.Reference >> CaseReference.format)
+                return
+                    (read reply).Items
+                    |> List.map (fun item -> caseAlias database.Fixture item.CaseId)
             }
 
         let facts =

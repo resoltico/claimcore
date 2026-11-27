@@ -18,5 +18,5 @@ type ChangeReferences =
 [<RequireQualifiedAccess>]
 type ReviewTarget =
     | Case of CaseId * CaseReference
-    | Opening of requested: CaseReference option
+    | Opening
     | Person of ActorRef option

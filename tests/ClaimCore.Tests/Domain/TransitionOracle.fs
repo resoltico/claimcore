@@ -54,13 +54,10 @@ let origin =
     |> OperationId.create
     |> Option.get
 
-let reference = CaseReference.parse "UNIT-001" |> required
+let reference =
+    ClaimCore.TestSupport.DomainInputs.reference "CC-ZQ16-FT6R-54T8-E39K-67"
 
-let opening =
-    witness
-        "case.open"
-        ((BusinessField.CaseReference, "UNIT-001")
-         :: registrationValues "Example Claimant Ltd")
+let opening = witness "case.open" (registrationValues "Example Claimant Ltd")
 
 let decide amount =
     witness
@@ -191,9 +188,7 @@ let offered state =
         |> List.choose (fun witness -> if allows state witness then Some witness.Task else None)
         |> Set.ofList
 
-    match state with
-    | CaseState.Active _ -> Set.add "case.changeReference" existing
-    | _ -> existing
+    existing
 
 let private finance decision paid count =
     let currency = Currency.parse "EUR" |> required

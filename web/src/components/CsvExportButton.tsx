@@ -3,6 +3,7 @@ import { ActionMenu } from "../ui/ActionMenu";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ExportRequest } from "@contracts/client";
 import { routeRevisionSnapshot, subscribeRoute } from "../routing/navigation";
+import { useDisplayGeneration, useEndpointCache } from "../hooks/EndpointProvider";
 import { useSettingsDetour } from "../hooks/SettingsDetourContext";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useSessionContext } from "../session/SessionContext";
@@ -37,6 +38,8 @@ export const CsvExportButton = ({
   label?: "label.exportCsv" | "ui.exportCasesCsv" | "ui.exportReportCsv";
 }) => {
   const p = usePresentation();
+  const cache = useEndpointCache();
+  const display = useDisplayGeneration();
   const requester = useRequesterContext();
   const { state } = useSessionContext();
   const owner = exportOwner(state, requester);
@@ -45,7 +48,7 @@ export const CsvExportButton = ({
   const offered = available && detour?.paused !== true;
   const admitted = offered && owner !== null;
   const credential = state.kind === "authenticated" ? state.token : "";
-  const scope = JSON.stringify([owner, credential, selection, offered, routeRevision]);
+  const scope = JSON.stringify([owner, credential, selection, offered, routeRevision, display]);
   const current = useRef({ owner, scope });
   const active = useRef<{ scope: string; controller: AbortController } | null>(null);
   const downloadUrl = useRef<{ scope: string; dispose: () => void } | null>(null);
@@ -98,7 +101,9 @@ export const CsvExportButton = ({
       return;
     }
     const currentOwner = () =>
-      routeRevisionSnapshot() === routeRevision && current.current.scope === scope
+      cache?.admitsDisplay(display) === true &&
+      routeRevisionSnapshot() === routeRevision &&
+      current.current.scope === scope
         ? current.current.owner
         : null;
     const request = { scope, controller: new AbortController() };

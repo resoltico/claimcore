@@ -37,7 +37,7 @@ const correction: OperationSubmission = {
   task: "case.correct",
   binding: {
     kind: "CASE",
-    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+    target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
     expectedRevision: 1,
   },
   inputs: {
@@ -55,14 +55,14 @@ const review: HumanReview = {
     subject: {
       kind: "REVIEW",
       consequence: "ROUTINE",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+      confirmation: { kind: "CASE_REFERENCE", reference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
     },
     actions: [
       operationAffordance(
         "case.correct",
         {
           kind: "CASE",
-          target: { kind: "REFERENCE", caseReference: "CASE-1" },
+          target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
           expectedRevision: 1,
         },
         {},
@@ -78,7 +78,7 @@ const review: HumanReview = {
             entries: [
               entry("caseReference", "field.caseReference.label", {
                 kind: "REFERENCE",
-                value: "CASE-1",
+                value: "CC-55KW-SSJ4-8HMS-G1BH-73",
               }),
             ],
           },
@@ -86,7 +86,7 @@ const review: HumanReview = {
         details([
           entry("caseReference", "field.caseReference.label", {
             kind: "REFERENCE",
-            value: "CASE-1",
+            value: "CC-55KW-SSJ4-8HMS-G1BH-73",
           }),
           entry("authoredAmount", "field.claimedAmount.label", { kind: "TEXT", value: "12.3400" }),
         ]),
@@ -100,11 +100,13 @@ it("preserves Core-supplied target and technical values without changing the pre
   const { bytes } = prepared;
   render(<ReviewDialog model={operation} />);
   const dialog = screen.getByRole("dialog");
-  expect(dialog.querySelector('[data-region="IDENTITY"]')).toHaveTextContent("CASE-1");
+  expect(dialog.querySelector('[data-region="IDENTITY"]')).toHaveTextContent(
+    "CC-55KW-SSJ4-8HMS-G1BH-73",
+  );
   expect(within(dialog).queryByText("Grant scope", { exact: true })).toBeNull();
   const request = dialog.querySelector<HTMLElement>(".screen-details")!;
   fireEvent.click(request.querySelector("summary")!);
-  expect(within(request).getByText("CASE-1", { exact: true })).toBeVisible();
+  expect(within(request).getByText("CC-55KW-SSJ4-8HMS-G1BH-73", { exact: true })).toBeVisible();
   expect(within(request).getByText("12.3400", { exact: true })).toBeVisible();
   expect(operation.prepared).toBe(prepared);
   expect(prepared.bytes).toBe(bytes);
@@ -123,7 +125,7 @@ const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
     inputs: {
       "input:role": "CASE_READER",
       "input:scope": kind,
-      ...(kind === "CASE" ? { "field:caseReference": "SYNTHETIC-GRANT" } : {}),
+      ...(kind === "CASE" ? { "field:caseReference": "CC-QFK6-T1RE-CE19-5D3N-68" } : {}),
     },
   };
   const proposed: HumanReview = {
@@ -155,7 +157,7 @@ const peopleReviewModel = (kind: "INSTALLATION" | "CASE") => {
               ? [
                   entry("caseReference", "field.caseReference.label", {
                     kind: "REFERENCE",
-                    value: "SYNTHETIC-GRANT",
+                    value: "CC-QFK6-T1RE-CE19-5D3N-68",
                   }),
                 ]
               : []),
@@ -181,7 +183,9 @@ it.each(["INSTALLATION", "CASE"] as const)(
     expect(within(dialog).queryByText("Keep current details", { exact: true })).toBeNull();
     expect(within(dialog).queryByText("PEOPLE", { exact: true })).toBeNull();
     if (kind === "CASE") {
-      expect(within(dialog).getAllByText("SYNTHETIC-GRANT", { exact: true })).toHaveLength(1);
+      expect(
+        within(dialog).getAllByText("CC-QFK6-T1RE-CE19-5D3N-68", { exact: true }),
+      ).toHaveLength(1);
     }
   },
 );
@@ -261,7 +265,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
     task: "case.erase",
     binding: {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
       expectedFamilySequence: 4,
       expectedRevision: 1,
     },
@@ -273,7 +277,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
       ...closeReview.document,
       subject: {
         kind: "REVIEW",
-        confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+        confirmation: { kind: "CASE_REFERENCE", reference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
         consequence: "IRREVERSIBLE",
       },
       actions: [
@@ -281,7 +285,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
           "case.erase",
           {
             kind: "CASE",
-            target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
             expectedFamilySequence: 4,
             expectedRevision: 1,
           },

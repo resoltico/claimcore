@@ -16,7 +16,11 @@ open CliCalls
 
 let private operator (fixture: PublishedFixture.Fixture) arguments expected =
     let result = fixture.Administration arguments
-    Expect.equal result.ExitCode expected "Published operator command exit"
+
+    Expect.equal
+        result.ExitCode
+        expected
+        ("Published operator command exit for " + List.head arguments)
 
     Expect.equal
         result.StandardError.Length
@@ -296,29 +300,34 @@ let private qualify () =
         let installation = trusted.GetProperty("installationId").GetString() |> nonNull
         do! stop fixture
 
-        fixture.FenceRestore(
-            Guid.Parse installation,
-            Guid.Parse "10000000-0000-4000-8000-000000000199"
-        )
+        let transition = Guid.Parse "10000000-0000-4000-8000-000000000199"
+        fixture.FenceRestore(Guid.Parse installation, transition)
 
         do! fixture.RestoreDatabase missingHistoryBackup
 
         operator fixture [ "maintenance"; "acquire"; "0"; "10000000-0000-4000-8000-000000000099" ] 0
         |> ignore
 
-        let missing =
-            operator
-                fixture
-                [
-                    "admit-restored-installation"
-                    "--checkpoint"
-                    checkpoint
-                    "--pause-generation"
-                    "1"
-                    "--pause-id"
-                    "10000000-0000-4000-8000-000000000099"
-                ]
-                5
+        let admission =
+            [
+                "admit-restored-installation"
+                "--checkpoint"
+                checkpoint
+                "--pause-generation"
+                "1"
+                "--pause-id"
+                "10000000-0000-4000-8000-000000000099"
+            ]
+
+        let unproven = operator fixture admission 2
+
+        Expect.equal
+            (unproven.GetProperty("fault").GetString())
+            "STALE_RECOVERY_PREPARATION"
+            "A fence alone cannot authorize a logical restore without WAL proof"
+
+        fixture.RecordRestoreGap(Guid.Parse installation, transition)
+        let missing = operator fixture admission 5
 
         Expect.equal
             (missing.GetProperty("finding").GetString())
@@ -351,19 +360,7 @@ let private qualify () =
             "EXPIRY_FRONTIER"
             "Backup loses only the later trusted expiry observation"
 
-        let admitted =
-            operator
-                fixture
-                [
-                    "admit-restored-installation"
-                    "--checkpoint"
-                    checkpoint
-                    "--pause-generation"
-                    "1"
-                    "--pause-id"
-                    "10000000-0000-4000-8000-000000000099"
-                ]
-                0
+        let admitted = operator fixture admission 0
 
         Expect.equal
             (admitted.GetProperty("invalidatedSessions").GetInt64())

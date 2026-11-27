@@ -43,7 +43,7 @@ let tests =
                 let! actor = caseWorker database.Fixture
                 let token = CancellationToken.None
 
-                for index in 1..10000 do
+                for index in 1..128 do
                     let! reply =
                         Service.executeSubmission
                             actor
@@ -82,14 +82,41 @@ let tests =
                         Service.timeline
                             actor
                             {
-                                Target = CaseSelector.Reference "TIMING-00001"
+                                Target = caseTarget database.Fixture "TIMING-00001"
                                 Filter = None
                                 AfterCursor = None
                                 Limit = 50
                             }
                             token)
 
-                do! measure "work.views" (fun () -> Service.workViews actor () token)
+                // Twenty foreground refreshes over a three-page register exercise repeated audit
+                // writes while the visible contexts and counts still have independent reads.
+                let samples = ResizeArray<float>()
+
+                for _ in 1..20 do
+                    let elapsed = Stopwatch.StartNew()
+                    do! measure "context" (fun () -> Service.context actor () token)
+                    do! measure "work.views" (fun () -> Service.workViews actor () token)
+
+                    do!
+                        measure "case.list" (fun () ->
+                            Service.list
+                                actor
+                                {
+                                    Page = { AfterCursor = None; Limit = 50 }
+                                    Filter = CaseListFilter.empty
+                                }
+                                token)
+
+                    samples.Add elapsed.Elapsed.TotalMilliseconds
+
+                let ordered = samples |> Seq.sort |> Seq.toArray
+
+                printfn
+                    "Foreground refresh, 128 synthetic cases: median %.3f ms, p95 %.3f ms"
+                    ordered[9]
+                    ordered[18]
+
 
                 do!
                     measure "reminder.list" (fun () ->

@@ -25,10 +25,12 @@ let tests =
                 (fun () ->
                     for args, endpoint in
                         [
-                            [ "case"; "get"; "QUERY" ], Api.caseGet.Id
-                            [ "case"; "notes"; "QUERY" ], Api.caseNotes.Id
-                            [ "case"; "payments"; "QUERY" ], Api.casePayments.Id
-                            [ "case"; "timeline"; "QUERY" ], Api.caseTimeline.Id
+                            [ "case"; "get"; "CC-V07E-YNVJ-8QNQ-R3E5-96" ], Api.caseGet.Id
+                            [ "case"; "notes"; "CC-V07E-YNVJ-8QNQ-R3E5-96" ], Api.caseNotes.Id
+                            [ "case"; "payments"; "CC-V07E-YNVJ-8QNQ-R3E5-96" ],
+                            Api.casePayments.Id
+                            [ "case"; "timeline"; "CC-V07E-YNVJ-8QNQ-R3E5-96" ],
+                            Api.caseTimeline.Id
                             [ "people"; "grants"; "00000000-0000-4000-8000-000000000001" ],
                             Api.peopleGrants.Id
                             [ "operation"; "get"; "019aa6a0-0000-7000-8000-000000000001" ],
@@ -43,11 +45,15 @@ let tests =
                     Expect.isError (prepare [ "operation"; "get" ]) "Lookup cannot invent an ID")
             testCase "note and payment defaults remain distinct from a directory page" (fun () ->
                 let notes =
-                    Frames.value Api.caseNotes (invocation [ "case"; "notes"; "QUERY" ])
+                    Frames.value
+                        Api.caseNotes
+                        (invocation [ "case"; "notes"; "CC-V07E-YNVJ-8QNQ-R3E5-96" ])
                     |> Option.get
 
                 let payments =
-                    Frames.value Api.casePayments (invocation [ "case"; "payments"; "QUERY" ])
+                    Frames.value
+                        Api.casePayments
+                        (invocation [ "case"; "payments"; "CC-V07E-YNVJ-8QNQ-R3E5-96" ])
                     |> Option.get
 
                 let actors =
@@ -58,11 +64,11 @@ let tests =
                 Expect.equal actors.Limit 50 "Directory default"
 
                 Expect.isError
-                    (prepare [ "case"; "notes"; "QUERY"; "--limit"; "21" ])
+                    (prepare [ "case"; "notes"; "CC-V07E-YNVJ-8QNQ-R3E5-96"; "--limit"; "21" ])
                     "Note page maximum is enforced at acquisition"
 
                 Expect.isError
-                    (prepare [ "case"; "payments"; "QUERY"; "--limit"; "51" ])
+                    (prepare [ "case"; "payments"; "CC-V07E-YNVJ-8QNQ-R3E5-96"; "--limit"; "51" ])
                     "Payment page maximum")
             testCase "read filters retain separate vocabularies and explicit false" (fun () ->
                 let frame =
@@ -106,7 +112,7 @@ let tests =
                             [ "case"; "list"; "--limit"; "0" ]
                             [ "case"; "list"; "--limit"; "9007199254740992" ]
                             [ "case"; "get"; "CC-0000-0000-0000-0000-01" ]
-                            [ "case"; "notes"; "QUERY"; "--cursor"; "" ]
+                            [ "case"; "notes"; "CC-V07E-YNVJ-8QNQ-R3E5-96"; "--cursor"; "" ]
                             [ "people"; "list"; "--cursor"; String.replicate 513 "x" ]
                         ] do
                         Expect.isError (prepare args) "No malformed typed query can reach delivery")

@@ -49,7 +49,7 @@ const initial: ApiResult<ListResponse> = {
                       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
                     },
                   },
-                  values: [{ kind: "REFERENCE", value: "SYNTHETIC-PRIVATE" }],
+                  values: [{ kind: "REFERENCE", value: "CC-MT7E-RJR6-QWHA-6REM-91" }],
                 },
               ],
             },
@@ -150,16 +150,15 @@ it.each([
     expect(result.current.message).not.toBeNull();
   },
 );
-it("keeps a previously disclosed page retryable after a transient delivery failure", async () => {
+it("masks a previously disclosed page after a transient delivery failure", async () => {
   const result = await loadAfter({
     kind: "deliveryFailure",
     notice: localNotice("incomplete"),
   });
-  expect(result.current.items).toHaveLength(1);
-  expect(result.current.items[0]?.key).toBe("20000000-0000-4000-8000-000000000001");
-  expect(JSON.stringify(result.current.views)).toContain("SYNTHETIC-PRIVATE");
-  expect(result.current.cursor).toBe("continuation");
-  expect(result.current.page).not.toBeNull();
+  expect(result.current.items).toEqual([]);
+  expect(result.current.views).toEqual([]);
+  expect(result.current.cursor).toBeNull();
+  expect(result.current.page).toBeNull();
   expect(result.current.message).not.toBeNull();
 });
 it("does not interpret a local delivery notice as a definite server refusal", () => {

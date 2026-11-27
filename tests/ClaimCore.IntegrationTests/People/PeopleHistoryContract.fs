@@ -80,7 +80,7 @@ let internal factsAndPaging fixture =
         let grant =
             {
                 Role = Role.CaseReader
-                Scope = GrantTarget.CaseReference "HISTORY-CASE"
+                Scope = (caseGrant fixture "HISTORY-CASE")
             }
 
         let! _ =
@@ -272,7 +272,7 @@ let internal permissions fixture =
                 (ClaimCore.TestSupport.Submissions.grant (
                     {
                         Role = Role.Auditor
-                        Scope = GrantTarget.CaseReference "HISTORY-ACCESS"
+                        Scope = (caseGrant fixture "HISTORY-ACCESS")
                     }
                 ))
 

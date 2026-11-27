@@ -12,7 +12,7 @@ let tests =
     testCase "wire case fields use financial facts and reject an extra progress claim" (fun () ->
         let value: CaseFields =
             {
-                CaseReference = DomainInputs.reference "PROGRESS-CORE"
+                CaseReference = DomainInputs.reference "CC-XJR3-0H0C-6E7G-MEY0-04"
                 Handling = Handling.Open
                 Registration = DomainInputs.admittedRegistration DomainInputs.registration
                 Finance = FinancialPosition.undecided

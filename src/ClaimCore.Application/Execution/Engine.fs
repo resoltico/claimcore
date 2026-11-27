@@ -388,14 +388,7 @@ module internal Engine =
             }
 
         task {
-            let! reserved =
-                match opening.Intent with
-                | OpeningIntent.Automatic -> draw 8
-                | OpeningIntent.Custom reference ->
-                    task {
-                        let! reserved = owner reference
-                        return Ok(reference, reserved)
-                    }
+            let! reserved = draw 8
 
             return
                 reserved

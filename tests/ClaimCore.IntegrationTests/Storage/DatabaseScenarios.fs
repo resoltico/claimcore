@@ -191,7 +191,7 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
                     task {
                         try
                             let! installation =
-                                setup.Initialize("Etc/UTC", initialOwner database, None, token)
+                                setup.Initialize("Etc/UTC", initialOwner database, token)
 
                             return Some installation.InstallationId
                         with :? InvalidOperationException ->

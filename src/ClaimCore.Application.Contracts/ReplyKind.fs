@@ -12,6 +12,7 @@ type ReplyKind =
     | Pending
     | Rejected
     | Failed
+    | ReceiptUnavailable
     | OutcomeUnknown
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -51,6 +52,7 @@ module OperationSettlement =
         | ReplyKind.Succeeded
         | ReplyKind.Reviewed
         | ReplyKind.Failed
+        | ReplyKind.ReceiptUnavailable
         | ReplyKind.OutcomeUnknown -> OperationSettlement.Unresolved
 
     let isFinal =

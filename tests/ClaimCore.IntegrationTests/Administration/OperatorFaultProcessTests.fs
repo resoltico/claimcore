@@ -328,7 +328,7 @@ let private publishedFaults () =
 
             do!
                 sql
-                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,case_reference_policy,wrapped_data_key) VALUES(12,$1,'Etc/UTC','CUSTOM_ALLOWED',$2)"
+                    "INSERT INTO claimcore.installation(installation_format,installation_id,business_time_zone,wrapped_data_key) VALUES(12,$1,'Etc/UTC',$2)"
                     [| box database.Fixture.InstallationId; box wrapped |]
 
             do! sql "DELETE FROM claimcore.ledger_head" [||]
@@ -437,13 +437,6 @@ let private publishedFaults () =
                 (result.GetProperty("kind").GetString())
                 "STATUS"
                 "Valid source still works after negative controls"
-
-            let setPolicy policy =
-                sql "UPDATE claimcore.installation SET case_reference_policy=$1" [| box policy |]
-
-            do! setPolicy "SYSTEM_ASSIGNED_ONLY"
-            do! fault connection [ "status" ] "INSTALLATION_INVALID" ExitCode.Rejected
-            do! setPolicy "CUSTOM_ALLOWED"
 
             do! fault connection recovery "OWNER_RECOVERY_NAME_REQUIRED" ExitCode.Rejected
 

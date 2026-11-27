@@ -111,15 +111,22 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
                 (CancellationToken.None))
 
         let receipt = accepted result
-        Expect.equal store.ReadCalls 0 "No state is fetched after commit to shape the receipt"
+        Expect.equal store.ReadCalls 1 "Receipt uses a separate fresh observation after settlement"
 
         Expect.equal
-            (Identifier.format (
-                Registration.policyNumber ((disclosedFields receipt).Registration) |> Option.get
-            ))
-            (RegistrationInput.tryValue BusinessField.PolicyNumber (registration)
-             |> Option.get)
-            "Disclosure uses the write's locked context"
+            receipt.OperationId
+            (CaseFixtures.operationId (id fixture 10))
+            "Original settlement identity"
+
+        Expect.equal
+            (caseReceipt receipt).Revision
+            Revision.first
+            "No later business operation replaces the acceptance"
+
+        Expect.equal
+            (caseReceipt receipt).Snapshot
+            SnapshotDisclosure.Withheld
+            "Revocation before the receipt cut withholds original facts"
 
         Expect.equal
             (receipt.RecordedBy |> AuthorityRef.actor |> Option.get).ActorId
@@ -130,7 +137,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             (Service.get
                 (core fixture principal)
                 ({
-                    Target = CaseSelector.Reference("PROBE-1")
+                    Target = caseTarget fixture "PROBE-1"
                 })
                 (CancellationToken.None))
 
@@ -146,6 +153,6 @@ let tests =
         "committed receipt context"
         [
             testCaseAsync
-                "receipts retain locked disclosure when people and revision change before delivery"
+                "receipts preserve settlement and recheck current disclosure after commit"
                 (run commitSnapshot)
         ]

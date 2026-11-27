@@ -25,9 +25,9 @@ module internal OperationStorage =
         | CompartmentOwner.Family id -> "FAMILY", CaseId.value id
         | CompartmentOwner.Profile id -> "PROFILE", ActorId.value id
 
-    let private parametersWithLink
+    let private parametersWithPrivateEvidence
         (cipher: InstallationCipher)
-        attachmentLink
+        privateEvidence
         (root: OperationRoot)
         =
         let header = root.Header
@@ -36,10 +36,11 @@ module internal OperationStorage =
             OperationRoot.effectBytes root
             |> List.map (snd >> json)
             |> function
-                | [ JsonValue.Object members ] when Option.isSome attachmentLink ->
-                    [ JsonValue.Object(("attachmentLink", Option.get attachmentLink) :: members) ]
-                | rows when Option.isNone attachmentLink -> rows
-                | _ -> invalidOp "An attachment link must belong to one accepting effect."
+                | [ JsonValue.Object members ] when Option.isSome privateEvidence ->
+                    [ JsonValue.Object(Option.get privateEvidence :: members) ]
+                | rows when Option.isNone privateEvidence -> rows
+                | _ ->
+                    invalidOp "Private dependency evidence requires exactly one accepting effect."
             |> JsonValue.Array
             |> text
 
@@ -125,7 +126,8 @@ module internal OperationStorage =
             box compartments
         |]
 
-    let parameters cipher root = parametersWithLink cipher None root
+    let parameters cipher root =
+        parametersWithPrivateEvidence cipher None root
 
     let attachmentParameters
         (cipher: InstallationCipher)
@@ -164,7 +166,9 @@ module internal OperationStorage =
                 else
                     DatabaseSession.nullValue
 
-            Array.append (parametersWithLink cipher (Some link) entry.Root) [| binary |]
+            Array.append
+                (parametersWithPrivateEvidence cipher (Some("attachmentLink", link)) entry.Root)
+                [| binary |]
         | _ -> invalidOp "Verified attachment bytes require an accepted attachment descriptor."
 
     let private appendParameters connection values token =
@@ -174,10 +178,22 @@ module internal OperationStorage =
             values
             token
 
-    let append connection cipher root token =
+    let append connection cipher (entry: RetainedOperation) token =
+        let dependency =
+            match entry.Changes with
+            | [ {
+                    Value = PartValue.Link {
+                                               Removed = false
+                                               Content = Some related
+                                           }
+                } ] -> Some("relatedCase", JsonValue.String(CaseId.format related.Target))
+            | _ -> None
+
         appendParameters
             connection
-            (Array.append (parameters cipher root) [| DatabaseSession.nullValue |])
+            (Array.append
+                (parametersWithPrivateEvidence cipher dependency entry.Root)
+                [| DatabaseSession.nullValue |])
             token
 
     let appendWithAttachment connection cipher entry attachment token =
@@ -224,8 +240,13 @@ module internal OperationStorage =
                         Some(cipher.DecryptCompartment(sequence, ordinal, kind, identity, payload))
             | _ -> corrupt ()
 
-        Compartment.restore descriptor (DatabaseSession.value<byte array> 3 row) nonce payload
-        |> admitted
+        let restored =
+            Compartment.restore descriptor (DatabaseSession.value<byte array> 3 row) nonce payload
+
+        if DatabaseSession.value<bool> 7 row then
+            restored |> Result.bind Compartment.clearedRelationship |> admitted
+        else
+            restored |> admitted
 
     let private rootColumns =
         "sequence,previous_hash,entry_hash,installation_format,actor_id,recorded_at,"
@@ -236,10 +257,16 @@ module internal OperationStorage =
         "effect_index,(jsonb_build_object('aggregate',jsonb_build_object('kind',aggregate_kind,'id',aggregate_id),'part',jsonb_build_object('kind',part_kind,'id',part_id),'revision',revision,'naturalKey',natural_key,'retained',retained,'erases',CASE WHEN erases_kind IS NOT NULL THEN jsonb_build_object('kind',erases_kind,'id',erases_id) END,'compartment',compartment) - array_remove(ARRAY[CASE WHEN natural_key IS NULL THEN 'naturalKey' END,CASE WHEN retained IS NULL THEN 'retained' END,CASE WHEN erases_kind IS NULL THEN 'erases' END,CASE WHEN compartment IS NULL THEN 'compartment' END],NULL))::text"
 
     let private contentColumns includePrivate =
-        if includePrivate then
-            "ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload"
-        else
-            "ordinal,owner_kind,owner_id,commitment,NULL::bytea,NULL::bytea,NULL::bytea"
+        "ordinal,owner_kind,owner_id,commitment,"
+        + (if includePrivate then
+               "nonce,nonce_fingerprint,payload"
+           else
+               "NULL::bytea,NULL::bytea,NULL::bytea")
+        + ",relationship_cleared,"
+        + (if includePrivate then
+               "(SELECT d.target_case_id FROM claimcore.ledger_link_dependencies d WHERE (d.operation_sequence,d.ordinal)=(ledger_compartments.operation_sequence,ledger_compartments.ordinal))"
+           else
+               "NULL::uuid")
 
     let private restoreRecord installation cipher operation row effectRows contentRows =
         if DatabaseSession.value<int16> 3 row <> int16 InstallationFormat.Current then
@@ -274,16 +301,48 @@ module internal OperationStorage =
             |> EntryHash.ofBytes
             |> Option.defaultWith corrupt
 
-        OperationRoot.restore
-            header
-            (DatabaseSession.value<string> 8 row)
-            (Encoding.UTF8.GetBytes(DatabaseSession.value<string> 7 row))
-            effects
-            (List.map (compartment cipher (Sequence.value header.Sequence)) contentRows)
-            hash
-        |> admitted
-        |> RetainedOperation.restore
-        |> admitted
+        let restored =
+            OperationRoot.restore
+                header
+                (DatabaseSession.value<string> 8 row)
+                (Encoding.UTF8.GetBytes(DatabaseSession.value<string> 7 row))
+                effects
+                (List.map (compartment cipher (Sequence.value header.Sequence)) contentRows)
+                hash
+            |> admitted
+            |> RetainedOperation.restore
+            |> admitted
+
+        if cipher.IsSome then
+            let dependencies = contentRows |> List.choose (DatabaseSession.optional<Guid> 8)
+
+            let relationship =
+                match restored.Changes with
+                | [ {
+                        Value = PartValue.Link {
+                                                   Removed = false
+                                                   Content = Some content
+                                               }
+                    } ] -> [ CaseId.value content.Target ]
+                | _ -> []
+
+            let cleared =
+                restored.Root.Structure.Compartments |> List.filter _.RelationshipCleared
+
+            let validClearing =
+                cleared.IsEmpty
+                || (cleared.Length = 1
+                    && restored.Root.Structure.Compartments.Length = 1
+                    && (match restored.Changes with
+                        | [ {
+                                Value = PartValue.Link { Removed = false; Content = None }
+                            } ] -> true
+                        | _ -> false))
+
+            if dependencies <> relationship || not validClearing then
+                corrupt ()
+
+        restored
 
     let private read (cipher: InstallationCipher option) connection installation operation token =
         task {
@@ -400,7 +459,7 @@ module internal OperationStorage =
                         List.groupBy (DatabaseSession.value<int64> ordinal) >> Map.ofList
 
                     let effectsBySequence = group 2 effects
-                    let contentsBySequence = group 7 contents
+                    let contentsBySequence = group 9 contents
 
                     // Keep ambiguity at its own identity so ordered verification can report
                     // an earlier broken link or invalid root before forcing this restoration.
@@ -444,6 +503,30 @@ module internal OperationStorage =
                 |> Seq.map (fun (operation, restore) ->
                     DatabaseSession.admitted OperationId.create operation, restore ())
                 |> Map.ofSeq
+        }
+
+    let linkCoverageIsComplete connection token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    """SELECT
+                        (SELECT count(*) FROM claimcore.ledger_compartments WHERE relationship_cleared)
+                        =
+                        (SELECT coalesce(sum(cleared_count),0) FROM claimcore.ledger_link_coverage)
+                        AND NOT EXISTS(
+                          SELECT 1 FROM claimcore.ledger_link_coverage c
+                          FULL JOIN (SELECT operation_sequence,effect_index FROM claimcore.ledger_effects
+                                     WHERE erases_kind='FAMILY') e USING(operation_sequence,effect_index)
+                          WHERE c.operation_sequence IS NULL OR e.operation_sequence IS NULL)
+                        AND NOT EXISTS(
+                          SELECT 1 FROM claimcore.ledger_link_dependencies d
+                          JOIN claimcore.ledger_effects e ON e.erases_kind='FAMILY'
+                            AND e.erases_id IN (d.source_case_id,d.target_case_id))"""
+                    [||]
+                    token
+
+            return DatabaseSession.value<bool> 0 rows.Head
         }
 
     let previous connection cipher (change: PartChange) token =

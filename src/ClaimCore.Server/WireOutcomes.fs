@@ -29,7 +29,8 @@ type private EncodedJsonResult(bytes: byte array, status: int) =
             :> Task
 
 [<Sealed>]
-type private CompleteCsvResult(bytes: byte array, filename: string, installation: Guid) =
+type private CompleteCsvResult
+    (bytes: byte array, filename: string, installation: Guid, nextCursor: string option) =
     interface IResult with
         member _.ExecuteAsync context =
             task {
@@ -51,9 +52,13 @@ type private CompleteCsvResult(bytes: byte array, filename: string, installation
                 context.Response.ContentLength <- int64 bytes.Length
                 context.Response.Headers.ContentEncoding <- "identity"
 
+                nextCursor
+                |> Option.iter (fun cursor ->
+                    context.Response.Headers[ExportTransport.nextHeader] <- cursor)
+
                 context.Response.Headers.ContentDisposition <-
                     Microsoft.Extensions.Primitives.StringValues(
-                        "attachment; filename=\"" + filename + "\""
+                        ExportTransport.disposition filename
                     )
 
                 context.Response.Headers["ClaimCore-Installation"] <-
@@ -101,7 +106,7 @@ type private CompleteAttachmentResult
             :> Task
 
 module internal WebWire =
-    let csv (bytes: byte array) filename installation =
+    let csv (bytes: byte array) filename installation nextCursor =
         if
             bytes.Length > Limits.MaximumResponseBytes
             || not (List.contains filename ExportTransport.filenames)
@@ -109,7 +114,7 @@ module internal WebWire =
         then
             invalidArg "bytes" "A complete bounded CSV response requires declared metadata."
 
-        CompleteCsvResult(bytes, filename, installation) :> IResult
+        CompleteCsvResult(bytes, filename, installation, nextCursor) :> IResult
 
     let attachment transfer (content: AttachmentContent) installation =
         let name = content.Bytes |> VerifiedAttachment.intent |> AttachmentIntent.name

@@ -309,7 +309,7 @@ const assertAuthoredCase = (request: CaseInput) => {
   switch (request.task) {
     case "case.open":
       expect(request.binding).toEqual({ kind: "CASE", expectedRevision: 0 });
-      expect(request.inputs["field:caseReference"]).toBe(caseFields.caseReference);
+      expect(request.inputs).not.toHaveProperty("field:caseReference");
       expect(request.inputs["field:policyNumber"]).toBe(caseFields.registration.policyNumber!);
       break;
     case "case.amendRegistration":

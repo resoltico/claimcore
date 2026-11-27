@@ -178,6 +178,7 @@ let tests =
                 "unchanged retained actions can be rescheduled while new actions use current admission"
                 (fun () ->
                     let state, id = reminder ()
+
                     let oldAction = ReminderAction.parse (String.replicate 201 "x") |> accepted
 
                     let retainedChange =

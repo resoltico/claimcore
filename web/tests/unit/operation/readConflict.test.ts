@@ -59,7 +59,7 @@ const effectFor = (
 };
 const root = {
   operationId: "10000000-0000-4000-8000-000000000001",
-  target: { kind: "REFERENCE" as const, caseReference: "CASE-1" },
+  target: { kind: "REFERENCE" as const, caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
 };
 it("uses the current work revision separately from the case fact revision", async () => {
   mockEndpoint("case.get").mockResolvedValue(succeeded(caseValue()));

@@ -119,13 +119,14 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     binding: await reviewedPeopleBinding(page, await selectedActor(page, principal)),
     inputs: { "input:role": "CASE_HANDLER", "input:scope": "INSTALLATION" },
   });
-  const references = [
-    `HAND-A-${randomUUID().slice(0, 8)}`,
-    `HAND-B-${randomUUID().slice(0, 8)}`,
-  ] as const;
-  for (const reference of references) {
+  const openedReferences: string[] = [];
+  for (const marker of ["HAND-A", "HAND-B"]) {
     await goToView(page, "cases");
-    await openCase(page, reference);
+    const { caseReference: reference } = await openCase(
+      page,
+      `${marker}-${randomUUID().slice(0, 8)}`,
+    );
+    openedReferences.push(reference);
     const assigned = await workRequest(page, "operation.execute", {
       operationId: operationId(),
       task: "work.update",
@@ -141,6 +142,11 @@ test("reassigns a filtered list row with its work revision and refuses stale han
     });
     expect(assigned.outcome.kind).toBe("ACCEPTED");
   }
+  const [firstReference, secondReference] = openedReferences;
+  if (firstReference === undefined || secondReference === undefined) {
+    throw new Error("The handover fixture needs two issued case references.");
+  }
+  const references = [firstReference, secondReference] as const;
   await page.goto(`/people/${owner}`);
   const responsibility = page.getByRole("link", {
     name: /^Responsible open cases:/u,

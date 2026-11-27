@@ -12,6 +12,7 @@ open ClaimCore.Domain
 open ClaimCore.Json
 open ClaimCore.Application.Contracts
 open ClaimCore.Wire
+open ClaimCore.Wire.Export
 open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -135,15 +136,8 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
             Errors = fun bytes -> errors.Write(bytes: byte array)
         }
 
-    let declaration = EndpointDeclarations.find "case.list" |> Option.get
-
     let code =
-        ReadCommand.runWith
-            { Width = 4096; BoldHeader = false }
-            declaration
-            io
-            pending
-            CancellationToken.None
+        PageCommand.runWith { Width = 4096; BoldHeader = false } io pending CancellationToken.None
         |> fun task -> task.GetAwaiter().GetResult()
 
     code, output.ToArray(), errors.ToArray(), List.ofSeq calls
@@ -190,7 +184,7 @@ let private declaredPages () =
                 else
                     match input.Name with
                     | TaskInputId.Target(InputTarget.Field BusinessField.CaseReference) ->
-                        Some "PAGE-FIXTURE"
+                        Some "CC-FD0Q-1HG1-NBRR-1GD8-83"
                     | TaskInputId.ActorId -> Some "10000000-0000-4000-8000-000000000099"
                     | _ -> failtest "The paging fixture needs an independently supplied operand.")
 
@@ -265,203 +259,6 @@ let private declaredPages () =
             (filters calls[1])
             (filters calls[0])
             "Traversal preserves every other request member"
-
-let private snapshot success wrongRoute serialize =
-    let mutable serializations = 0
-    // Keep the test endpoint local. Its genuinely nonpaged grammar has no continuation member.
-    let endpoint =
-        { Api.caseGet with
-            Csv =
-                Some
-                    {
-                        Header = Csv.row [ "revision" ]
-                        Rows =
-                            fun _ value ->
-                                serializations <- serializations + 1
-
-                                if not serialize then
-                                    invalidOp "Synthetic CSV serialization failure."
-
-                                match value with
-                                | RepresentationReply.Data(Outcome.Succeeded snapshot) ->
-                                    Some(Csv.row [ Revision.format snapshot.Snapshot.Revision ])
-                                | _ ->
-                                    failtest "CSV serialization is only called for successful DATA."
-                    }
-        }
-
-    let request =
-        {
-            CaseGetRequest.Target = CaseSelector.Reference "CSV-SNAPSHOT"
-        }
-
-    let frame = Frames.create endpoint request |> CaseBuilders.accepted
-
-    let initial =
-        Grammar.prepare
-            (fun () -> failtest "A read never allocates an operation ID")
-            [ "case"; "get"; "CSV-SNAPSHOT" ]
-        |> CaseBuilders.accepted
-
-    let prepared =
-        { initial with
-            Invocation = frame
-            Format = VerbFormat.Csv
-        }
-
-    let endpointDeclaration = EndpointDeclarations.find "case.get" |> Option.get
-    let declaration = { endpointDeclaration with Csv = true }
-
-    let output = ResizeArray<byte array>()
-    let errors = ResizeArray<byte array>()
-    let mutable exchanges = 0
-
-    let io: ReadPageIO =
-        {
-            Exchange =
-                fun frame _ ->
-                    exchanges <- exchanges + 1
-
-                    Expect.equal
-                        (Frames.representation frame)
-                        Representation.Data
-                        "The one exchange requests DATA"
-
-                    Expect.isNone
-                        (JsonValue.tryMember "cursor" (Frames.input frame))
-                        "The snapshot has no cursor"
-
-                    let correlated =
-                        if wrongRoute then
-                            Frames.create { endpoint with Id = Api.caseNotes.Id } request
-                            |> CaseBuilders.accepted
-                        else
-                            frame
-
-                    let value =
-                        if success then
-                            Outcome.Succeeded ResponseExamples.caseRead
-                        else
-                            Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
-
-                    CliReply.result
-                        correlated
-                        (endpoint.Output.Write(RepresentationReply.Data value))
-                    |> CaseBuilders.accepted
-                    |> Task.FromResult
-            Deliver = fun _ _ -> failtest "CSV does not print a native reply frame"
-            Output = output.Add
-            Errors = errors.Add
-        }
-
-    let options = { Width = 4096; BoldHeader = false }
-
-    let code =
-        (ReadCommand.runWith options declaration io prepared CancellationToken.None)
-            .GetAwaiter()
-            .GetResult()
-
-    Expect.equal exchanges 1 "The snapshot uses exactly one exchange"
-    code, List.ofSeq output, List.ofSeq errors, serializations
-
-let private mismatchCsv () =
-    for arguments, paged in
-        [
-            [ "case"; "list"; "--format"; "csv" ], true
-            [ "case"; "get"; "CSV-SNAPSHOT" ], false
-        ] do
-        let initial =
-            Grammar.prepare (fun () -> failtest "Read must not allocate an ID") arguments
-            |> CaseBuilders.accepted
-
-        let prepared = { initial with Format = VerbFormat.Csv }
-
-        let declaration =
-            EndpointDeclarations.find (Frames.endpoint prepared.Invocation).Token
-            |> Option.get
-
-        let declaredCsv = { declaration with Csv = true }
-        let expectedHost = String.replicate 64 "a"
-        use errors = new MemoryStream()
-        let mutable count = 0
-
-        let io =
-            {
-                Exchange =
-                    fun frame _ ->
-                        count <- count + 1
-
-                        let reply =
-                            CliReply.serviceFailure
-                                frame
-                                {
-                                    Code = HostFailureCode.ContractMismatch
-                                    Phase = Some ExecutionPhase.NotStarted
-                                }
-
-                        let identified = CliReply.withHostContractIdentity (Some expectedHost) reply
-
-                        Expect.equal
-                            identified.Bytes
-                            reply.Bytes
-                            "Local response metadata never changes machine JSON"
-
-                        Task.FromResult identified
-                Deliver = fun _ _ -> failtest "CSV failure must not print a machine frame"
-                Output = ignore
-                Errors = fun bytes -> errors.Write bytes
-            }
-
-        let code =
-            ReadCommand.runWith
-                { Width = 100; BoldHeader = false }
-                declaredCsv
-                io
-                prepared
-                CancellationToken.None
-            |> _.GetAwaiter().GetResult()
-
-        Expect.equal count 1 "A mismatch cannot cause a repeat request"
-        Expect.equal code 3 "The typed host mismatch preserves its exit"
-        Expect.equal declaration.Paged paged "Each acquisition branch is exercised"
-        let output = Encoding.UTF8.GetString(errors.ToArray())
-        Expect.stringContains output expectedHost "CSV stderr names the admitted host contract"
-        Expect.stringContains output ContractIdentity.value "CSV stderr names the local contract"
-
-[<Tests>]
-let snapshotCsvTests =
-    testList
-        "native CSV snapshot acquisition"
-        [
-            testCase
-                "paged and snapshot CSV failures keep typed host identity on stderr"
-                mismatchCsv
-            testCase "one nonpaged DATA response serializes the complete CSV" (fun () ->
-                let code, output, errors, calls = snapshot true false true
-                Expect.equal code 0 "The admitted snapshot succeeded"
-
-                Expect.equal
-                    (output |> List.map Encoding.UTF8.GetString)
-                    [ "revision\r\n1\r\n" ]
-                    "Header and rows are emitted together with canonical line endings"
-
-                Expect.isEmpty errors "No cursor or failure guidance on a snapshot success"
-                Expect.equal calls 1 "The endpoint serializer runs once")
-            testCase
-                "a refusal, wrong endpoint or failed serializer publishes no header or rows"
-                (fun () ->
-                    for success, wrongRoute, serialize, calls in
-                        [ false, false, true, 0; true, true, true, 0; true, false, false, 1 ] do
-                        let code, output, errors, actual = snapshot success wrongRoute serialize
-                        Expect.equal code 2 "The refusal or invalid response exits nonzero"
-                        Expect.isEmpty output "Snapshot validation precedes any stdout bytes"
-                        Expect.isNonEmpty errors "Failure guidance goes to stderr"
-
-                        Expect.equal
-                            actual
-                            calls
-                            "Only a correlated success reaches the serializer")
-        ]
 
 [<Tests>]
 let accessRequestRestart =
@@ -625,10 +422,11 @@ let tests =
                         State = CaseState.Active { facts with Fields = values }
                     }
 
-                let code, bytes, _, _ =
-                    run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ exported ] None) ]
+                let bytes =
+                    Array.append
+                        CaseCsv.csvHeader
+                        (CaseCsv.csvRows DomainInputs.workBasis [ exported ])
 
-                Expect.equal code 0 "CSV succeeds"
                 let rows = parseCsv bytes
                 let columns = List.zip rows[0] rows[1] |> Map.ofList
                 Expect.equal columns["netPaid"] "60.25" "Exact canonical paid amount"
@@ -644,7 +442,7 @@ let tests =
                     for prefix in [ "="; "+"; "-"; "@"; "\t"; "\r" ] do
                         let reference =
                             if prefix = "\t" || prefix = "\r" then
-                                "Safe-Custom"
+                                "CC-51N1-TT7K-ZWRB-KAF6-14"
                             else
                                 "CC-0123-4567-89AB-CDEF-41"
 
@@ -656,10 +454,11 @@ let tests =
                                 State = CaseState.Active(parties claimant insurer)
                             }
 
-                        let code, bytes, _, _ =
-                            run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ exported ] None) ]
+                        let bytes =
+                            Array.append
+                                CaseCsv.csvHeader
+                                (CaseCsv.csvRows DomainInputs.workBasis [ exported ])
 
-                        Expect.equal code 0 "Export succeeds without changing admission"
                         let cells = (parseCsv bytes)[1]
 
                         Expect.equal cells[0] reference "Issued case references are preserved"
@@ -748,7 +547,7 @@ let tests =
                     | _ -> failtest "Expected a structured reply")
             testCase "JSON and text preserve formula-leading authored values" (fun () ->
                 let exported =
-                    { row "Safe-Custom" with
+                    { row "CC-51N1-TT7K-ZWRB-KAF6-14" with
                         State = CaseState.Active(parties "=1+1" "@insurer")
                     }
 
@@ -759,7 +558,7 @@ let tests =
                     let rendered = Encoding.UTF8.GetString bytes
                     Expect.equal code 0 "Exact-value output succeeds"
 
-                    for authored in [ "Safe-Custom"; "=1+1"; "@insurer" ] do
+                    for authored in [ "=1+1"; "@insurer" ] do
                         Expect.stringContains rendered authored "Authored spelling remains"
 
                         Expect.isFalse
@@ -769,7 +568,7 @@ let tests =
                 "CSV is independently parseable with wire headers quoting and erased disclosure"
                 (fun () ->
                     let erased =
-                        { row "ERASED" with
+                        { row "CC-Z399-4K58-1T11-N5NF-88" with
                             CaseId =
                                 CaseFixtures.caseId (
                                     Guid.Parse "20000000-0000-4000-8000-000000000002"
@@ -780,13 +579,12 @@ let tests =
                             Headline = CaseHeadline.Erased
                         }
 
-                    let code, bytes, errors, _ =
-                        run
-                            [ "--format"; "csv" ]
-                            [ Outcome.Succeeded(page [ row "A-1"; erased ] None) ]
-
-                    Expect.equal code 0 "CSV export succeeds"
-                    Expect.isEmpty errors "Successful final-page CSV needs no error output"
+                    let bytes =
+                        Array.append
+                            CaseCsv.csvHeader
+                            (CaseCsv.csvRows
+                                DomainInputs.workBasis
+                                [ row "CC-QH77-QTC2-NDWY-RKXP-15"; erased ])
 
                     Expect.isFalse
                         (bytes.Length >= 3 && bytes[0..2] = [| 0xEFuy; 0xBBuy; 0xBFuy |])
@@ -834,7 +632,7 @@ let tests =
                     Expect.equal
                         parsed[1]
                         [
-                            "A-1"
+                            "CC-QH77-QTC2-NDWY-RKXP-15"
                             "1"
                             "0"
                             "ACTIVE"
@@ -867,7 +665,7 @@ let tests =
                     Expect.equal
                         parsed[2]
                         [
-                            "ERASED"
+                            "CC-Z399-4K58-1T11-N5NF-88"
                             "9"
                             "0"
                             "ERASED"
@@ -934,10 +732,11 @@ let tests =
                             PendingReminders = 1L
                         }
 
-                    let code, bytes, _, _ =
-                        run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ item ] None) ]
+                    let bytes =
+                        Array.append
+                            CaseCsv.csvHeader
+                            (CaseCsv.csvRows DomainInputs.workBasis [ item ])
 
-                    Expect.equal code 0 "The actual CLI exports a successful work page"
                     let parsed = parseCsv bytes
                     let cells = List.zip parsed[0] parsed[1] |> Map.ofList
 
@@ -959,90 +758,14 @@ let tests =
                         (Encoding.UTF8.GetString bytes)
                         "'=authored display name"
                         "New profile-name column retains formula neutrality")
-            testCase "ordinary CSV reports the next cursor without following it" (fun () ->
-                let code, bytes, errors, calls =
-                    run
-                        [ "--format"; "csv" ]
-                        [ Outcome.Succeeded(page [ row "FIRST" ] (Some "next-opaque")) ]
-
-                Expect.equal code 0 "One healthy page succeeds"
-                Expect.equal calls.Length 1 "Only --all advances"
-                Expect.hasLength (parseCsv bytes) 2 "One header and one row"
-
-                Expect.stringContains
-                    (Encoding.UTF8.GetString errors)
-                    "next-opaque"
-                    "Continuation guidance stays on stderr")
-            testCase "CSV traversal refuses a repeated cursor" (fun () ->
-                Expect.throwsT<InvalidOperationException>
-                    (fun () ->
-                        run
-                            [ "--format"; "csv"; "--all" ]
-                            [
-                                Outcome.Succeeded(page [ row "FIRST" ] (Some "same"))
-                                Outcome.Succeeded(page [ row "SECOND" ] (Some "same"))
-                            ]
-                        |> ignore)
-                    "A repeated continuation cannot masquerade as end-of-data")
-            testCase "CSV all follows cursors with one header and unchanged filters" (fun () ->
-                let code, bytes, _, calls =
-                    run
-                        [ "--format=csv"; "--all"; "--text"; "Synthetic"; "--order"; "recent" ]
-                        [
-                            Outcome.Succeeded(page [ row "FIRST" ] (Some "next-opaque"))
-                            Outcome.Succeeded(page [ row "SECOND" ] None)
-                        ]
-
-                Expect.equal code 0 "Both pages succeed"
-                Expect.equal (parseCsv bytes |> List.length) 3 "One header and two case rows"
-                Expect.equal calls.Length 2 "One request per snapshot"
-
-                let first =
-                    Api.caseList.Input.Read "$" (Frames.input calls[0]) |> CaseBuilders.accepted
-
-                let second =
-                    Api.caseList.Input.Read "$" (Frames.input calls[1]) |> CaseBuilders.accepted
-
-                Expect.equal first.Page.AfterCursor None "Start from the requested page"
-
-                Expect.equal
-                    second.Page.AfterCursor
-                    (Some "next-opaque")
-                    "Follow the returned opaque cursor"
-
-                Expect.equal
-                    second.Filter
-                    first.Filter
-                    "Page traversal does not change the admitted query")
-            testCase
-                "refusal stops CSV traversal and reports the reached cursor on stderr"
-                (fun () ->
-                    let code, bytes, errors, calls =
-                        run
-                            [ "--format"; "csv"; "--all" ]
-                            [
-                                Outcome.Succeeded(page [ row "FIRST" ] (Some "refused-cursor"))
-                                Outcome.Rejected Refusal.InvalidCursor
-                            ]
-
-                    Expect.equal code 2 "The refusal controls exit status"
-                    Expect.equal calls.Length 2 "Do not continue after refusal"
-
-                    Expect.equal
-                        (parseCsv bytes |> List.length)
-                        2
-                        "Output stays valid CSV through the last accepted page"
-
-                    Expect.stringContains
-                        (Encoding.UTF8.GetString errors)
-                        "Stopped at cursor refused-cursor."
-                        "The caller can identify the reached cursor")
             testCase "JSON all emits one structured frame per page" (fun () ->
                 let code, bytes, _, calls =
                     run
                         [ "--format"; "json"; "--all" ]
                         [
-                            Outcome.Succeeded(page [ row "FIRST" ] (Some "next"))
+                            Outcome.Succeeded(
+                                page [ row "CC-4SYK-Q0D9-VKCK-FWXM-34" ] (Some "next")
+                            )
                             Outcome.Succeeded(page [] None)
                         ]
 
@@ -1065,8 +788,10 @@ let tests =
                     run
                         [ "--all" ]
                         [
-                            Outcome.Succeeded(page [ row "FIRST" ] (Some "next"))
-                            Outcome.Succeeded(page [ row "SECOND" ] None)
+                            Outcome.Succeeded(
+                                page [ row "CC-4SYK-Q0D9-VKCK-FWXM-34" ] (Some "next")
+                            )
+                            Outcome.Succeeded(page [ row "CC-GHT7-VKC3-3HRK-283T-94" ] None)
                         ]
 
                 Expect.equal code 0 "Text traversal succeeds"
@@ -1085,8 +810,12 @@ let tests =
                     "One header across all pages"
 
                 let rendered = Encoding.UTF8.GetString bytes
-                Expect.stringContains rendered "FIRST" "First page is retained"
-                Expect.stringContains rendered "SECOND" "Second page is retained"
+                Expect.stringContains rendered "CC-4SYK-Q0D9-VKCK-FWXM-34" "First page is retained"
+
+                Expect.stringContains
+                    rendered
+                    "CC-GHT7-VKC3-3HRK-283T-94"
+                    "Second page is retained"
 
                 Expect.equal
                     (lines
@@ -1110,10 +839,10 @@ let tests =
 
 [<Tests>]
 let localeInvariance =
-    testCase "CSV and DATA pagination bytes ignore independent display locale" (fun () ->
-        let replies = [ Outcome.Succeeded(page [ row "LOCALE" ] None) ]
+    testCase "DATA pagination bytes ignore independent display locale" (fun () ->
+        let replies = [ Outcome.Succeeded(page [ row "CC-JNBE-ED50-FGSC-P1TC-23" ] None) ]
 
-        for format in [ "csv"; "json" ] do
+        for format in [ "json" ] do
             let code, original, _, _ =
                 run [ "--format"; format; "--display-locale"; "en-GB" ] replies
 

@@ -12,7 +12,6 @@ type Installation =
     {
         InstallationId: Guid
         BusinessTimeZone: string
-        CaseReferencePolicy: CaseReferencePolicy
     }
 
 
@@ -64,7 +63,6 @@ type InstallationStatus =
         Baseline: string
         BaselineSha256: string
         BusinessTimeZone: string
-        CaseReferencePolicy: CaseReferencePolicy
         ObservedAt: DateTimeOffset
         Position: LedgerPosition
         Maintenance: RegisterMaintenance

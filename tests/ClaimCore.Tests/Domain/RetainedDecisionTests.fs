@@ -377,7 +377,12 @@ let tests =
 
                 let scopeEnvironment =
                     { peopleEnvironment newPrincipal with
-                        TargetCases = Map.ofList [ GrantTarget.CaseReference "TASK-1", family.Id ]
+                        TargetCases =
+                            Map.ofList
+                                [
+                                    GrantTarget.CaseReference "CC-0Q8W-MJRG-GFYZ-KMDQ-22",
+                                    family.Id
+                                ]
                     }
 
                 let publicInput =
@@ -385,7 +390,9 @@ let tests =
                         [
                             text InputTarget.Role "CASE_READER"
                             TaskInputId.Scope, InputValue.Text "CASE"
-                            text (InputTarget.Field BusinessField.CaseReference) "task-1"
+                            text
+                                (InputTarget.Field BusinessField.CaseReference)
+                                "cc-0q8w-mjrg-gfyz-kmdq-22"
                         ]
 
                 let selected =

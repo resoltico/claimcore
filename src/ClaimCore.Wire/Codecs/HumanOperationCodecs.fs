@@ -100,6 +100,7 @@ module HumanOperationCodecs =
                     | _ -> None)
                     failure
                 |> namedTaggedVariant "Failed"
+                unitVariant "RECEIPT_UNAVAILABLE" HumanExecuteResult.ReceiptUnavailable
                 unitVariant "OUTCOME_UNKNOWN" HumanExecuteResult.OutcomeUnknown
             ]
         |> reply "HumanExecuteReply"

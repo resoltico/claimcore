@@ -317,7 +317,7 @@ it("uses the Core row link rather than inferring a destination from actor facts"
   expect(screen.queryByRole("link", { name: /listed-/u })).toBeNull();
   expect(request).not.toHaveBeenCalled();
 });
-it("keeps only the same actor's page on a transient error and follows server continuations", async () => {
+it("masks roles on a transient error and reloads from the beginning", async () => {
   const request = mockEndpoint("people.grants")
     .mockResolvedValueOnce(grants(first, "next"))
     .mockResolvedValueOnce({
@@ -330,10 +330,10 @@ it("keeps only the same actor's page on a transient error and follows server con
   render(<PeopleGrants actorId={first} onBack={vi.fn()} onDisclosureRefused={vi.fn()} />);
   fireEvent.click(await screen.findByRole("button", { name: "More roles" }));
   await screen.findByRole("alert");
-  expect(screen.getByText(`GRANT-${first}`)).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "More roles" }));
+  expect(screen.queryByText(`GRANT-${first}`)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Reload roles" }));
   await screen.findByText("All roles are shown.");
-  expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
+  expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", null]);
 });
 
 it("loads and clears the selected grant page without request-per-row reads", async () => {

@@ -156,13 +156,7 @@ let internal lifecycle fixture =
             "Erased registration profile prevents exact replay"
 
         let! replay =
-            Service.provisionOwner
-                owner
-                (id fixture 1)
-                DomainInputs.ownerProfile
-                []
-                CaseReferencePolicy.CustomAllowed
-                token
+            Service.provisionOwner owner (id fixture 1) DomainInputs.ownerProfile [] token
 
         Expect.equal
             replay
@@ -235,13 +229,7 @@ let internal lifecycle fixture =
             "Later profile content survives"
 
         let! replay =
-            Service.provisionOwner
-                owner
-                (id fixture 1)
-                DomainInputs.ownerProfile
-                []
-                CaseReferencePolicy.CustomAllowed
-                token
+            Service.provisionOwner owner (id fixture 1) DomainInputs.ownerProfile [] token
 
         Expect.equal
             replay

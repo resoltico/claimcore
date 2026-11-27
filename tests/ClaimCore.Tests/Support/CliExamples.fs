@@ -66,7 +66,7 @@ let complete arguments =
 let private inputSamples =
     Map.ofList
         [
-            "caseReference", "SYNTHETIC"
+            "caseReference", "CC-DZXV-W4P3-TR4W-QN99-83"
             "operationId", "10000000-0000-7000-8000-000000000001"
             "actorId", "10000000-0000-7000-8000-000000000001"
             "limit", "5"

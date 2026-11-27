@@ -32,7 +32,7 @@ const listed: HumanDocument = {
                 endpoint: "case.get",
                 input: { target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } },
               },
-              values: [{ kind: "REFERENCE", value: "ADVISED-CASE" }],
+              values: [{ kind: "REFERENCE", value: "CC-260Q-KJ0K-1CGJ-Q3NP-85" }],
             },
           ],
         },
@@ -86,7 +86,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
                         target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
                       },
                     },
-                    values: [{ kind: "REFERENCE", value: "OTHER-A" }],
+                    values: [{ kind: "REFERENCE", value: "CC-MM05-2VZ7-6RD8-WR1R-78" }],
                   },
                   {
                     key: "20000000-0000-4000-8000-000000000002",
@@ -96,7 +96,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
                         target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000002" },
                       },
                     },
-                    values: [{ kind: "REFERENCE", value: "OTHER-B" }],
+                    values: [{ kind: "REFERENCE", value: "CC-ED8K-XKRZ-D2WR-VSJF-59" }],
                   },
                 ],
               },
@@ -111,7 +111,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
                     key: "exactReference",
                     labelId: "field.caseReference.label",
                     prominence: "PRIMARY",
-                    value: { kind: "REFERENCE", value: "ADVISED-CASE" },
+                    value: { kind: "REFERENCE", value: "CC-260Q-KJ0K-1CGJ-Q3NP-85" },
                   },
                 ],
               },
@@ -134,7 +134,7 @@ it("opens the core-supplied exact reference without inferring it from the query 
   navigate("/cases?q=different", true);
   const select = vi.fn();
   render(<CaseList onSelect={select} />);
-  fireEvent.click(await screen.findByRole("link", { name: "ADVISED-CASE" }));
+  fireEvent.click(await screen.findByRole("link", { name: "CC-260Q-KJ0K-1CGJ-Q3NP-85" }));
   expect(select).toHaveBeenCalledWith(
     {
       kind: "ID",
@@ -147,8 +147,8 @@ it("does not infer an exact match from a matching visible row when the core supp
   vi.stubGlobal("fetch", vi.fn<typeof globalThis.fetch>().mockResolvedValue(page(false, null)));
   navigate("/cases?q=advised-case", true);
   render(<CaseList onSelect={vi.fn()} />);
-  await screen.findByRole("link", { name: "ADVISED-CASE" });
-  expect(screen.queryByRole("button", { name: "Open ADVISED-CASE" })).toBeNull();
+  await screen.findByRole("link", { name: "CC-260Q-KJ0K-1CGJ-Q3NP-85" });
+  expect(screen.queryByRole("button", { name: "Open CC-260Q-KJ0K-1CGJ-Q3NP-85" })).toBeNull();
 });
 it("does not expand non-ASCII search text into a reference identity", async () => {
   vi.stubGlobal(
@@ -180,7 +180,7 @@ it("does not expand non-ASCII search text into a reference identity", async () =
                         target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
                       },
                     },
-                    values: [{ kind: "REFERENCE", value: "S" }],
+                    values: [{ kind: "REFERENCE", value: "CC-SHSE-18HF-PX9X-RCYC-68" }],
                   },
                 ],
               },
@@ -190,10 +190,10 @@ it("does not expand non-ASCII search text into a reference identity", async () =
       }),
     ),
   );
-  navigate("/cases?q=%C5%BF", true);
+  navigate("/cases?q=CC-%C5%BFHSE-18HF-PX9X-RCYC-68", true);
   render(<CaseList onSelect={vi.fn()} />);
-  await screen.findByRole("link", { name: "S" });
-  expect(screen.queryByRole("button", { name: "Open S" })).toBeNull();
+  await screen.findByRole("link", { name: "CC-SHSE-18HF-PX9X-RCYC-68" });
+  expect(screen.queryByRole("button", { name: "Open CC-SHSE-18HF-PX9X-RCYC-68" })).toBeNull();
 });
 it.each([
   ["UNDECIDED", "Undecided"],
@@ -253,7 +253,7 @@ it("keeps existing rows visible during a quiet refresh", async () => {
     );
   vi.stubGlobal("fetch", fetch);
   render(<CaseList onSelect={vi.fn()} />);
-  await screen.findByRole("link", { name: "ADVISED-CASE" });
+  await screen.findByRole("link", { name: "CC-260Q-KJ0K-1CGJ-Q3NP-85" });
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(fetch.mock.calls[0]?.[0]).toBe("/api/case.list");
   fireEvent.click(
@@ -261,7 +261,7 @@ it("keeps existing rows visible during a quiet refresh", async () => {
       name: "Refresh",
     }),
   );
-  expect(screen.getByRole("link", { name: "ADVISED-CASE" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "CC-260Q-KJ0K-1CGJ-Q3NP-85" })).toBeVisible();
   expect(
     screen.queryByRole("button", {
       name: "Open a case",
@@ -273,7 +273,7 @@ it("keeps existing rows visible during a quiet refresh", async () => {
     }),
   );
   await screen.findByRole("link", {
-    name: "ADVISED-CASE",
+    name: "CC-260Q-KJ0K-1CGJ-Q3NP-85",
   });
   expect(
     screen.queryByRole("button", {
@@ -327,7 +327,7 @@ it.each(["access", "session"])(
     await screen.findByRole("alert");
     expect(
       screen.queryByRole("link", {
-        name: "ADVISED-CASE",
+        name: "CC-260Q-KJ0K-1CGJ-Q3NP-85",
       }),
     ).toBeNull();
     expect(
@@ -342,7 +342,7 @@ it.each(["access", "session"])(
     ).toBeNull();
   },
 );
-it("retains the last accepted rows after a request-local failure", async () => {
+it("masks the last accepted rows after a request-local failure", async () => {
   vi.stubGlobal(
     "fetch",
     vi
@@ -360,8 +360,8 @@ it("retains the last accepted rows after a request-local failure", async () => {
     expect(screen.getByRole("alert")).toBeVisible();
   });
   expect(
-    screen.getByRole("link", {
-      name: "ADVISED-CASE",
+    screen.queryByRole("link", {
+      name: "CC-260Q-KJ0K-1CGJ-Q3NP-85",
     }),
-  ).toBeVisible();
+  ).toBeNull();
 });

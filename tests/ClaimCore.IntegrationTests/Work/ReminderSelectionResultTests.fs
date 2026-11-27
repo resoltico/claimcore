@@ -115,7 +115,7 @@ let private run action =
                     execute
                         number
                         "reminder.create"
-                        (Binding.ReminderNew(CaseSelector.Reference reference))
+                        (Binding.ReminderNew((caseTarget fixture reference)))
                         (Submissions.reminderPlan (sprintf "Literal reminder %d" number) due)
                     |> Async.AwaitTask
 
@@ -131,7 +131,7 @@ let private run action =
                         number
                         taskName
                         (Binding.Reminder(
-                            CaseSelector.Reference target,
+                            (caseTarget fixture target),
                             ReminderId.create (id fixture reminder) |> Option.get,
                             Revision.first
                         ))
@@ -142,7 +142,7 @@ let private run action =
                 execute
                     301
                     "case.close"
-                    (Binding.Case(CaseSelector.Reference "STATE-CLOSED", Revision.first))
+                    (Binding.Case((caseTarget fixture "STATE-CLOSED"), Revision.first))
                     CaseTransitionInputs.closed
                 |> Async.AwaitTask
 
@@ -150,7 +150,7 @@ let private run action =
                 execute
                     302
                     "case.void"
-                    (Binding.Case(CaseSelector.Reference "STATE-VOID", Revision.first))
+                    (Binding.Case((caseTarget fixture "STATE-VOID"), Revision.first))
                     (Map.ofList
                         [
                             TaskInputId.Target InputTarget.Reason,
@@ -172,7 +172,7 @@ let private expectRows (database: PostgresFixture.Database) expected page =
 let private coreLink (database: PostgresFixture.Database) service =
     task {
         let query =
-            match Link.remindersForCase (CaseSelector.Reference "STATE-OPEN") with
+            match Link.remindersForCase (caseTarget database.Fixture "STATE-OPEN") with
             | Link.ReminderList request -> request
             | _ -> failtest "Reminder list link required"
 
@@ -195,8 +195,10 @@ let private coreLink (database: PostgresFixture.Database) service =
 let private pagingAndRights (database: PostgresFixture.Database) service =
     task {
         let query =
-            wire
-                """{"target":{"kind":"REFERENCE","caseReference":"STATE-OPEN"},"state":"ANY","includeInactive":true,"limit":1}"""
+            wire (
+                """{"target":{"kind":"ID","caseId":"<case>"},"state":"ANY","includeInactive":true,"limit":1}"""
+                    .Replace("<case>", (id database.Fixture 10).ToString("D"))
+            )
 
         let! first = Service.reminders service query token
         let first = read first
@@ -377,8 +379,10 @@ let private inactiveAndExport (database: PostgresFixture.Database) service =
 
         do!
             export
-                (wire
-                    """{"target":{"kind":"REFERENCE","caseReference":"STATE-OPEN"},"state":"ANY","limit":50}""")
+                (wire (
+                    """{"target":{"kind":"ID","caseId":"<case>"},"state":"ANY","limit":50}"""
+                        .Replace("<case>", (id database.Fixture 10).ToString("D"))
+                ))
                 [ 101, "PENDING"; 102, "COMPLETED"; 103, "CANCELLED" ]
 
         do! export (completed ",\"includeInactive\":false") [ 102, "COMPLETED" ]

@@ -16,7 +16,7 @@ let private accepted =
     | Error error -> failtestf "%A" error
 
 let private amend values =
-    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.amendRegistration","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"MAP-1"},"expectedRevision":1},"inputs":{REPLACE}}"""
+    """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.amendRegistration","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CC-J808-33PT-YZG0-D806-29"},"expectedRevision":1},"inputs":{REPLACE}}"""
         .Replace("REPLACE", values)
 
 [<Tests>]
@@ -69,10 +69,10 @@ let tests =
                         selected
                         "A required immutable selection is retained")
             testCase
-                "creation reference is authored and an existing binding needs a positive revision"
+                "opening leaves the reference to the server and an existing binding needs a positive revision"
                 (fun () ->
                     let created =
-                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:caseReference":"MAP-NEW","field:incidentDate":"2026-01-01","field:receivedDate":"2026-01-02","field:incidentCountry":"LV","field:policyNumber":"Claimant","field:insurerClaimReference":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
+                        """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.open","binding":{"kind":"CASE","expectedRevision":0},"inputs":{"field:incidentDate":"2026-01-01","field:receivedDate":"2026-01-02","field:incidentCountry":"LV","field:policyNumber":"Claimant","field:insurerClaimReference":"Insurer","field:claimedAmount":"12.34","field:claimedCurrency":"EUR"}}"""
 
                     let submitted = decode created |> accepted
 
@@ -83,18 +83,17 @@ let tests =
                             (Binding.CaseNew Revision.zero)
                             "Creation basis"
 
-                        Expect.equal
-                            request.Inputs.Values[TaskInputId.Target(
-                                                      InputTarget.Field BusinessField.CaseReference
-                                                  )]
-                            (InputValue.Text "MAP-NEW")
-                            "Authored creation reference"
+                        Expect.isFalse
+                            (Map.containsKey
+                                (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+                                request.Inputs.Values)
+                            "Opening carries no authored reference"
                     | other -> failtestf "Expected creation: %A" other
 
                     let misplaced =
                         created.Replace(
                             """"expectedRevision":0""",
-                            """"target":{"kind":"REFERENCE","caseReference":"OTHER"},"expectedRevision":0"""
+                            """"target":{"kind":"REFERENCE","caseReference":"CC-3HAX-KE16-X3FT-K51Q-82"},"expectedRevision":0"""
                         )
 
                     Expect.isError
@@ -248,7 +247,12 @@ let tests =
                         SubmissionEnvelope.OperationId = None
                         Task = (TaskId.ofLiteral "case.amendRegistration")
                         Binding =
-                            OperationBinding.Case(CaseSelector.Reference "MAP-1", None, None, None)
+                            OperationBinding.Case(
+                                CaseSelector.Reference "CC-J808-33PT-YZG0-D806-29",
+                                None,
+                                None,
+                                None
+                            )
                         Inputs =
                             Map.ofList
                                 [
@@ -280,7 +284,7 @@ let tests =
                             OperationId = Some id
                             Binding =
                                 OperationBinding.Case(
-                                    CaseSelector.Reference "MAP-1",
+                                    CaseSelector.Reference "CC-J808-33PT-YZG0-D806-29",
                                     Some 1L,
                                     None,
                                     None
@@ -443,7 +447,7 @@ let tests =
                         submitted
                             "case.erase"
                             (OperationBinding.Case(
-                                CaseSelector.Reference "TYPED",
+                                CaseSelector.Reference "CC-CFH6-9SPS-62Q5-QJRF-24",
                                 1L,
                                 None,
                                 family
@@ -493,7 +497,7 @@ let tests =
                                 Task = (TaskId.ofLiteral "case.erase")
                                 Binding =
                                     OperationBinding.Case(
-                                        CaseSelector.Reference "TYPED",
+                                        CaseSelector.Reference "CC-CFH6-9SPS-62Q5-QJRF-24",
                                         None,
                                         None,
                                         Some value
@@ -521,7 +525,7 @@ let tests =
                                 Task = TaskId.ofLiteral "case.erase"
                                 Binding =
                                     OperationBinding.Case(
-                                        CaseSelector.Reference "TYPED",
+                                        CaseSelector.Reference "CC-CFH6-9SPS-62Q5-QJRF-24",
                                         1L,
                                         None,
                                         None
@@ -578,7 +582,7 @@ let tests =
                             Task = (TaskId.ofLiteral "case.erase")
                             Binding =
                                 OperationBinding.Case(
-                                    CaseSelector.Reference "TYPED",
+                                    CaseSelector.Reference "CC-CFH6-9SPS-62Q5-QJRF-24",
                                     None,
                                     None,
                                     None

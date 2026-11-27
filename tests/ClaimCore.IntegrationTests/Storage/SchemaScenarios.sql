@@ -26,12 +26,12 @@ $$;
 
 -- The F# fixture seeds real accepted roots through the production service.
 SELECT actor_id::text AS owner FROM claimcore.actors WHERE subject='synthetic-owner' \gset
-SELECT case_id::text AS case1 FROM claimcore.cases WHERE case_reference='synthetic-a' \gset
+SELECT case_id::text AS case1,case_reference AS issued FROM claimcore.cases \gset
 SELECT pg_temp.expect('erasure requires an accepted ERASE',
     format('SELECT claimcore.clear_owner(''FAMILY'',%L)', :'case1'), 'CC002');
 
 SELECT pg_temp.expect('reference differing only by ASCII case refused',
-    $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000002', 'SYNTHETIC-A', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23505');
+    format($s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000002', %L, 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, lower(:'issued' COLLATE "C")), '23505');
 SELECT pg_temp.expect('reference with a space refused',
     $s$INSERT INTO claimcore.cases (case_id,case_reference,revision,state,snapshot,status,progress,changed_at,search_text,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency,registered_on,last_activity_on) VALUES ('c0000000-0000-4000-8000-000000000003', 'DEMO 3', 1, 'ACTIVE', '\x01', 'OPENED', 'UNDECIDED', TIMESTAMPTZ '2026-09-01T00:00:00Z', 'synthetic', DATE '2026-08-03', 1, 'EUR', NULL, NULL, DATE '2026-09-01', DATE '2026-09-01')$s$, '23514');
 SELECT pg_temp.expect('non-ASCII reference refused',
@@ -79,7 +79,7 @@ SELECT pg_temp.expect('projection revision beyond 2^53-1 refused',
     $s$UPDATE claimcore.cases SET revision=9007199254740992$s$, '23514');
 SELECT pg_temp.expect('projection clearing requires accepted matching erasure evidence',
     $s$UPDATE claimcore.cases SET follow_up=NULL,deadline_due=NULL,responsible_actor=NULL,revision=3,snapshot=NULL,status=NULL,progress=NULL,search_text=NULL,received_on=NULL,claimed_amount=NULL,claimed_currency=NULL,payable_amount=NULL,payable_currency=NULL,payment_review=NULL,outcome=NULL,work_search_text=NULL$s$, 'CC003');
-SELECT snapshot IS NOT NULL AND received_on IS NOT NULL AND claimed_amount IS NOT NULL AND claimed_currency IS NOT NULL AND case_reference='synthetic-a' AS retained_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
+SELECT snapshot IS NOT NULL AND received_on IS NOT NULL AND claimed_amount IS NOT NULL AND claimed_currency IS NOT NULL AND case_reference=:'issued' AS retained_projection FROM claimcore.cases WHERE case_id=:'case1' \gset
 \if :retained_projection
 \echo PASS unmatched erasure leaves private projections intact
 \else

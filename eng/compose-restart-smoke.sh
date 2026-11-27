@@ -66,14 +66,31 @@ start() {
   wait_for_web
 }
 
-require_log() {
-  local logs
-  logs="$("${compose[@]}" logs administration)"
-  if ! grep --fixed-strings --quiet -- "$1" <<< "${logs}"; then
-    echo "Administration log lacks: $1" >&2
-    diagnose
+installation_id() {
+  local kind="$1" identity
+  if ! identity="$(
+    "${compose[@]}" logs --no-log-prefix administration |
+      node --input-type=module -e '
+        import { readFileSync } from "node:fs";
+        const kind = process.argv[1];
+        const rows = readFileSync(0, "utf8").split("\n")
+          .filter((line) => line.trimStart().startsWith("{"))
+          .map((line) => JSON.parse(line));
+        const reply = rows.findLast((row) => row.kind === kind);
+        if (reply === undefined ||
+            Object.keys(reply).sort().join(",") !== "installationId,kind" ||
+            typeof reply.installationId !== "string" ||
+            !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(reply.installationId)) {
+          process.exit(1);
+        }
+        process.stdout.write(reply.installationId);
+      ' "${kind}"
+  )"; then
+    printf 'Administration did not return the expected %s installation result.\n' "${kind}" >&2
+    diagnose >&2
     return 1
   fi
+  printf '%s\n' "${identity}"
 }
 
 verify_database_owner() {
@@ -374,8 +391,7 @@ verify_interrupted_bootstrap "${production[@]}"
 verify_interrupted_bootstrap "${compose[@]}"
 
 start --build
-require_log '"kind":"INITIALIZED"'
-require_log '"caseReferencePolicy":"SYSTEM_ASSIGNED_ONLY"'
+first_installation="$(installation_id INITIALIZED)"
 verify_cold_identity_dependency() {
   local url="https://localhost:${web_port}" status
   "${compose[@]}" stop identity
@@ -413,8 +429,8 @@ verify_container_settings administration 256
 
 "${compose[@]}" down --timeout 20
 start
-require_log '"kind":"INITIALIZATION_SKIPPED"'
-require_log '"caseReferencePolicy":"SYSTEM_ASSIGNED_ONLY"'
+restarted_installation="$(installation_id INITIALIZATION_SKIPPED)"
+[[ "${restarted_installation}" == "${first_installation}" ]]
 
 echo "Compose restart smoke passed: the installation survived down and up."
 

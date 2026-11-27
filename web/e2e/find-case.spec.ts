@@ -7,8 +7,7 @@ test("Find uses a modifier shortcut, debounces suggestions and routes exact and 
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `FIND-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `FIND-${randomUUID().slice(0, 8)}`);
   const apple = await page.evaluate(() => /Mac|iPhone|iPad|iPod/u.test(navigator.platform));
   await page.keyboard.press("k");
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -44,12 +43,16 @@ test("Find uses a modifier shortcut, debounces suggestions and routes exact and 
 
 test("editing Find discards a held exact case response @engine", async ({ page }) => {
   await openAuthenticated(page);
-  const oldReference = `FIND-OLD-${randomUUID().slice(0, 8)}`;
-  const currentReference = `FIND-CURRENT-${randomUUID().slice(0, 8)}`;
-  await openCase(page, oldReference);
+  const { caseReference: oldReference } = await openCase(
+    page,
+    `FIND-OLD-${randomUUID().slice(0, 8)}`,
+  );
   const oldPath = new URL(page.url()).pathname;
   await page.goto("/cases");
-  await openCase(page, currentReference);
+  const { caseReference: currentReference } = await openCase(
+    page,
+    `FIND-CURRENT-${randomUUID().slice(0, 8)}`,
+  );
   const currentPath = new URL(page.url()).pathname;
   await page.goto("/cases");
 

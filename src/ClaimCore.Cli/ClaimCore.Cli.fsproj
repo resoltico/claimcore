@@ -59,6 +59,7 @@
     <Compile Include="Authentication/RemoteAccessSession.fs" />
     <Compile Include="Delivery/RemoteServiceCall.fs" />
     <Compile Include="Delivery/AttachmentBinaryCall.fs" />
+    <Compile Include="Delivery/ExportBinaryCall.fs" />
     <Compile Include="Delivery/FrameDelivery.fs" />
     <Compile Include="Delivery/RemoteFrameProcessing.fs" />
     <Compile Include="Text/TextDescriptorValue.fs" />

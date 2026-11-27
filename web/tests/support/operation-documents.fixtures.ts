@@ -16,7 +16,7 @@ export const closeReview: HumanReview = {
     screen: { regions: [] },
     subject: {
       kind: "REVIEW",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CASE-SERIALIZATION" },
+      confirmation: { kind: "CASE_REFERENCE", reference: "CC-3PBY-1JRP-Z70W-2VXH-71" },
       consequence: "ROUTINE",
     },
     actions: [
@@ -73,7 +73,7 @@ export const openReview: HumanReview = {
     screen: { regions: [] },
     subject: {
       kind: "REVIEW",
-      confirmation: { kind: "CASE_REFERENCE", reference: "CASE-1" },
+      confirmation: { kind: "CASE_REFERENCE", reference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
       consequence: "ROUTINE",
     },
     actions: [operationAffordance("case.open", { kind: "CASE", expectedRevision: 0 }, {}, [])],

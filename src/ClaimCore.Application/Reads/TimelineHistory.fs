@@ -54,7 +54,7 @@ module internal TimelineHistory =
                 && (before |> Option.forall (fun before -> entry.Position < before))))
 
     let entries
-        _services
+        (services: ServiceContext)
         (tx: ReadTx)
         reference
         erased
@@ -118,6 +118,12 @@ module internal TimelineHistory =
                                     | _ -> true))
                         then
                             return Ok TimelineChanges.Withheld
+                        elif
+                            entry.Change.Kind = PartKind.Link
+                            && (entry.Operation.Root.Structure.Compartments
+                                |> List.exists _.RelationshipCleared)
+                        then
+                            return Ok TimelineChanges.Withheld
                         elif StoredEffect.privateUnavailable entry then
                             return Error CoreFault.StoreIntegrityError
                         else
@@ -145,38 +151,75 @@ module internal TimelineHistory =
                                                         previous
                                             | None -> ()
 
-                                        let! basisReference =
-                                            match
-                                                entry.Operation.Changes
-                                                |> List.tryPick (fun change ->
-                                                    match change.Value with
-                                                    | PartValue.Case { Reference = Some _ } when
-                                                        change.Revision > Revision.first
-                                                        ->
-                                                        Some change.Revision
-                                                    | _ -> None)
-                                            with
-                                            | Some revision ->
-                                                match entry.Change.Aggregate with
-                                                | AggregateReference.Family id ->
-                                                    CaseIdentityReads.referenceBefore tx id revision
-                                                | _ -> invalidOp "Expected family operation."
-                                            | None -> System.Threading.Tasks.Task.FromResult None
-
                                         let described =
                                             PartDescriptions.familyVersions
-                                                (defaultArg basisReference reference)
+                                                reference
                                                 previous
                                                 entry.Operation.Changes
                                             |> Result.mapError (fun _ ->
                                                 CoreFault.StoreIntegrityError)
 
                                         match described with
+                                        | Error _ -> return described
                                         | Ok descriptions ->
-                                            roots <- Map.add entry.OperationId descriptions roots
-                                        | Error _ -> ()
+                                            let targets =
+                                                descriptions
+                                                |> List.collect (fun part ->
+                                                    match part.Description with
+                                                    | PartDescription.Link link ->
+                                                        [
+                                                            yield! Option.toList link.Before
+                                                            yield! Option.toList link.After
+                                                        ]
+                                                        |> List.map _.Target
+                                                    | _ -> [])
+                                                |> List.distinct
 
-                                        return described
+                                            let! allowed =
+                                                task {
+                                                    if targets.IsEmpty then
+                                                        return Set.empty
+                                                    else
+                                                        let! scope =
+                                                            AccessReads.accessCases
+                                                                tx
+                                                                (services.Principal, targets)
+
+                                                        let visible =
+                                                            targets
+                                                            |> List.filter (fun id ->
+                                                                Access.can
+                                                                    services.Principal
+                                                                    scope
+                                                                    Capability.ReadCase
+                                                                    (Scope.Case id))
+
+                                                        return!
+                                                            CaseLinkStorage.liveTargets tx visible
+                                                }
+
+                                            let redact (content: RelatedCaseContent option) =
+                                                content
+                                                |> Option.filter (fun related ->
+                                                    Set.contains related.Target allowed)
+
+                                            let descriptions =
+                                                descriptions
+                                                |> List.map (fun part ->
+                                                    match part.Description with
+                                                    | PartDescription.Link link ->
+                                                        { part with
+                                                            Description =
+                                                                PartDescription.Link
+                                                                    {
+                                                                        Before = redact link.Before
+                                                                        After = redact link.After
+                                                                    }
+                                                        }
+                                                    | _ -> part)
+
+                                            roots <- Map.add entry.OperationId descriptions roots
+                                            return Ok descriptions
                                 }
 
                             match descriptions with

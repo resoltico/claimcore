@@ -15,8 +15,7 @@ test("discovers a case reminder queue, retains visible context through filters a
   test.setTimeout(60_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
-  const reference = `TARGET-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `TARGET-${randomUUID().slice(0, 8)}`);
   const entry = page.getByRole("link", { name: "Reminders for this case", exact: true });
   await expect(entry).toBeVisible();
   const first = reminderResponse(page);

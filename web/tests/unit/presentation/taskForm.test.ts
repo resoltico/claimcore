@@ -104,7 +104,7 @@ it("rejects duplicate local row keys before correlating diagnostics", () => {
     ),
   ).toThrow("row keys must be unique");
 });
-it("preserves explicit opening intent even when a fresh offer omits the override", () => {
+it("excludes the retired authored reference from opening assembly", () => {
   const binding = { kind: "CASE", expectedRevision: 0 } as const;
   const automaticOnly = operationAffordance("case.open", binding, {}, ["field:policyNumber"]);
   for (const inputs of [
@@ -115,7 +115,7 @@ it("preserves explicit opening intent even when a fresh offer omits the override
   ]) {
     const value = assembleTask("case.open", inputs, binding, operationId, automaticOnly);
     expect(value.command.binding).toEqual(binding);
-    expect(value.command.inputs).toEqual(inputs);
+    expect(value.command.inputs).toEqual({});
   }
 });
 

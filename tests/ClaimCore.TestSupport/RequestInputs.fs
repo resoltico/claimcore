@@ -167,10 +167,7 @@ let all () : IEndpointInput list =
                 create
                     "case.open"
                     (Binding.CaseNew Revision.zero)
-                    (Submissions.fields (RegistrationInput.values DomainInputs.registration)
-                     |> Map.add
-                         (Submissions.field BusinessField.CaseReference)
-                         (SubmissionValue.Text "CASE-1"))
+                    (Submissions.fields (RegistrationInput.values DomainInputs.registration))
 
             yield
                 create

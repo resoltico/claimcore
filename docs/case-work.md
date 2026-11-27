@@ -28,9 +28,7 @@ A case with several attention reasons counts once.
 
 Search matches the current reference, policy numbers, insurer claim references, party names and
 contact details, and current narratives. Percent, underscore and backslash are literal text.
-An exact readable reference has an **Open** link even outside the selected view. That includes
-reserved earlier references. The destination identifies the spelling you matched and shows the
-case's current reference. Unreadable cases remain undisclosed.
+An exact readable reference has an **Open** link even outside the selected view. The link opens the stable Case ID.
 
 An empty worklist distinguishes a view with no matches from an accessible scope with no cases.
 Use **Clear filters** to remove applied filters while keeping the view.
@@ -58,10 +56,8 @@ Report pages also restart when the facts contributing to their totals change.
 ## Open a case
 
 Choose **Open a case** to open the centered work dialog. On a short screen, scroll the dialog to reach **Review changes**. The register assigns a reference when you record the case, and the receipt
-shows the assigned value. In a register that allows custom case references, select **Use a custom
-case reference** to enter your own. Use a reference free of personal data because it remains
-reserved after correction or erasure. The review shows your request, and the register checks availability when
-you record the case. You can add the incident date and country, Received
+shows the assigned value. Use the policy number or insurer claim reference to record external identifiers.
+You can add the incident date and country, Received
 date, narrative, policy number, insurer claim reference and claimed amount with its currency. Received
 means the date your office received the claim. Each observed date must be a valid calendar date at
 or before the business date. Record the actual dates even when they arrived out of order.
@@ -76,22 +72,15 @@ name, contact details or both. Party changes require Register and access to the 
 party hides it from current party lists. Its history stays available to authorized readers until
 case erasure. Case CSV joins current claimant and insurer names in creation order.
 
-From the CLI, `claimcore case open` requests automatic assignment. Where permitted, supply
-`--case-reference REF` to request a custom reference.
+From the CLI, `claimcore case open` records the case and returns its assigned reference.
 
-## Change the reference or link a case
+## Link related cases
 
-With Register, use **Change case reference** on an active open or closed case that has a custom
-reference. System-assigned references stay fixed. Every recorded reference remains reserved to its
-case, including after erasure. Opening an earlier reference shows the current one and identifies the
-matched reference.
-
-Adding or removing a link requires Manage case work, read access to both cases, and a target that
-has not been erased. You can include a note when adding a link. The source shows its outgoing links.
-The target shows readable incoming links, newest first, and a count. Case-scoped access suffices
-for these reads. Each case can have up to 20 outgoing links. Links never grant read access. An
-unreadable target shows as unavailable. A readable erased target shows as erased. Erasing the
-source clears its links.
+Adding a link requires Manage case work on the source and read access to both live cases. You can
+include a note. The source shows its outgoing links. The target shows readable incoming links,
+newest first, and a count. Each case can have up to 20 outgoing links. A source handler can detach an
+active link using its handle when the target is inaccessible. Erasing either case closes the link
+and clears its private target and note, including links detached earlier.
 
 ## Open the case workspace
 
@@ -257,12 +246,17 @@ accepted reason remains attached to its own receipt and full history entry, incl
 changes; current rights and case erasure control disclosure.
 
 Erase permanently clears saved business contents, including earlier facts, payments, work, reminders
-notes, attachments, parties and source links. Every reference remains reserved. Read the consequence and type the shown reference to confirm.
+notes, attachments, parties and related-case links. The issued Case ID and reference remain. Read the
+consequence and type the shown reference to confirm.
 Erasure also freezes the reviewed case-family sequence. Changes to any owned work, note, reminder or
 payment invalidate that review even when the case fact version stays unchanged. Review again explicitly
 before another attempt. Unrelated cases and account changes do not change this family sequence;
 current permission checks still apply.
-See [erasure limits](operating.md#erasure-limits) for backups and external copies.
+Erasing either case closes the relationship and clears its retained target and note, including
+a link detached before erasure. An authorized source handler can detach an active link using
+its handle when the target is inaccessible. Free text authored independently on another case
+keeps that case’s own erasure lifetime. See [erasure limits](operating.md#erasure-limits) for
+backups and external copies.
 
 ## Review, confirmation and delivery
 

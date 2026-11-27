@@ -90,7 +90,6 @@ let private owner fixture =
                 (OperationIds.fresh ())
                 DomainInputs.ownerProfile
                 []
-                CaseReferencePolicy.CustomAllowed
                 CancellationToken.None
 
         match provision with
@@ -673,14 +672,7 @@ let tests =
                                     (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                                     (ClaimCore.TestSupport.Submissions.fields (
                                         RegistrationInput.values (registration)
-                                     )
-                                     |> Map.add
-                                         (TaskInputId.Target(
-                                             InputTarget.Field BusinessField.CaseReference
-                                         ))
-                                         (ClaimCore.Application.Contracts.SubmissionValue.Text(
-                                             "HIDDEN-CONTENT"
-                                         )))))
+                                    ))))
                                 CancellationToken.None
 
                         accepted opened |> ignore

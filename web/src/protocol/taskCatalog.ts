@@ -69,16 +69,3 @@ export const taskScalar = (id: TaskInputId): FieldCatalogEntry | undefined => {
     (field): field is FieldCatalogEntry => field.scalar !== null && field.name === key,
   );
 };
-
-/** An optional retained reference is either explicitly entered or absent. */
-export const openingReferenceInput = (task: OperationTaskDefinition) =>
-  task.creates && task.binding?.kind === "CASE" && !task.binding.selectsCase
-    ? task.inputs.find(
-        (input) =>
-          input.mode === "OPTIONAL" &&
-          input.source === "AUTHORED" &&
-          input.retention === "RETAINED" &&
-          !input.clearable &&
-          taskScalar(input.id)?.valueKind === "REFERENCE",
-      )
-    : undefined;

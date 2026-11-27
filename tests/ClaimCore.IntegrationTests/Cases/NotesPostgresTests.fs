@@ -15,7 +15,7 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private target = CaseSelector.Reference "synthetic-a"
+let private target = CaseSelector.Reference populatedReference
 
 let private read =
     function

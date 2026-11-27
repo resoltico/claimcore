@@ -348,7 +348,7 @@ let tests =
                                        TaskInputId.Target(
                                            InputTarget.Field BusinessField.CaseReference
                                        )
-                                   )] <- JsonValue.Create "TASK-1")
+                                   )] <- JsonValue.Create "CC-0Q8W-MJRG-GFYZ-KMDQ-22")
                         record
 
                 Expect.equal

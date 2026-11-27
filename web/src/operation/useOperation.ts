@@ -9,7 +9,7 @@ import {
   type OperationAffordance,
 } from "./affordances";
 
-import { openingReferenceInput, operationTask } from "../protocol/taskCatalog";
+import { operationTask } from "../protocol/taskCatalog";
 import { createDraft } from "./operationDraft";
 import { ownerScope, sameOwnerScope } from "../protocol/ownerScope";
 import type { MutationLockChange } from "../hooks/useWorkspaceMutationLock";
@@ -104,9 +104,8 @@ const suppliedAffordance = (options: Options, kind: string) => {
 const currentAffordance = (state: OperationState, options: Options) => {
   const task = operationEntry(state.draft.entry);
   const supplied = suppliedAffordance(options, task.id);
-  return openingReferenceInput(task) === undefined
-    ? (state.draft.affordance ?? supplied)
-    : supplied;
+  const createsCase = task.creates && task.binding?.kind === "CASE" && !task.binding.selectsCase;
+  return createsCase ? supplied : (state.draft.affordance ?? supplied);
 };
 const fresh = (
   options: Options,
@@ -203,6 +202,7 @@ const useEffects = (
   ownerVerified: boolean,
 ) => {
   const subscribe = useRecoverySubscription();
+  const cache = useEndpointCache();
   useEffect(() => {
     if (
       !ownerVerified ||
@@ -319,7 +319,11 @@ const useEffects = (
       } else if (effect.kind === "DISCLOSURE_REFUSED") {
         options.onDisclosureRefused?.(effect.notice);
       } else {
+        const display = cache?.display();
+        const displayCurrent = () =>
+          display === undefined || cache?.admitsDisplay(display) === true;
         const current = () =>
+          displayCurrent() &&
           alive.current &&
           latest.current.ownerVerified &&
           effectMatchesOptions(effect.identity, latest.current.options) &&
@@ -337,13 +341,18 @@ const useEffects = (
             dispatch({ type: "HANDOFF", identity: effect.identity });
           },
         }).then((action) => {
-          if (effect.kind === "EXECUTE" ? alive.current : current()) {
+          if (effect.kind === "EXECUTE" && alive.current) {
+            if (!displayCurrent()) {
+              dispatch({ type: "INVALIDATE", refused: true });
+            }
+            dispatch(action);
+          } else if (current()) {
             dispatch(action);
           }
         });
       }
     }
-  }, [state, dispatch, options, ownerVerified]);
+  }, [state, dispatch, options, ownerVerified, cache]);
 };
 const useLock = (
   state: OperationState,
@@ -792,7 +801,8 @@ export const useOperation = (supplied: Options) => {
     }
   }, [cache, conflictCase, ownerVerified]);
   const view = operationView(state);
-  const disclosureCurrent = hasCurrentDisclosure(state, options, contextEpoch);
+  const displayAdmitted = cache === null || cache.admitsDisplay(cache.display());
+  const disclosureCurrent = displayAdmitted && hasCurrentDisclosure(state, options, contextEpoch);
   const controls = actions(state, dispatch, options, ownerVerified);
   const requestedReview = useRef<{
     context: typeof state.disclosed.context;

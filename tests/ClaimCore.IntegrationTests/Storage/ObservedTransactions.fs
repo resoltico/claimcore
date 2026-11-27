@@ -11,7 +11,9 @@ open ClaimCore.Application.Verification
 /// Record the real provider instant without replacing transaction behavior or results.
 type Store(inner: IStore) =
     let mutable observed: DateTimeOffset option = None
+    let mutable acceptedAt = None
     let mutable calls = 0
+    member _.AcceptedAt = acceptedAt |> Option.get
     member _.Calls = Volatile.Read(&calls)
 
     member _.ObservedAt =
@@ -52,5 +54,6 @@ type Store(inner: IStore) =
                     Work =
                         fun tx ->
                             observed <- Some tx.ObservedAt
+                            acceptedAt <- Some tx.ObservedAt
                             operation.Work tx
                 }

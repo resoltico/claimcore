@@ -15,7 +15,6 @@ type private Submitted =
     {
         Bytes: byte array
         OperationId: string
-        Reference: string
     }
 
 let private authored (fixture: PublishedFixture.Fixture) =
@@ -25,10 +24,7 @@ let private authored (fixture: PublishedFixture.Fixture) =
 
     let input = source["input"] |> nonNull
     let operation = id ()
-    let reference = "CLI-RESOLUTION-" + (id ()).Substring(24)
     input["operationId"] <- JsonValue.Create operation
-
-    (input["inputs"] |> nonNull)["field:caseReference"] <- JsonValue.Create reference
 
     let values = input["inputs"] |> nonNull
     values["field:claimedAmount"] <- JsonValue.Create "1.0000"
@@ -36,7 +32,6 @@ let private authored (fixture: PublishedFixture.Fixture) =
     {
         Bytes = Encoding.UTF8.GetBytes(source.ToJsonString())
         OperationId = operation
-        Reference = reference
     }
 
 let private field name (value: JsonElement) =
@@ -56,7 +51,8 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
     let subject = receipt.GetProperty "subject"
     Expect.equal (field "kind" subject) "CASE" "Case receipt"
     Expect.equal (field "act" subject) "case.open" "No changed act"
-    Expect.equal (field "caseReference" subject) submitted.Reference "No changed target"
+    Expect.equal (field "caseId" subject) submitted.OperationId "No changed case identity"
+    let reference = field "caseReference" subject
     Expect.equal (subject.GetProperty("revision").GetInt64()) 1L "No implicit rebase"
 
     let current =
@@ -67,7 +63,7 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
                 target =
                     {|
                         kind = "REFERENCE"
-                        caseReference = submitted.Reference
+                        caseReference = reference
                     |}
             |}
             0
@@ -93,7 +89,7 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
                 target =
                     {|
                         kind = "REFERENCE"
-                        caseReference = submitted.Reference
+                        caseReference = reference
                     |}
                 filter = "FACTS"
                 limit = 50
@@ -185,7 +181,7 @@ let private idlessCall (fixture: PublishedFixture.Fixture) =
     let input = source["input"] |> nonNull
     Expect.isNull input["operationId"] "The public example omits its operation identity"
 
-    (input["inputs"] |> nonNull)["field:caseReference"] <-
+    (input["inputs"] |> nonNull)["field:policyNumber"] <-
         JsonValue.Create("CLI-IDLESS-" + (id ()).Substring(24))
 
     let bytes = Encoding.UTF8.GetBytes(source.ToJsonString())

@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "امحُ نهائيًا تفاصيل هذا الملف ومدفوعاتها وأعمالها وتذكيراتها وملاحظاتها ومرفقاتها الحالية والمحتفَظ بها. يبقى مرجع الملف وسجل التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
-    "source": "8bf54b53220a"
+    "text": "امحُ تفاصيل الملف الخاصة وملاحظات الملفات المرتبطة والروابط إليها من السجل النشط. يبقى معرّف الملف ومرجعها وسجل تغييراتها. وتظل النسخ المحفوظة في أماكن أخرى كما هي.",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "محو الملف الشخصي",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "افتح ملفًا ببيانات التسجيل المعروفة لديك. اترك مرجع الملف فارغًا ليُعيّن تلقائيًا. يمكنك إدخال مرجع ملف مخصص إذا كان السجل يسمح بذلك.",
-    "source": "debda0b6773d",
+    "text": "افتح ملفًا ببيانات التسجيل التي تعرفها. يعيّن ClaimCore مرجعًا دائمًا للملف.",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "استخدم مرجع ملف صالحًا. يبدأ المرجع المخصص بحرف ASCII ويتكون من 32 حرفًا أو رقمًا أو شرطة على الأكثر، مع شرطة واحدة بين المجموعات. البادئة CC- محجوزة للمراجع التي يعيّنها النظام.",
-    "source": "f856f6f13ef0",
+    "text": "استخدم مرجع الملف الكامل الذي عيّنه ClaimCore، بما في ذلك أرقام التحقق.",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -1086,8 +1087,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "ممحُوّ. لم يبقَ سوى مرجع الملف.",
-    "source": "e63410fae906"
+    "text": "مُحيت الملف. يبقى معرّف الملف ومرجعها وسجل تغييراتها.",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "مُبطَل",
@@ -1140,6 +1142,16 @@
   "notice.notAccepted": {
     "text": "لم يُسجَّل هذا التغيير في السجل الحالي. بعد الاستعادة، اطلب من مشغّل التثبيت تأكيد أن السجل المستعاد يغطي النتيجة السابقة قبل تكرار التغيير.",
     "source": "a91c7c51f54b",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "انتهى تصدير CSV قبل تسليم جميع الصفوف.",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "الإيصال غير متاح. ابحث عن العملية باستخدام معرّفها الأصلي.",
+    "source": "f23e5cdf6158",
     "machineMade": true
   },
   "notice.outcomeUnknown": {
@@ -1404,17 +1416,129 @@
     "text": "عرض سجل الوصول والتصدير",
     "source": "637731605ab4"
   },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "طلبات الوصول",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "قائمة المرفقات",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "المسؤولون عن الملف",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "قائمة الملفات",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "ملاحظات الملف",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "أطراف الملف",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "مدفوعات الملف",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "ملخص الملفات",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "معاينة العملية",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "سياق مقدّم الطلب",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "إنهاء الجلسات",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "البحث عن العملية",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "إيصال العملية",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "دليل الأشخاص",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "صلاحيات الأشخاص",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "سجل الأشخاص",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "قائمة التذكيرات",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "عرض التذكير",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "أعداد عناصر العمل",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "قراءة السجل الزمني للملف",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "تغييرات الملف منذ المراجعة",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
   "disclosureKind.CASE_READ.label": {
     "text": "قراءة الملف",
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "تنزيل المرفق",
-    "source": "ba23685b28f6"
+    "text": "السماح بتنزيل المرفق",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "معاينة المرفق",
-    "source": "01b3a2e62a0d"
+    "text": "السماح بمعاينة المرفق",
+    "source": "5e82512366e5",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "ملخص التذكيرات",
+    "source": "b0c80c0e513f",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "التصدير",
@@ -1423,10 +1547,6 @@
   "disclosureKind.TRAIL_READ.label": {
     "text": "قراءة سجل الوصول والتصدير",
     "source": "42bd45e7fe95"
-  },
-  "disclosureKind.ACCESS_REFUSED.label": {
-    "text": "رفض الوصول",
-    "source": "07edbc210200"
   },
   "disclosureOutcome.SUCCEEDED.label": {
     "text": "تم بنجاح",
@@ -1499,6 +1619,21 @@
   "label.disclosureExportSelection": {
     "text": "نطاق التصدير",
     "source": "c015ee6b5e6e"
+  },
+  "label.disclosureRowCount": {
+    "text": "الصفوف المعروضة",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "الملفات المفصح عنها",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "الحسابات المفصح عنها",
+    "source": "5b856c5553bc",
+    "machineMade": true
   },
   "label.disclosureExportRowCount": {
     "text": "الصفوف المصدّرة",
@@ -1681,13 +1816,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "استخدم من 1 إلى {maximumCharacters} محرفًا من ASCII. يبدأ المرجع المخصص بحرف ويستخدم الحروف والأرقام وشرطة واحدة بين المجموعات. البادئة CC- محجوزة للمراجع التي يعيّنها النظام.",
-    "source": "e7fc63264856",
+    "text": "استخدم مرجع الملف المعيّن كاملاً، بما يصل إلى {maximumCharacters} محرف ASCII ورقمي التحقق.",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "يظل المرجع المخصص محجوزًا حتى بعد التصحيح أو المحو. لا تدرج فيه معلومات شخصية.",
-    "source": "4936b3dc4560",
+    "text": "أدخل المرجع المعيّن عند فتح الملف.",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1992,8 +2127,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "تحقق من مرجع الملف وشرطاته. ابدأ المرجع المخصص بحرف واستخدم 32 حرفًا أو رقمًا أو شرطة على الأكثر. البادئة CC- محجوزة.",
-    "source": "00e1c36eb2e1",
+    "text": "تحقق من مرجع الملف الكامل، بما في ذلك الشرطات وأرقام التحقق.",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2057,8 +2192,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "سيؤدي هذا إلى حذف تفاصيل الملف ومدفوعاته وأعماله وتذكيراته وملاحظاته الحالية والمحفوظة نهائيًا. يبقى المرجع وسجل التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
-    "source": "0e447a932597"
+    "text": "سيؤدي هذا إلى محو التفاصيل الخاصة والمرفقات وملاحظات الملفات المرتبطة والروابط إليها نهائيًا من السجل النشط. يبقى معرّف الملف ومرجعها وسجل تغييراتها. وتظل النسخ المحفوظة في أماكن أخرى كما هي.",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "سُجّل الحساب.",
@@ -3418,39 +3554,6 @@
     "text": "اختر نتيجة إغلاق من القائمة.",
     "source": "ed45fada7999"
   },
-  "task.case.changeReference.label": {
-    "text": "تغيير مرجع الملف",
-    "source": "c48c7e896bb5"
-  },
-  "task.case.changeReference.meaning": {
-    "text": "استبدل مرجع الملف الحالي. تبقى المراجع السابقة صالحة للعثور على الملف نفسه.",
-    "source": "1065858202dd"
-  },
-  "task.case.changeReference.done": {
-    "text": "تم تغيير مرجع الملف.",
-    "source": "58241a331134"
-  },
-  "task.case.changeReference.consequence": {
-    "text": "اختر مرجعًا جديدًا لهذا الملف.",
-    "source": "73700635d1ab"
-  },
-  "field.newReference.label": {
-    "text": "المرجع الجديد",
-    "source": "42906b7cf062"
-  },
-  "field.newReference.rule": {
-    "text": "استخدم تنسيق مرجع الملف.",
-    "source": "b905bbf44b8b"
-  },
-  "field.newReference.hint": {
-    "text": "يظل المرجع السابق صالحًا للعثور على هذا الملف. لا تضمّن معلومات شخصية في المرجع الجديد.",
-    "source": "2712ad08d240",
-    "machineMade": true
-  },
-  "label.referenceChangedFrom": {
-    "text": "المرجع السابق",
-    "source": "0f0590159e51"
-  },
   "field.reopenReason.hint": {
     "text": "سبب استئناف المعالجة.",
     "source": "52db5e07d84d"
@@ -4628,54 +4731,9 @@
     "text": "أدخل المبلغ والعملة معًا.",
     "source": "11da00ab5ba1"
   },
-  "diagnostic.REFERENCE_UNAVAILABLE": {
-    "text": "مرجع الملف غير متاح.",
-    "source": "233033263ef9",
-    "machineMade": true
-  },
-  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
-    "text": "يعيّن هذا السجل جميع مراجع الملفات تلقائيًا. أزل المرجع المخصص للمتابعة.",
-    "source": "072632d9c59c",
-    "machineMade": true
-  },
   "label.caseReferencePending": {
     "text": "يُعيّن عند فتح الملف.",
     "source": "9fcad855f05a",
-    "machineMade": true
-  },
-  "label.useCustomCaseReference": {
-    "text": "استخدام مرجع ملف مخصص",
-    "source": "3796d7f0af59",
-    "machineMade": true
-  },
-  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
-    "source": "22c0bf147040",
-    "text": "يعيّنها النظام فقط",
-    "machineMade": true
-  },
-  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
-    "source": "2126c4e1b515",
-    "text": "يُسمح بمراجع ملفات مخصصة",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.label": {
-    "source": "00276badc096",
-    "text": "سياسة مراجع الملفات",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.rule": {
-    "source": "d15f3878c38a",
-    "text": "سياسة تعيين مراجع الملفات المختارة عند الإعداد.",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.hint": {
-    "source": "8e971dfd9ae8",
-    "text": "اختر ما إذا كان يمكن إدخال مرجع ملف مخصص.",
-    "machineMade": true
-  },
-  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
-    "source": "a743fa65aff6",
-    "text": "اختر سياسة مدعومة لمراجع الملفات.",
     "machineMade": true
   },
   "diagnostic.TRAVERSAL_CHANGED": {

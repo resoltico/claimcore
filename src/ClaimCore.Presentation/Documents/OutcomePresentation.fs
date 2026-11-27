@@ -33,6 +33,7 @@ module OutcomePresentation =
         | ExecuteResult.AlreadyAccepted _ -> ReplyKind.AlreadyAccepted
         | ExecuteResult.Rejected _ -> ReplyKind.Rejected
         | ExecuteResult.Failed _ -> ReplyKind.Failed
+        | ExecuteResult.ReceiptUnavailable -> ReplyKind.ReceiptUnavailable
         | ExecuteResult.OutcomeUnknown -> ReplyKind.OutcomeUnknown
 
     let classifyOperationGet =

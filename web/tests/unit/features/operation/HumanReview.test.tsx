@@ -56,7 +56,7 @@ const review: HumanReview = {
       kind: "REVIEW",
       confirmation: {
         kind: "CASE_REFERENCE",
-        reference: "CORE-REFERENCE",
+        reference: "CC-AH6X-V2NW-BDWH-6WZM-30",
       },
       consequence: "IRREVERSIBLE",
     },
@@ -134,7 +134,7 @@ it("renders Core review content and requires its exact confirmation target while
   await userEvent.type(screen.getByRole("textbox"), "WRONG-REFERENCE");
   expect(submit).toBeDisabled();
   await userEvent.clear(screen.getByRole("textbox"));
-  await userEvent.type(screen.getByRole("textbox"), "CORE-REFERENCE");
+  await userEvent.type(screen.getByRole("textbox"), "CC-AH6X-V2NW-BDWH-6WZM-30");
   await userEvent.click(submit);
   expect(value.confirm).toHaveBeenLastCalledWith(true);
   expect(value.execute).toHaveBeenCalledTimes(1);
@@ -169,7 +169,7 @@ it("resets consent when a new Core review supplies a different target", async ()
       }
     </OperationReview>,
   );
-  await userEvent.type(screen.getByRole("textbox"), "CORE-REFERENCE");
+  await userEvent.type(screen.getByRole("textbox"), "CC-AH6X-V2NW-BDWH-6WZM-30");
   const next: HumanReview = {
     ...review,
     document: {
@@ -179,7 +179,7 @@ it("resets consent when a new Core review supplies a different target", async ()
         consequence: "IRREVERSIBLE",
         confirmation: {
           kind: "CASE_REFERENCE",
-          reference: "OTHER-REFERENCE",
+          reference: "CC-CN63-5ZDH-5Z4Z-CN91-20",
         },
       },
     },
@@ -213,14 +213,14 @@ it("records a routine review with one consent action", async () => {
       subject: {
         kind: "REVIEW",
         consequence: "ROUTINE",
-        confirmation: { kind: "CASE_REFERENCE", reference: "CORE-REFERENCE" },
+        confirmation: { kind: "CASE_REFERENCE", reference: "CC-AH6X-V2NW-BDWH-6WZM-30" },
       },
       actions: [
         operationAffordance(
           "case.close",
           {
             kind: "CASE",
-            target: { kind: "REFERENCE", caseReference: "CASE-1" },
+            target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
             expectedRevision: 1,
           },
           {},

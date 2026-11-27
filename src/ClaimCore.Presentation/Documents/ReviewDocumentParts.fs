@@ -23,16 +23,12 @@ module internal ReviewDocumentParts =
                         "field.caseReference.label"
                         Prominence.Primary
                         (PresentedValue.Reference reference)
-                | None, ReviewTarget.Opening requested ->
+                | None, ReviewTarget.Opening ->
                     ScreenEntries.value
                         "reference"
                         "field.caseReference.label"
                         Prominence.Primary
-                        (requested
-                         |> Option.map (CaseReference.format >> PresentedValue.Identifier)
-                         |> Option.defaultValue (
-                             PresentedValue.Message "label.caseReferencePending"
-                         ))
+                        (PresentedValue.Message "label.caseReferencePending")
                 | None, ReviewTarget.Person actor ->
                     ScreenEntries.value
                         "target"
@@ -131,7 +127,7 @@ module internal ReviewDocumentParts =
         let notices =
             [
                 match review.Target with
-                | ReviewTarget.Opening _ -> ()
+                | ReviewTarget.Opening -> ()
                 | _ ->
                     {
                         MessageId = PresentationKeys.consequence review.Task

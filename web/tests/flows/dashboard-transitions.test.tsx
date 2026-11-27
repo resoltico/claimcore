@@ -95,7 +95,7 @@ const queueDefinitionAndList = () => {
                   values: [
                     {
                       kind: "REFERENCE",
-                      value: "CASE-1",
+                      value: "CC-55KW-SSJ4-8HMS-G1BH-73",
                     },
                   ],
                 },
@@ -141,7 +141,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
     await screen.findByRole(
       "link",
       {
-        name: "CASE-1",
+        name: "CC-55KW-SSJ4-8HMS-G1BH-73",
       },
       {
         timeout: 5_000,
@@ -167,7 +167,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   renderDashboard();
   await user.click(
     await screen.findByRole("link", {
-      name: "CASE-1",
+      name: "CC-55KW-SSJ4-8HMS-G1BH-73",
     }),
   );
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
@@ -384,11 +384,9 @@ it("returns an accepted open operation to Dashboard through its committed transi
       name: "Open a case",
     }),
   );
-  await screen.findByRole("checkbox", { name: "Use a custom case reference" });
   const fill = (label: string, value: string): void => {
     changeField(label, value);
   };
-  fill("Case reference", "CASE-1");
   fill("Incident date", "2026-09-01");
   fill("Received", "2026-09-02");
   fill("Country", "LV");

@@ -8,6 +8,7 @@ the applicable final stages once, choosing CI or local execution as their owner.
 | Tool | Responsibility |
 | --- | --- |
 | [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and per-stage TRX reports |
+| [check-disclosure-boundary.sh](check-disclosure-boundary.sh) | Builds the server from an isolated source archive and requires the same build to reject a case-detail producer that returns its raw snapshot |
 | [native_test_report.py](native_test_report.py) | Requires every selected native test to pass in the fresh TRX report |
 | [versioning.py](versioning.py) | Evaluated product version, lockfile and toolchain version checks, and release-note extraction |
 | [compose-restart-smoke.sh](compose-restart-smoke.sh) | Builds the evaluation Compose stack and proves `down`/`up` keeps the installation in [CI qualification and scheduled runs](../.github/workflows/compose.yml) |

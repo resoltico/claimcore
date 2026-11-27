@@ -36,7 +36,7 @@ type SeedStep = Readonly<{
   operationId?: string;
   task: CaseSubmission["task"];
   inputs: CaseSubmission["inputs"];
-  fields: CaseFields;
+  fields: Omit<CaseFields, "caseReference">;
 }>;
 const setupRegistration = {
   incidentDate: "2026-09-01",
@@ -52,9 +52,8 @@ const setupDecision = {
   payableAmount: "300.25",
   payableCurrency: "EUR",
 };
-const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep[] => {
-  const opened: CaseFields = {
-    caseReference: reference,
+const paidCaseSteps = (status: "OPENED" | "CLOSED"): SeedStep[] => {
+  const opened: SeedStep["fields"] = {
     handling: { kind: "OPEN" },
     registration: {
       ...setupRegistration,
@@ -66,7 +65,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
       paymentCount: 0,
     },
   };
-  const decided: CaseFields = {
+  const decided: SeedStep["fields"] = {
     ...opened,
     finance: {
       ...opened.finance,
@@ -74,7 +73,7 @@ const paidCaseSteps = (reference: string, status: "OPENED" | "CLOSED"): SeedStep
     },
   };
   const paymentId = mintOperationId();
-  const paid: CaseFields = {
+  const paid: SeedStep["fields"] = {
     ...decided,
     finance: {
       ...decided.finance,
@@ -120,7 +119,7 @@ const acceptSetup = async (
   page: Page,
   token: string,
   request: CaseSubmission,
-  fields: CaseFields,
+  fields: SeedStep["fields"],
 ): Promise<CaseDataReceipt> => {
   const endpoint = endpoints.find((item) => item.id === "operation.execute");
   if (endpoint === undefined) {
@@ -156,7 +155,7 @@ const acceptSetup = async (
   expect(receipt.operationId).toBe(request.operationId);
   const reference = (() => {
     if (request.task === "case.open") {
-      return request.inputs["field:caseReference"];
+      return receipt.subject.caseReference;
     }
     return "target" in request.binding && request.binding.target.kind === "REFERENCE"
       ? request.binding.target.caseReference
@@ -195,7 +194,7 @@ const acceptSetup = async (
     recordedFields,
     state: {
       kind: "ACTIVE",
-      fields,
+      fields: { ...fields, caseReference: reference },
     },
     payments:
       request.task === "case.recordPayment"
@@ -216,11 +215,12 @@ const acceptSetup = async (
   });
   return receipt;
 };
-export const paidCase = async (page: Page, reference: string, status: "OPENED" | "CLOSED") => {
+export const paidCase = async (page: Page, status: "OPENED" | "CLOSED") => {
   const token = await sessionToken(page);
   let recordedBy: string | undefined;
   let revision = 0;
-  for (const step of paidCaseSteps(reference, status)) {
+  let reference: string | undefined;
+  for (const step of paidCaseSteps(status)) {
     const receipt = await acceptSetup(
       page,
       token,
@@ -232,13 +232,10 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
             ? { kind: "CASE", expectedRevision: 0 }
             : {
                 kind: "CASE",
-                target: { kind: "REFERENCE", caseReference: reference },
+                target: { kind: "REFERENCE", caseReference: reference! },
                 expectedRevision: revision,
               },
-        inputs:
-          step.task === "case.open"
-            ? { ...step.inputs, "field:caseReference": reference }
-            : step.inputs,
+        inputs: step.inputs,
       } as CaseSubmission,
       step.fields,
     );
@@ -251,13 +248,15 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       expect(acceptedActor.actor.actorId).toBe(recordedBy);
     }
     recordedBy = acceptedActor.actor.actorId;
+    reference = receipt.subject.caseReference;
     revision = acceptedRevision;
   }
   const lookup = await showExactLookup(page);
-  await lookup.fill(reference);
+  await lookup.fill(reference!);
   await lookup.press("Enter");
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expectCaseRevision(page, revision);
+  return reference!;
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);

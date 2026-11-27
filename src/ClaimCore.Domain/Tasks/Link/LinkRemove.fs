@@ -27,40 +27,22 @@ let private selected binding (state: DecisionFacts) =
         |> Option.map (fun part -> id, part)
     | _ -> None
 
-let private gate retained (environment: FamilyEnvironment) binding state =
+let private gate retained binding state =
     FamilyRules.active false state
     |> Option.orElseWith (fun () ->
         let available =
             selected binding state
-            |> Option.exists (fun (_, part) ->
-                match part.Value.Content with
-                | Some content ->
-                    environment.RelatedCase(CaseSelector.Id content.Target)
-                    |> RelatedCase.availableTarget
-                    |> Option.isSome
-                | None -> retained)
+            |> Option.exists (fun (_, part) -> retained || part.Value.Content.IsSome)
 
         if available then None else Some FamilyRules.unavailable)
 
 let availability environment state binding =
-    FamilyRules.availability
-        declaration
-        environment
-        state
-        binding
-        capability
-        (gate false environment binding)
+    FamilyRules.availability declaration environment state binding capability (gate false binding)
 
 let private apply retained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state with
     | Some state ->
-        FamilyRules.admit
-            context
-            environment
-            state
-            binding
-            capability
-            (gate retained environment binding)
+        FamilyRules.admit context environment state binding capability (gate retained binding)
         |> Result.bind (fun () ->
             match selected binding state with
             | None -> Error FamilyRules.unavailable

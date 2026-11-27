@@ -92,7 +92,7 @@ it("keeps false and Any through a supplied-target page continuation, clear restr
     .mockResolvedValueOnce(selectionPage([completedLaterOpen]))
     .mockResolvedValue(selectionPage([completedOpen]));
   navigate(
-    "/reminders?view=COMPLETED&state=ANY&includeInactive=false&caseReference=VISIBLE-CASE",
+    "/reminders?view=COMPLETED&state=ANY&includeInactive=false&caseReference=CC-QBA5-JRM2-0YAR-5JGG-30",
     true,
   );
   const view = render(<ReminderQueue />);
@@ -101,7 +101,7 @@ it("keeps false and Any through a supplied-target page continuation, clear restr
   await waitFor(() => {
     expect(reads.mock.calls[1]?.[1]).toMatchObject({
       cursor: "old-scope-cursor",
-      target: { kind: "REFERENCE", caseReference: "VISIBLE-CASE" },
+      target: { kind: "REFERENCE", caseReference: "CC-QBA5-JRM2-0YAR-5JGG-30" },
       state: "ANY",
       includeInactive: false,
     });

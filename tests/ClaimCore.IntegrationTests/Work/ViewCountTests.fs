@@ -68,12 +68,7 @@ let tests =
                         (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                         (ClaimCore.TestSupport.Submissions.fields (
                             RegistrationInput.values (DomainInputs.registration)
-                         )
-                         |> Map.add
-                             (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                             (ClaimCore.Application.Contracts.SubmissionValue.Text(
-                                 sprintf "COUNT-%d" number
-                             )))))
+                        ))))
                     CancellationToken.None
                 |> get
 
@@ -89,7 +84,7 @@ let tests =
                         "reminder.create"
                         (id (100 + number))
                         (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                            (CaseSelector.Reference(sprintf "COUNT-%d" number)),
+                            (CaseSelector.Id(CaseFixtures.caseId (id number))),
                             None
                         ))
                         (ClaimCore.TestSupport.Submissions.reminderPlan

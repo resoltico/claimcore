@@ -356,7 +356,7 @@ let private admittedDatabase
         Installation = installation
     }
 
-let private createInZone seeded configure owner timeZone poolCapacity policy =
+let private createInZone seeded configure owner timeZone poolCapacity bootstrapOwner =
     task {
         let! container =
             if seeded && TestcontainersSettings.ResourceReaperEnabled then
@@ -392,8 +392,7 @@ let private createInZone seeded configure owner timeZone poolCapacity policy =
 
             let! installationId =
                 task {
-                    match policy with
-                    | None ->
+                    if not bootstrapOwner then
                         return!
                             SchemaAdministration.initialize
                                 ownerSource
@@ -401,7 +400,7 @@ let private createInZone seeded configure owner timeZone poolCapacity policy =
                                 timeZone
                                 (fun _ _ _ -> Task.FromResult(()))
                                 CancellationToken.None
-                    | Some _ ->
+                    else
                         use setup = new Administration(ownerConnection container, "test", masterKey)
 
                         let initial =
@@ -412,7 +411,7 @@ let private createInZone seeded configure owner timeZone poolCapacity policy =
                             }
 
                         let! installation =
-                            setup.Initialize(timeZone, initial, policy, CancellationToken.None)
+                            setup.Initialize(timeZone, initial, CancellationToken.None)
 
                         return installation.InstallationId
                 }
@@ -424,9 +423,9 @@ let private createInZone seeded configure owner timeZone poolCapacity policy =
             sources <- runtime :: sources
 
             let! admitted, cipher =
-                match policy with
-                | Some _ -> InstallationCheck.openRuntime runtime masterKey CancellationToken.None
-                | None ->
+                if bootstrapOwner then
+                    InstallationCheck.openRuntime runtime masterKey CancellationToken.None
+                else
                     // Schema-only tests provision the first owner themselves. They exercise storage
                     // directly, because real runtime admission requires sequence-one evidence.
                     DatabaseSession.read runtime CancellationToken.None (fun connection ->
@@ -484,27 +483,27 @@ let private createInZone seeded configure owner timeZone poolCapacity policy =
 let private defaults builder = builder
 
 let internal createFor principal =
-    createInZone true defaults principal "Etc/UTC" None None
+    createInZone true defaults principal "Etc/UTC" None false
 
 let internal createWithZone timeZone =
-    createInZone true defaults owner timeZone None None
+    createInZone true defaults owner timeZone None false
 
 let internal createForPool principal capacity =
-    createInZone true defaults principal "Etc/UTC" (Some capacity) None
+    createInZone true defaults principal "Etc/UTC" (Some capacity) false
 
 let internal create () = createFor owner
 
 let internal createDurable () =
-    createInZone false durable owner "Etc/UTC" None None
+    createInZone false durable owner "Etc/UTC" None false
 
-let internal createWithReferencePolicy policy =
-    createInZone true defaults owner "Etc/UTC" None (Some policy)
+let internal createWithOwner () =
+    createInZone true defaults owner "Etc/UTC" None true
 
 let internal createWithStatementCounts () =
     let configure (builder: PostgreSqlBuilder) =
         builder.WithCommand("-c", "shared_preload_libraries=pg_stat_statements")
 
-    createInZone false configure owner "Etc/UTC" None None
+    createInZone false configure owner "Etc/UTC" None false
 
 /// The two additional ports belong to independent, promoted physical restores inside the
 /// owned fixture. The primary archives to an atomic, test-only sibling of its data directory.
@@ -530,7 +529,7 @@ let internal createArchived () =
                 "archive_command=mkdir -p /var/lib/postgresql/attachment-wal && cp %p /var/lib/postgresql/attachment-wal/%f.tmp && mv /var/lib/postgresql/attachment-wal/%f.tmp /var/lib/postgresql/attachment-wal/%f"
             )
 
-    createInZone false configure owner "Etc/UTC" None None
+    createInZone false configure owner "Etc/UTC" None false
 
 let internal fixture () =
     task { let! database = create () in return database.Fixture }

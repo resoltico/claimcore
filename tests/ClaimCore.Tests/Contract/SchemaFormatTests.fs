@@ -42,8 +42,20 @@ let private calendar () =
 let private references () =
     for expected, values in
         [
-            true, [ "Demo-1"; String.replicate 32 "A"; "CC-0123-4567-89AB-CDEF-41" ]
-            false, [ ""; "a b"; "é"; String.replicate 33 "A"; "a\u0000b"; "a\n"; "A--B"; "CC-123" ]
+            true, [ "CC-0000-0000-0000-0000-98"; "CC-0123-4567-89AB-CDEF-41" ]
+            false,
+            [
+                "Demo-1"
+                String.replicate 32 "A"
+                ""
+                "a b"
+                "é"
+                String.replicate 33 "A"
+                "a\u0000b"
+                "a\n"
+                "A--B"
+                "CC-123"
+            ]
         ] do
         for value in values do
             Expect.equal
@@ -148,7 +160,7 @@ let tests =
             testCase "disjoint literal alternatives use equivalent compact enums" literalEnums
             testCase "instants use exact UTC microsecond spelling" timestamps
             testCase "calendar dates exist and have exact spelling" calendar
-            testCase "accepted references have the custom or checked generated grammar" references
+            testCase "accepted references have the issued reference grammar" references
             testCase
                 "business request admission and accepted response grammars are distinct"
                 businessAdmission

@@ -18,7 +18,6 @@ import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
 import { goToView } from "./workspace-navigation";
 
-const systemOnly = process.env["CLAIMCORE_WEB_E2E_REFERENCE_POLICY"] === "SYSTEM_ASSIGNED_ONLY";
 const generatedReference = /^CC-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}-[0-9]{2}$/u;
 
 test("automatic opening reviews pending assignment and records a copyable case reference", async ({
@@ -29,15 +28,8 @@ test("automatic opening reviews pending assignment and records a copyable case r
   await startOpen(page);
   const custom = page.getByRole("checkbox", { name: "Use a custom case reference" });
   await expect(page.getByRole("textbox", { name: "Case reference", exact: true })).toHaveCount(0);
-  if (systemOnly) {
-    await expect(custom).toHaveCount(0);
-  } else {
-    await expect(custom).toBeVisible();
-    await expect(custom).not.toBeChecked();
-  }
-  await expect(
-    page.getByRole("status").filter({ hasText: "Assigned when the case is opened." }),
-  ).toHaveCount(1);
+  await expect(custom).toHaveCount(0);
+  await expect(page.getByText(/ClaimCore assigns its permanent reference/u)).toBeVisible();
   await expect(page.getByText(/Leave the case reference blank/u)).toHaveCount(0);
   const identity = await reviewDraft(page);
   const review = page.getByRole("dialog");
@@ -58,97 +50,95 @@ test("automatic opening reviews pending assignment and records a copyable case r
     receipt.getByRole("button", { name: /Copy.*Case reference/u }).first(),
   ).toBeVisible();
 });
-if (systemOnly) {
-  test("automatic opening recovers the issued reference after losing its acceptance reply", async ({
-    page,
-    context,
-  }) => {
-    await openAuthenticated(page);
-    await startOpen(page);
-    const identity = await reviewDraft(page);
+test("automatic opening recovers the issued reference after losing its acceptance reply", async ({
+  page,
+  context,
+}) => {
+  await openAuthenticated(page);
+  await startOpen(page);
+  const identity = await reviewDraft(page);
 
-    const executions: string[] = [];
-    context.on("request", (request) => {
-      if (new URL(request.url()).pathname === "/api/operation.execute") {
-        executions.push((request.postDataJSON() as { operationId: string }).operationId);
-      }
-    });
-
-    let issued: string | undefined;
-    await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
-    await page.route("**/api/operation.execute", async (route) => {
-      const committed = await route.fetch({ maxRedirects: 0 });
-      expect(committed.status()).toBe(200);
-      const reply = (await committed.json()) as ResponseFor<"operation.execute", "HUMAN">;
-      expect(reply.operationId).toBe(identity.operationId);
-      if (reply.outcome.kind !== "ACCEPTED") {
-        throw new Error("The generated opening did not commit.");
-      }
-      const reference = reply.outcome.document.screen.regions
-        .flatMap(({ content }) => (content.kind === "ENTRIES" ? content.entries : []))
-        .find(({ key }) => key === "reference")?.value;
-      if (reference?.kind !== "REFERENCE") {
-        throw new Error("The opening receipt is missing its issued reference.");
-      }
-      issued = reference.value;
-      expect(issued).toMatch(generatedReference);
-      await route.abort("connectionfailed");
-    });
-
-    await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
-    await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
-    expect(issued).toBeDefined();
-
-    const replacement = await context.newPage();
-    try {
-      const lookup = replacement
-        .waitForResponse(
-          (response) =>
-            response.url().endsWith("/api/operation.get") &&
-            response.ok() &&
-            (response.request().postDataJSON() as { operationId: string }).operationId ===
-              identity.operationId,
-        )
-        .then(async (response) => (await response.json()) as ResponseFor<"operation.get", "HUMAN">);
-      await page.close();
-      await openAuthenticated(replacement);
-      expect(await lookup).toMatchObject({
-        operationId: identity.operationId,
-        outcome: {
-          kind: "ACCEPTED",
-          byRequester: true,
-          document: {
-            screen: {
-              regions: expect.arrayContaining([
-                expect.objectContaining({
-                  content: {
-                    kind: "ENTRIES",
-                    entries: expect.arrayContaining([
-                      expect.objectContaining({
-                        key: "reference",
-                        value: { kind: "REFERENCE", value: issued },
-                      }),
-                    ]),
-                  },
-                }),
-              ]),
-            },
-          },
-        },
-      });
-      await goToView(replacement, "recovery");
-      await expect(replacement.locator('.unconfirmed-list [data-state="RECORDED"]')).toBeVisible();
-      await replacement.getByRole("link", { name: "Open case", exact: true }).click();
-      await expect(replacement).toHaveURL(
-        (url) => url.pathname === `/cases/id/${identity.operationId}`,
-      );
-      await expect(replacement.locator("#case-detail-title")).toHaveText(issued!);
-      expect(executions).toEqual([identity.operationId]);
-    } finally {
-      await replacement.close();
+  const executions: string[] = [];
+  context.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/operation.execute") {
+      executions.push((request.postDataJSON() as { operationId: string }).operationId);
     }
   });
-}
+
+  let issued: string | undefined;
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
+  await page.route("**/api/operation.execute", async (route) => {
+    const committed = await route.fetch({ maxRedirects: 0 });
+    expect(committed.status()).toBe(200);
+    const reply = (await committed.json()) as ResponseFor<"operation.execute", "HUMAN">;
+    expect(reply.operationId).toBe(identity.operationId);
+    if (reply.outcome.kind !== "ACCEPTED") {
+      throw new Error("The generated opening did not commit.");
+    }
+    const reference = reply.outcome.document.screen.regions
+      .flatMap(({ content }) => (content.kind === "ENTRIES" ? content.entries : []))
+      .find(({ key }) => key === "reference")?.value;
+    if (reference?.kind !== "REFERENCE") {
+      throw new Error("The opening receipt is missing its issued reference.");
+    }
+    issued = reference.value;
+    expect(issued).toMatch(generatedReference);
+    await route.abort("connectionfailed");
+  });
+
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  expect(issued).toBeDefined();
+
+  const replacement = await context.newPage();
+  try {
+    const lookup = replacement
+      .waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/operation.get") &&
+          response.ok() &&
+          (response.request().postDataJSON() as { operationId: string }).operationId ===
+            identity.operationId,
+      )
+      .then(async (response) => (await response.json()) as ResponseFor<"operation.get", "HUMAN">);
+    await page.close();
+    await openAuthenticated(replacement);
+    expect(await lookup).toMatchObject({
+      operationId: identity.operationId,
+      outcome: {
+        kind: "ACCEPTED",
+        byRequester: true,
+        document: {
+          screen: {
+            regions: expect.arrayContaining([
+              expect.objectContaining({
+                content: {
+                  kind: "ENTRIES",
+                  entries: expect.arrayContaining([
+                    expect.objectContaining({
+                      key: "reference",
+                      value: { kind: "REFERENCE", value: issued },
+                    }),
+                  ]),
+                },
+              }),
+            ]),
+          },
+        },
+      },
+    });
+    await goToView(replacement, "recovery");
+    await expect(replacement.locator('.unconfirmed-list [data-state="RECORDED"]')).toBeVisible();
+    await replacement.getByRole("link", { name: "Open case", exact: true }).click();
+    await expect(replacement).toHaveURL(
+      (url) => url.pathname === `/cases/id/${identity.operationId}`,
+    );
+    await expect(replacement.locator("#case-detail-title")).toHaveText(issued!);
+    expect(executions).toEqual([identity.operationId]);
+  } finally {
+    await replacement.close();
+  }
+});
 
 test("protects exact routed amendment edits on Back while untouched drafts leave directly", async ({
   page,
@@ -296,7 +286,7 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
     "case.amendRegistration",
   );
   const detail = page.locator("#case-detail-title");
-  await expect(detail).toHaveText(reference);
+  await expect(detail).toHaveText(generatedReference);
   const banner = acceptanceBanner(page);
   await expect(banner).toContainText("Case opened.");
   await expect(banner).toBeFocused();
@@ -321,7 +311,7 @@ test("accepted receipt opens in a readable dialog in desktop LTR and narrow RTL"
   await page.setViewportSize({ width: 1440, height: 1050 });
   await openAuthenticated(page);
   const reference = `RECEIPT-LAYOUT-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference } = await openCase(page, reference);
   for (const language of ["en", "ar"] as const) {
     if (language === "ar") {
       await page.setViewportSize({ width: 390, height: 844 });
@@ -330,7 +320,7 @@ test("accepted receipt opens in a readable dialog in desktop LTR and narrow RTL"
     }
     await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
     const receipt = await openAcceptedReceipt(page);
-    await expect(receipt.locator('[data-entry="reference"] dd bdi')).toHaveText(reference);
+    await expect(receipt.locator('[data-entry="reference"] dd bdi')).toHaveText(caseReference);
     await expect(receipt.locator('[data-entry="policyNumber"] dd')).toHaveText(
       "Synthetic claimant",
     );

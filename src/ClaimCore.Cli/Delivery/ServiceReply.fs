@@ -27,7 +27,8 @@ module ReplyExitCode =
         | ReplyKind.AlreadyAccepted -> ExitCode.Success
         | ReplyKind.NotAccepted
         | ReplyKind.Rejected -> ExitCode.Rejected
-        | ReplyKind.Failed -> ExitCode.Failed
+        | ReplyKind.Failed
+        | ReplyKind.ReceiptUnavailable -> ExitCode.Failed
         | ReplyKind.Pending
         | ReplyKind.OutcomeUnknown -> ExitCode.OutcomeUnknown
 

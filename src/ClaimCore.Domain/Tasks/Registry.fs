@@ -12,7 +12,6 @@ module Registry =
         [
             Task.Opening openCase
             ClaimCore.Domain.Tasks.Case.AmendRegistration.task
-            ClaimCore.Domain.Tasks.Case.ChangeReference.task
             ClaimCore.Domain.Tasks.Case.Correct.task
             ClaimCore.Domain.Tasks.Case.Decide.task
             ClaimCore.Domain.Tasks.Case.WithdrawDecision.task
@@ -64,9 +63,6 @@ module Registry =
     let find id = Map.tryFind id byId
     let findDeclaration id = find id |> Option.map Task.declaration
     let initialOwnerRoles = ClaimCore.Domain.Tasks.People.ProvisionOwner.initialRoles
-
-    let initialReferencePolicy =
-        ClaimCore.Domain.Tasks.People.ProvisionOwner.referencePolicy
 
     let validateInitialOwnerRoles =
         ClaimCore.Domain.Tasks.People.ProvisionOwner.validateRoles

@@ -1,6 +1,7 @@
 namespace ClaimCore.Server
 
 open System
+open System.Globalization
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
@@ -56,6 +57,32 @@ module internal ExportRoutes =
                 | Ok value -> return Ok value
         }
 
+    let private pageWindow (context: HttpContext) =
+        let header name =
+            match context.Request.Headers.TryGetValue name with
+            | false, _ -> Ok None
+            | true, values when values.Count = 1 ->
+                match Option.ofObj values[0] with
+                | Some text -> Ok(Some text)
+                | None -> Error()
+            | _ -> Error()
+
+        match header ExportTransport.pageSizeHeader, header ExportTransport.afterHeader with
+        | Ok None, Ok None -> Ok None
+        | Ok(Some size), Ok after ->
+            match Int32.TryParse(size, NumberStyles.None, CultureInfo.InvariantCulture) with
+            | true, count when
+                count >= 1
+                && count <= Paging.MaximumPageSize
+                && (after
+                    |> Option.forall (fun cursor ->
+                        cursor.Length > 0
+                        && cursor.Length <= ExportTransport.maximumContinuationCharacters))
+                ->
+                Ok(Some { Limit = count; After = after })
+            | _ -> Error()
+        | _ -> Error()
+
     let handle configuration withActor (context: HttpContext) =
         task {
             HttpHeaders.noStore context
@@ -72,7 +99,7 @@ module internal ExportRoutes =
                 return RouteSupport.hostFailure context HostFailureReason.MethodRejected
             elif not (ApiRoutes.handshake context) then
                 return RouteSupport.hostFailure context HostFailureReason.ContractMismatch
-            elif Result.isError representation then
+            elif Result.isError representation || Result.isError (pageWindow context) then
                 return RouteSupport.hostFailure context HostFailureReason.InputInvalid
             else
                 match! ApiRoutes.admit configuration context with
@@ -99,6 +126,8 @@ module internal ExportRoutes =
                         match! selection configuration context with
                         | Error result -> return result
                         | Ok selection ->
+                            let window = pageWindow context |> Result.defaultValue None
+
                             match ApiRoutes.installationBinding context with
                             | None ->
                                 return
@@ -142,91 +171,86 @@ module internal ExportRoutes =
                                                         |> Service.withReadCancellation
                                                             budget.Token
 
-                                                    let read () =
-                                                        Service.readExportSnapshot
-                                                            services
-                                                            selection
-                                                            budget.Token
-                                                            (fun snapshot ->
-                                                                CsvExport.materialize
-                                                                    Limits.MaximumResponseBytes
-                                                                    budget.Token
-                                                                    (CsvExport.traversal
-                                                                        snapshot
-                                                                        selection))
+                                                    let continuation =
+                                                        window
+                                                        |> Option.map (fun page ->
+                                                            let digest =
+                                                                ExportTransport.request.Write
+                                                                    selection
+                                                                |> CanonicalWriter.bytes
+                                                                |> System.Security.Cryptography
+                                                                    .SHA256.HashData
+                                                                |> Convert.ToHexStringLower
 
-                                                    let outcome =
-                                                        function
-                                                        | Outcome.Failed fault ->
-                                                            Error(ExportFailure.Failed fault)
-                                                        | Outcome.Rejected refusal ->
-                                                            Error(
-                                                                ExportFailure.Rejected(
-                                                                    HumanReplies.rejection refusal
-                                                                )
-                                                            )
-                                                        | Outcome.Succeeded value -> Ok value
+                                                            {
+                                                                ExportContinuationRequest.SelectionDigest =
+                                                                    digest
+                                                                    + ":"
+                                                                    + page.Limit.ToString(
+                                                                        CultureInfo
+                                                                            .InvariantCulture
+                                                                    )
+                                                                After = page.After
+                                                            })
+
+                                                    let materialize snapshot after seal =
+                                                        task {
+                                                            let page =
+                                                                window
+                                                                |> Option.map (fun value ->
+                                                                    { value with After = after })
+
+                                                            let limit =
+                                                                window
+                                                                |> Option.map _.Limit
+                                                                |> Option.defaultValue
+                                                                    Paging.MaximumPageSize
+
+                                                            let! prepared =
+                                                                CsvExport.materializeWindow
+                                                                    Limits.MaximumResponseBytes
+                                                                    page
+                                                                    budget.Token
+                                                                    (CsvExport.traversalAt
+                                                                        limit
+                                                                        snapshot
+                                                                        selection)
+
+                                                            return
+                                                                prepared
+                                                                |> Result.map (fun document ->
+                                                                    {
+                                                                        ExportCandidate.Body =
+                                                                            {
+                                                                                Bytes =
+                                                                                    document.Bytes
+                                                                                NextCursor =
+                                                                                    Option.map
+                                                                                        seal
+                                                                                        document
+                                                                                            .NextCursor
+                                                                            }
+                                                                        RowCount =
+                                                                            document.RowCount
+                                                                        Manifest =
+                                                                            document.Manifest
+                                                                        CaseId = document.CaseId
+                                                                    })
+                                                        }
 
                                                     let! document =
                                                         task {
                                                             try
-                                                                match! read () with
-                                                                | Outcome.Succeeded(Ok prepared,
-                                                                                    basis) ->
-                                                                    // The second authorized snapshot is the release cut. Buffer evidence
-                                                                    // includes source subjects plus the delivered bytes.
-                                                                    match! read () with
-                                                                    | Outcome.Succeeded(Ok current,
-                                                                                        releaseBasis) ->
-                                                                        let disclosure =
-                                                                            ExportSelection
-                                                                                .disclosure
-                                                                                prepared.RowCount
-                                                                                prepared.CaseId
-                                                                                selection
-
-                                                                        let! released =
-                                                                            Service.releaseExport
-                                                                                services
-                                                                                (basis,
-                                                                                 prepared.Manifest)
-                                                                                (releaseBasis,
-                                                                                 current.Manifest)
-                                                                                prepared.CaseId
-                                                                                disclosure
-                                                                                budget.Token
-
-                                                                        return
-                                                                            outcome released
-                                                                            |> Result.map
-                                                                                (fun () ->
-                                                                                    prepared)
-                                                                    | Outcome.Succeeded(Error _, _) ->
-                                                                        return
-                                                                            Error(
-                                                                                ExportFailure
-                                                                                    .Rejected(
-                                                                                        HumanReplies
-                                                                                            .rejection (
-                                                                                                ClaimCore
-                                                                                                    .Domain
-                                                                                                    .Refusal
-                                                                                                    .Access
-                                                                                                    ClaimCore
-                                                                                                        .Domain
-                                                                                                        .AccessRefusal
-                                                                                                        .ResourceUnavailable
-                                                                                            )
-                                                                                    )
-                                                                            )
-                                                                    | result ->
-                                                                        return
-                                                                            outcome result
-                                                                            |> Result.map (fun _ ->
-                                                                                prepared)
-                                                                | Outcome.Succeeded(Error failure,
-                                                                                    _) ->
-                                                                    return Error failure
+                                                                match!
+                                                                    Service.export
+                                                                        services
+                                                                        selection
+                                                                        continuation
+                                                                        budget.Token
+                                                                        materialize
+                                                                with
+                                                                | Outcome.Succeeded result ->
+                                                                    return result
                                                                 | Outcome.Rejected refusal ->
                                                                     return
                                                                         Error(
@@ -273,7 +297,7 @@ module internal ExportRoutes =
                                                                 {
                                                                     RouteReply.Response =
                                                                         RouteBody.Csv(
-                                                                            document.Bytes,
+                                                                            document,
                                                                             ExportTransport
                                                                                 .filename
                                                                                 selection,

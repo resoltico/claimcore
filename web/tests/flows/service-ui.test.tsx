@@ -61,7 +61,7 @@ describe("catalog rendering", () => {
                       key: "arbitrary-server-key",
                       labelId: "field.caseReference.label",
                       prominence: "PRIMARY",
-                      value: { kind: "REFERENCE", value: "CASE-1" },
+                      value: { kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" },
                     },
                   ],
                 },
@@ -83,7 +83,7 @@ describe("catalog rendering", () => {
       createPresenter(defaults).fieldHint(incident.name),
     );
     expect(screen.getAllByText(createPresenter(defaults).fieldHint(incident.name))).toHaveLength(1);
-    expect(screen.getByText("CASE-1")).toBeVisible();
+    expect(screen.getByText("CC-55KW-SSJ4-8HMS-G1BH-73")).toBeVisible();
   });
 });
 const queueClosePreview = () => {

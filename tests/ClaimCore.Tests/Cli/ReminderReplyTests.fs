@@ -30,7 +30,7 @@ let private reminder state =
 let private item active state timing : ReminderReadModel =
     {
         Reminder = reminder state
-        Reference = CaseReference.parse "CLI-TIMING" |> required
+        Reference = ClaimCore.TestSupport.DomainInputs.reference "CC-F17M-B2GM-Q6FJ-1QY0-56"
         Claimants =
             [
                 (PartyName.parse "Synthetic claimant" |> Result.defaultWith (string >> failtest))
@@ -290,7 +290,8 @@ let tests =
                                                 ClaimCore.TestSupport
                                                     .ResponseExamples.snapshot.CaseId
                                             Reference =
-                                                CaseReference.parse "CLI-TIMING" |> required
+                                                ClaimCore.TestSupport.DomainInputs.reference
+                                                    "CC-F17M-B2GM-Q6FJ-1QY0-56"
                                             Act = (TaskId.ofLiteral "reminder.create")
                                             Effects =
                                                 ReminderReceiptEffects.Single

@@ -68,7 +68,9 @@ let private continuation () =
         "Continuation preserves all filters and only changes the cursor"
 
     Expect.isError
-        (Grammar.prepare (fun () -> id) [ "disclosure"; "trail"; "--case-id"; "CASE-001" ])
+        (Grammar.prepare
+            (fun () -> id)
+            [ "disclosure"; "trail"; "--case-id"; "CC-XE9K-MAK4-MB6P-FXMR-33" ])
         "The filter requires the case UUID rather than a human case reference"
 
 let private humanTable () =
@@ -79,11 +81,18 @@ let private humanTable () =
             CaseId = None
             AttachmentId = None
             Outcome = DisclosureOutcome.Succeeded
+            Page = None
             Export =
                 Some
                     {
-                        Query = "case.list"
-                        Selection = Map.ofList [ "view", "NEEDS_ATTENTION" ]
+                        Query = DisclosureExportQuery.Cases
+                        Selection =
+                            {
+                                Filtered = true
+                                Paged = false
+                                Order = Some CaseListOrder.Reference
+                                Grouping = None
+                            }
                         RowCount = 12
                     }
         }
@@ -118,16 +127,7 @@ let private humanTable () =
         ViewText.renderDocument true (RenderingContext.forLanguage "en") document
         |> String.concat "\n"
 
-    for value in
-        [
-            id
-            caseId
-            attachmentId
-            "Export"
-            "case.list"
-            "view=NEEDS_ATTENTION"
-            "12"
-        ] do
+    for value in [ id; caseId; attachmentId; "Export"; "case.list"; "filtered=true"; "12" ] do
         Expect.stringContains output value "Exact disclosure data is present in --details output"
 
     Expect.equal

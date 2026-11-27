@@ -118,7 +118,17 @@ let private activeIssuer () =
                 Profile = None
             }
 
-        let storage = HandlerStub.ScriptedStore(observed, Some actor)
+        let disclosure = ResizeArray<DisclosureEvent>()
+
+        let storage =
+            HandlerStub.ScriptedStore(
+                observed,
+                Some actor,
+                recordDisclosure =
+                    (fun event ->
+                        disclosure.Add event
+                        System.Threading.Tasks.Task.FromResult(Ok()))
+            )
 
         let calendar =
             { new IBusinessCalendar with
@@ -144,6 +154,12 @@ let private activeIssuer () =
         let! token = host.Token()
         let! status, payload = host.Call("context", Encoding.UTF8.GetBytes "{}", token)
         Expect.equal status 200 "Authenticated ACTIVE context is available"
+
+        Expect.equal
+            (disclosure |> Seq.map (fun event -> event.ActorId, event.Kind) |> Seq.toList)
+            [ actor.ActorId, DisclosureKind.RequesterContext ]
+            "Active requester facts require a recorded disclosure"
+
         use doc = JsonDocument.Parse payload
 
         let requester =

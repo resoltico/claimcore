@@ -12,6 +12,7 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application.Verification
 open ClaimCore.Application
 open ClaimCore.TestSupport
+open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.WorklistFixtures
 
 let private page actor filter limit cursor =
@@ -30,10 +31,20 @@ let private page actor filter limit cursor =
         | _ -> return failtestf "Worklist read failed: %A" result
     }
 
-let private walk fixture filter limit expected =
+let private walk fixture (filter: CaseListFilter<string>) limit (membership: ExpectedCase list) =
+    let names = membership |> List.map (fun row -> row.Reference) |> Set.ofList
+
+    let ordered =
+        expected
+            fixture
+            { CaseListFilter.empty with
+                Order = filter.Order
+            }
+        |> List.filter (fun row -> Set.contains row.Reference names)
+
     task {
         let mutable cursor = None
-        let mutable remaining = expected
+        let mutable remaining = ordered
         let mutable finished = false
         let mutable pages = 0
 
@@ -42,7 +53,8 @@ let private walk fixture filter limit expected =
             let visible = remaining |> List.truncate limit
 
             Expect.equal
-                (postgres.Items |> List.map (fun row -> CaseReference.format row.Reference))
+                (postgres.Items
+                 |> List.map (fun row -> caseAlias fixture.Database.Fixture row.CaseId))
                 (visible |> List.map _.Reference)
                 "Page references follow the independent facet table and order"
 
@@ -158,7 +170,8 @@ let private views fixture =
                 [ "work-02"; "work-05"; "work-06"; "work-08"; "WORK-09"; "Work-10" ]
                 CaseView.Voided,
                 [ "work-03"; "work-07"; "work-08"; "WORK-09"; "Work-10"; "Work-12" ]
-                CaseView.All, (expected CaseListFilter.empty<string> |> List.map _.Reference)
+                CaseView.All,
+                (expected fixture CaseListFilter.empty<string> |> List.map _.Reference)
             ]
 
         Expect.equal
@@ -209,7 +222,7 @@ let private facets fixture =
                                 let filter =
                                     CaseListFilter.create lifecycle status progress None order
 
-                                let rows = expected filter
+                                let rows = expected fixture filter
 
                                 for limit in limits do
                                     yield filter, limit, rows
@@ -267,7 +280,7 @@ let private search fixture =
                 "full", [ "Work-12" ]
                 "RĪGAS", [ "mix-04"; "WORK-09" ]
                 "¨", [ "mix-04"; "work-01" ]
-                "WORK-02", [ "work-02" ]
+                fixture.IssuedReferences["work-02"].ToLowerInvariant(), [ "work-02" ]
                 "Private erased", []
             ]
 
@@ -276,7 +289,7 @@ let private search fixture =
                 let filter = CaseListFilter.create [] [] [] (Some text) order
 
                 let rows =
-                    expected filter
+                    expected fixture filter
                     |> List.filter (fun row -> List.contains row.Reference references)
 
                 for limit in [ 1; 2 ] do
@@ -286,12 +299,13 @@ let private search fixture =
 let private erasure fixture =
     task {
         use! connection = fixture.Database.OwnerSource.OpenConnectionAsync()
+        let reference = fixture.IssuedReferences["work-13"]
 
         let! rows =
             DatabaseSession.rows
                 connection
-                "SELECT status,progress,search_text,changed_at,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency FROM claimcore.cases WHERE case_reference='work-13'"
-                [||]
+                "SELECT status,progress,search_text,changed_at,received_on,claimed_amount,claimed_currency,payable_amount,payable_currency FROM claimcore.cases WHERE case_reference=$1"
+                [| box reference |]
                 token
 
         let row = List.exactlyOne rows
@@ -304,8 +318,8 @@ let private erasure fixture =
         let! latest =
             DatabaseSession.rows
                 connection
-                "SELECT l.recorded_at FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.part_kind='CASE' AND e.part_id=(SELECT case_id FROM claimcore.cases WHERE case_reference='work-13') ORDER BY e.revision DESC LIMIT 1"
-                [||]
+                "SELECT l.recorded_at FROM claimcore.ledger l JOIN claimcore.ledger_effects e ON e.operation_sequence=l.sequence WHERE e.part_kind='CASE' AND e.part_id=(SELECT case_id FROM claimcore.cases WHERE case_reference=$1) ORDER BY e.revision DESC LIMIT 1"
+                [| box reference |]
                 token
 
         Expect.equal

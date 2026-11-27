@@ -102,7 +102,9 @@ let private previewReply id irreversible =
                     { reviewed.Document with
                         Subject =
                             DocumentSubject.Review(
-                                ConfirmationTarget.CaseReference(DomainInputs.reference "CASE-1"),
+                                ConfirmationTarget.CaseReference(
+                                    DomainInputs.reference "CC-55KW-SSJ4-8HMS-G1BH-73"
+                                ),
                                 Consequence.Irreversible
                             )
                     }
@@ -214,7 +216,7 @@ let tests =
                                 [
                                     "attachment"
                                     "withdraw"
-                                    "CASE-1"
+                                    "CC-55KW-SSJ4-8HMS-G1BH-73"
                                     "018f785e-1b45-7cc4-b9c9-cebf5f897689"
                                     "--confirm"
                                     "yes"
@@ -496,8 +498,6 @@ let tests =
                             [
                                 "case"
                                 "open"
-                                "--case-reference"
-                                "LONG-REVIEW"
                                 "--incident-date"
                                 "2026-01-01"
                                 "--received-date"
@@ -568,7 +568,7 @@ let tests =
                                     "close"
                                     "--outcome"
                                     "other"
-                                    "CASE-1"
+                                    "CC-55KW-SSJ4-8HMS-G1BH-73"
                                     "--expected-revision"
                                     "1"
                                     "--operation-id"
@@ -699,7 +699,7 @@ let tests =
                                 "--expected-family-sequence"
                                 "1"
                                 "--confirm"
-                                "CASE-1"
+                                "CC-55KW-SSJ4-8HMS-G1BH-73"
                             ]
                             CancellationToken.None
                         |> sync
@@ -926,7 +926,7 @@ let tests =
                                         (if scenario = "wrong confirmation" then
                                              "OTHER"
                                          else
-                                             "CASE-1")
+                                             "CC-55KW-SSJ4-8HMS-G1BH-73")
                                     ]
                                     CancellationToken.None
                                 |> sync

@@ -18,7 +18,8 @@ open ClaimCore.TestSupport
 open ClaimCore.Application
 
 /// Real PostgreSQL preserves the same Application authorization exercised through OIDC.
-type Fixture(database: PostgresFixture.Database) =
+type Fixture(database: PostgresFixture.Database, caseId: CaseId) =
+    member _.CaseId = caseId
     member _.InstallationId = database.Fixture.InstallationId
     member _.Actor principal = core database.Fixture principal
 
@@ -94,15 +95,12 @@ let createFor issuer subject =
                     "SYNTHETIC-001"
                     0L
                     "case.open"
-                    (Submissions.fields (RegistrationInput.values registration)
-                     |> Map.add
-                         (Submissions.field BusinessField.CaseReference)
-                         (ClaimCore.Application.Contracts.SubmissionValue.Text "SYNTHETIC-001"))
+                    (Submissions.fields (RegistrationInput.values registration))
 
             let! opened = Service.executeSubmission owner opening CancellationToken.None
 
-            accepted opened |> ignore
-            return new Fixture(database)
+            let case = accepted opened |> caseReceipt
+            return new Fixture(database, case.CaseId)
         with error ->
             database.Fixture.Dispose()
             return raise error

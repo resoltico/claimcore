@@ -42,7 +42,6 @@ type CliMessage =
     | [<MessageKey("cli.next.readCurrent")>] NextReadCurrent
     | [<MessageKey("cli.next.retrySafe")>] NextRetrySafe
     | [<MessageKey("cli.next.investigate")>] NextInvestigate
-    | [<MessageKey("cli.next.chooseReference")>] NextChooseReference
     | [<MessageKey("cli.next.askAccess")>] NextAskAccess
     | [<MessageKey("cli.next.askRoles")>] NextAskRoles of roles: string
     | [<MessageKey("cli.next.reviewLatest")>] NextReviewLatest

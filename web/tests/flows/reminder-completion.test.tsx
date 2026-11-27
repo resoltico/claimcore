@@ -100,7 +100,7 @@ const setup = () => {
                       }),
                     ],
                     values: [
-                      { kind: "REFERENCE", value: "CASE-1" },
+                      { kind: "REFERENCE", value: "CC-55KW-SSJ4-8HMS-G1BH-73" },
                       { kind: "TEXT", value: "Call the claimant" },
                     ],
                   },

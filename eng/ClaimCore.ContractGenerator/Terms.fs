@@ -118,7 +118,6 @@ module Terms =
             rendered Role.vocabulary
             rendered PartyRole.vocabulary
             rendered PrincipalKind.vocabulary
-            rendered CaseReferencePolicy.vocabulary
             rendered ActorAvailability.vocabulary
             rendered AccountState.vocabulary
             rendered RequesterKind.vocabulary

@@ -7,12 +7,15 @@ import { openAuthenticated } from "./session-helpers";
 import { openCase } from "./case-workflow";
 
 import { operationId } from "../src/operation/operationId";
-test("successful summary continuation removes previously loaded full history after permission revocation", async ({
+test("successful summary continuation removes previously loaded full history after permission revocation @engine", async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   await openAuthenticated(page);
-  const reference = `DISCLOSURE-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `DISCLOSURE-${randomUUID().slice(0, 8)}`,
+  );
   for (let revision = 1; revision <= 12; revision += 1) {
     await applyPeople(page, {
       operationId: operationId(),

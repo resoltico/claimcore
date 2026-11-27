@@ -239,7 +239,14 @@ let private nativePublication () =
             JsonDocument.Parse(
                 (run
                     executable
-                    [ "note"; "add"; "--dry-run"; "--text=--urgent"; "--"; "Claim-Mixed" ])
+                    [
+                        "note"
+                        "add"
+                        "--dry-run"
+                        "--text=--urgent"
+                        "--"
+                        "CC-9972-G2K9-JWYG-ZP0E-72"
+                    ])
                     .AsMemory()
             )
 
@@ -251,7 +258,7 @@ let private nativePublication () =
                 .GetProperty("target")
                 .GetProperty("caseReference")
                 .GetString())
-            "Claim-Mixed"
+            "CC-9972-G2K9-JWYG-ZP0E-72"
             "Published offline preparation preserves the selected case"
 
         Expect.equal

@@ -8,8 +8,7 @@ test("confirmed compact departure focuses Recovery and restores the initiating l
   page,
 }) => {
   await openAuthenticated(page);
-  const reference = `GUARD-FOCUS-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  await openCase(page, `GUARD-FOCUS-${randomUUID().slice(0, 8)}`);
   await page.setViewportSize({ width: 320, height: 900 });
   const draft = page.locator('[data-region="NOTES"]').getByRole("textbox", { name: "Note" });
   await draft.fill("Keep this unsaved note until departure is confirmed.");

@@ -47,7 +47,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
   );
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByRole("textbox", { name: "Policy number" });
-  fillRegistrationInputs({ caseReference: "DRAFT-CONSENT" });
+  fillRegistrationInputs({ caseReference: "CC-6DD5-Y0KP-KGM3-Q9WG-55" });
   const name = screen.getByRole("textbox", { name: "Policy number" });
   const authored = name.getAttribute("value");
   await user.click(screen.getByRole("button", { name: "Settings" }));

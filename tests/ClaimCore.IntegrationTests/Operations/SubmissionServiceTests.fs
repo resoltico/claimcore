@@ -71,10 +71,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 "Service-Case"
                 0L
                 "case.open"
-                (Submissions.fields (RegistrationInput.values registration)
-                 |> Map.add
-                     (Submissions.field BusinessField.CaseReference)
-                     (SubmissionValue.Text "Service-Case"))
+                (Submissions.fields (RegistrationInput.values registration))
 
         let! preview = Service.previewSubmission services opening token
 
@@ -101,12 +98,12 @@ let private lifecycle (database: PostgresFixture.Database) =
                 (Binding.CaseNew Revision.zero)
                 opening.Envelope.Inputs
 
-        let! alreadyExists = Service.executeSubmission services laterOpening token
+        let! distinct = Service.executeSubmission services laterOpening token
 
-        Expect.equal
-            alreadyExists.Outcome
-            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.ReferenceUnavailable))
-            "An earlier preview cannot authorize a second creation after acceptance"
+        Expect.notEqual
+            ((accepted distinct |> caseReceipt).Reference)
+            ((caseReceipt opened).Reference)
+            "Identical business content can open a distinct case with a new issued reference"
 
         let alias =
             Submissions.create
@@ -114,9 +111,6 @@ let private lifecycle (database: PostgresFixture.Database) =
                 opening.OperationId
                 (Binding.CaseNew Revision.zero)
                 (opening.Envelope.Inputs
-                 |> Map.add
-                     (Submissions.field BusinessField.CaseReference)
-                     (SubmissionValue.Text "service-case")
                  |> Map.add
                      (Submissions.field BusinessField.ClaimedAmount)
                      (SubmissionValue.Text "1000"))
@@ -436,13 +430,7 @@ let private replayPermission (database: PostgresFixture.Database) =
         replayReceipt replay |> ignore
 
         let! bootstrap =
-            Service.provisionOwner
-                first
-                (id fixture 1)
-                DomainInputs.ownerProfile
-                []
-                CaseReferencePolicy.CustomAllowed
-                token
+            Service.provisionOwner first (id fixture 1) DomainInputs.ownerProfile [] token
 
         match bootstrap with
         | Ok(Verdict.Replay _) -> ()

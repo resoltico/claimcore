@@ -32,7 +32,7 @@ const data = {
 const input = {
   target: {
     kind: "REFERENCE",
-    caseReference: "SYNTHETIC-CASE",
+    caseReference: "CC-YCPR-QJ79-NN9J-819S-50",
   },
 } as const;
 const response = (value: unknown) =>
@@ -110,7 +110,7 @@ const operationInput = {
     kind: "CASE",
     target: {
       kind: "REFERENCE",
-      caseReference: "SYNTHETIC-CASE",
+      caseReference: "CC-YCPR-QJ79-NN9J-819S-50",
     },
     expectedRevision: 1,
   },
@@ -130,7 +130,7 @@ const operationReview = {
           kind: "REVIEW",
           confirmation: {
             kind: "CASE_REFERENCE",
-            reference: "SYNTHETIC-CASE",
+            reference: "CC-YCPR-QJ79-NN9J-819S-50",
           },
           consequence: "ROUTINE",
         },

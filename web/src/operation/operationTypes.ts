@@ -73,6 +73,7 @@ export type OperationPhase =
     }
   | {
       kind: "UNRESOLVED";
+      recoveryOnly: boolean;
       source: LocalSource;
       pending: { readonly kind: "EXECUTE" | "LOOKUP"; readonly identity: EffectIdentity } | null;
     }

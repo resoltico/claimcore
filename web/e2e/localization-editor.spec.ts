@@ -78,11 +78,11 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
         task: "case.open",
         binding: { kind: "CASE", expectedRevision: 0 },
         inputs: {
-          "field:caseReference": reference,
           ...prefixedInputs(
             "field:",
             registration({
               incidentDate,
+              policyNumber: reference,
             }),
             true,
           ),

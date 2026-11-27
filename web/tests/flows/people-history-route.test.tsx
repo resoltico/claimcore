@@ -274,7 +274,7 @@ it.each([
   },
 );
 
-it("retains only the same history page on transient delivery failure and retries its exact cursor", async () => {
+it("masks history on a transient delivery failure and reloads from page one", async () => {
   const fetch = vi
     .fn<typeof globalThis.fetch>()
     .mockResolvedValueOnce(page([entry()], "older-page"))
@@ -295,12 +295,12 @@ it("retains only the same history page on transient delivery failure and retries
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByRole("alert");
-  expect(screen.getByText("Current target one")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Load more" }));
+  expect(screen.queryByText("Current target one")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Refresh" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".people-history .region-timeline > li")).toHaveLength(1);
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
-  expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
+  expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first });
 });
 
 it("renders the affected account link and the separate recorder without revealing a bootstrap principal as a name", async () => {
@@ -318,7 +318,7 @@ it("renders the affected account link and the separate recorder without revealin
               key: "scopeReference",
               labelId: "field.caseReference.label",
               prominence: "PRIMARY",
-              value: { kind: "REFERENCE", value: "FT-0007" },
+              value: { kind: "REFERENCE", value: "CC-FC1F-GPNK-TVKH-8ZEJ-96" },
             },
           ],
         },

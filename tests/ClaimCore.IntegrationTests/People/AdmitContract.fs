@@ -113,7 +113,7 @@ let internal lifecycle fixture =
         Expect.notEqual
             (CaseId.value b.CaseId)
             (Guid.Parse uuidReference)
-            "A UUID-looking reference still resolves as a reference"
+            "The permanent Case ID is issued independently of fixture metadata"
 
         for operation, role in [ 733, Role.CaseHandler; 734, Role.PaymentRecorder ] do
             let! removed =
@@ -163,11 +163,11 @@ let internal lifecycle fixture =
                 }
                 {
                     Role = Role.CaseHandler
-                    Scope = GrantTarget.CaseReference first
+                    Scope = GrantTarget.CaseReference(CaseReference.format a.Reference)
                 }
                 {
                     Role = Role.Auditor
-                    Scope = GrantTarget.CaseReference uuidReference
+                    Scope = GrantTarget.CaseId b.CaseId
                 }
             ]
 
@@ -377,7 +377,10 @@ let internal boundary fixture =
             [
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference "admit-duplicate"
+                    Scope =
+                        GrantTarget.CaseReference(
+                            (CaseReference.format current.Reference).ToLowerInvariant()
+                        )
                 }
                 {
                     Role = Role.CaseReader
@@ -454,7 +457,7 @@ let internal boundary fixture =
                          ([
                              {
                                  Role = Role.CaseReader
-                                 Scope = GrantTarget.CaseReference "NO-SUCH-ADMIT-CASE"
+                                 Scope = caseGrant fixture "NO-SUCH-ADMIT-CASE"
                              }
                          ])
                          |> List.map ClaimCore.TestSupport.Submissions.grant
@@ -544,7 +547,7 @@ let internal maximum fixture =
             grants <-
                 {
                     Role = Role.CaseReader
-                    Scope = GrantTarget.CaseReference reference
+                    Scope = caseGrant fixture reference
                 }
                 :: grants
 

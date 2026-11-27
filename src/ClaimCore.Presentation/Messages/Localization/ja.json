@@ -1424,10 +1424,6 @@
     "text": "アクセスとエクスポートの記録の閲覧",
     "source": "42bd45e7fe95"
   },
-  "disclosureKind.ACCESS_REFUSED.label": {
-    "text": "アクセス拒否",
-    "source": "07edbc210200"
-  },
   "disclosureOutcome.SUCCEEDED.label": {
     "text": "成功",
     "source": "6d9a6f97a5fd"
@@ -3418,39 +3414,6 @@
     "text": "一覧から終了結果を選択してください。",
     "source": "ed45fada7999"
   },
-  "task.case.changeReference.label": {
-    "text": "案件参照番号を変更する",
-    "source": "c48c7e896bb5"
-  },
-  "task.case.changeReference.meaning": {
-    "text": "現在の案件参照番号を変更します。以前の番号でも同じ案件を検索できます。",
-    "source": "1065858202dd"
-  },
-  "task.case.changeReference.done": {
-    "text": "案件参照番号を変更しました。",
-    "source": "58241a331134"
-  },
-  "task.case.changeReference.consequence": {
-    "text": "この案件の新しい参照番号を選びます。",
-    "source": "73700635d1ab"
-  },
-  "field.newReference.label": {
-    "text": "新しい参照番号",
-    "source": "42906b7cf062"
-  },
-  "field.newReference.rule": {
-    "text": "案件参照番号の形式を使用してください。",
-    "source": "b905bbf44b8b"
-  },
-  "field.newReference.hint": {
-    "text": "以前の参照番号でもこの案件を検索できます。新しい参照番号に個人情報を含めないでください。",
-    "source": "2712ad08d240",
-    "machineMade": true
-  },
-  "label.referenceChangedFrom": {
-    "text": "変更前の参照番号",
-    "source": "0f0590159e51"
-  },
   "field.reopenReason.hint": {
     "text": "対応を再開した理由です。",
     "source": "52db5e07d84d"
@@ -4628,54 +4591,9 @@
     "text": "金額と通貨の両方を入力してください。",
     "source": "11da00ab5ba1"
   },
-  "diagnostic.REFERENCE_UNAVAILABLE": {
-    "text": "この案件参照番号は使用できません。",
-    "source": "233033263ef9",
-    "machineMade": true
-  },
-  "diagnostic.CUSTOM_REFERENCE_NOT_ALLOWED": {
-    "text": "この登録簿では、すべての案件参照番号が自動的に割り当てられます。独自の参照番号を削除して続行してください。",
-    "source": "072632d9c59c",
-    "machineMade": true
-  },
   "label.caseReferencePending": {
     "text": "案件の登録時に割り当てられます。",
     "source": "9fcad855f05a",
-    "machineMade": true
-  },
-  "label.useCustomCaseReference": {
-    "text": "独自の案件参照番号を使用",
-    "source": "3796d7f0af59",
-    "machineMade": true
-  },
-  "caseReferencePolicy.SYSTEM_ASSIGNED_ONLY.label": {
-    "source": "22c0bf147040",
-    "text": "システムによる割り当てのみ",
-    "machineMade": true
-  },
-  "caseReferencePolicy.CUSTOM_ALLOWED.label": {
-    "source": "2126c4e1b515",
-    "text": "任意の案件番号を許可",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.label": {
-    "source": "00276badc096",
-    "text": "案件番号の設定",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.rule": {
-    "source": "d15f3878c38a",
-    "text": "初期設定時に選択した案件番号の割り当て方法です。",
-    "machineMade": true
-  },
-  "field.caseReferencePolicy.hint": {
-    "source": "8e971dfd9ae8",
-    "text": "任意の案件番号を入力できるようにするか選択してください。",
-    "machineMade": true
-  },
-  "diagnostic.CASE_REFERENCE_POLICY_FORMAT": {
-    "source": "a743fa65aff6",
-    "text": "対応している案件番号の設定を選択してください。",
     "machineMade": true
   },
   "diagnostic.TRAVERSAL_CHANGED": {

@@ -164,24 +164,55 @@ module internal SessionTerminationQueries =
                                                  CommandTaskId.TerminateOwnSessions)
                                             |> CommandTaskId.key
 
-                                        return! commit tx operation intent caller selected mode
+                                        match! commit tx operation intent caller selected mode with
+                                        | Verdict.Proceed completion ->
+                                            return Verdict.Proceed(caller, completion)
+                                        | Verdict.Refuse refusal -> return Verdict.Refuse refusal
+                                        | Verdict.Fail fault -> return Verdict.Fail fault
+                                        | Verdict.Replay _ ->
+                                            return Verdict.Fail CoreFault.StoreIntegrityError
                                 }
                     }
 
-            return
-                match result with
-                | Error StoreFailure.CommitOutcomeUnknown -> SessionTerminationResult.OutcomeUnknown
-                | Error StoreFailure.Cancelled ->
-                    SessionTerminationResult.Failed CoreFault.StoreUnavailable
-                | Error failure -> SessionTerminationResult.Failed(QueryResults.fault failure)
-                | Ok(Verdict.Proceed(Terminated value)) -> SessionTerminationResult.Succeeded value
-                | Ok(Verdict.Proceed RetirementCommitted) ->
-                    SessionTerminationResult.RetirementConfirmed
-                | Ok(Verdict.Proceed Missing) -> SessionTerminationResult.OutcomeUnknown
-                | Ok(Verdict.Refuse refusal) -> SessionTerminationResult.Rejected refusal
-                | Ok(Verdict.Fail fault) -> SessionTerminationResult.Failed fault
-                | Ok(Verdict.Replay _) ->
-                    SessionTerminationResult.Failed CoreFault.StoreIntegrityError
+            match result with
+            | Error StoreFailure.CommitOutcomeUnknown ->
+                return DisclosureReads.safeTermination (SessionTerminationResult.OutcomeUnknown)
+            | Error StoreFailure.Cancelled ->
+                return
+                    DisclosureReads.safeTermination (
+                        SessionTerminationResult.Failed CoreFault.StoreUnavailable
+                    )
+            | Error failure ->
+                return
+                    DisclosureReads.safeTermination (
+                        SessionTerminationResult.Failed(QueryResults.fault failure)
+                    )
+            | Ok(Verdict.Proceed(Account actor, Terminated value)) ->
+                let event =
+                    DisclosureReads.success actor DisclosureKind.SessionTermination None None
+
+                let! released =
+                    DisclosureReads.release services token (Outcome.Succeeded value, Some event)
+
+                return DisclosureReads.termination released
+            | Ok(Verdict.Proceed(Principal _, Terminated value)) ->
+                // Bootstrap sign-outs affect only the principal that authenticated this session.
+                return DisclosureReads.bootstrapTermination value
+            | Ok(Verdict.Proceed(_, RetirementCommitted)) ->
+                return
+                    DisclosureReads.safeTermination (SessionTerminationResult.RetirementConfirmed)
+            | Ok(Verdict.Proceed(_, Missing)) ->
+                return DisclosureReads.safeTermination (SessionTerminationResult.OutcomeUnknown)
+            | Ok(Verdict.Refuse refusal) ->
+                return DisclosureReads.safeTermination (SessionTerminationResult.Rejected refusal)
+            | Ok(Verdict.Fail fault) ->
+                return DisclosureReads.safeTermination (SessionTerminationResult.Failed fault)
+            | Ok(Verdict.Replay _) ->
+                return
+                    DisclosureReads.safeTermination (
+                        SessionTerminationResult.Failed CoreFault.StoreIntegrityError
+                    )
+
         }
 
     let self services (request: OwnSessionTerminationRequest) token =

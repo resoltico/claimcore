@@ -197,7 +197,7 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
             Service.get
                 actor
                 {
-                    Target = CaseSelector.Reference "synthetic-a"
+                    Target = caseTarget database.Fixture "synthetic-a"
                 }
                 token
 

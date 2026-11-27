@@ -53,7 +53,9 @@ let tests =
 
         let dueDate = today.AddDays(7).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
 
-        for index, reference in List.indexed [ "VISIBLE-1"; "VISIBLE-2" ] do
+        let references = ResizeArray<string>()
+
+        for index in 0..1 do
             let opened =
                 Service.executeSubmission
                     (core adminPrincipal)
@@ -63,15 +65,13 @@ let tests =
                         (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                         (ClaimCore.TestSupport.Submissions.fields (
                             RegistrationInput.values (DomainInputs.registration)
-                         )
-                         |> Map.add
-                             (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                             (ClaimCore.Application.Contracts.SubmissionValue.Text(reference)))))
+                        ))))
                     CancellationToken.None
                 |> fun task -> task.GetAwaiter().GetResult()
 
             match opened.Outcome with
-            | ExecuteResult.Accepted _ -> ()
+            | ExecuteResult.Accepted receipt ->
+                references.Add(CaseReference.format (StoreFixtures.caseReceipt receipt).Reference)
             | _ -> failtestf "Fixture opening failed: %A" opened
 
         let servicePrincipal =
@@ -154,7 +154,7 @@ let tests =
             Service.get
                 service
                 {
-                    Target = CaseSelector.Reference("VISIBLE-1")
+                    Target = CaseSelector.Reference references[0]
                 }
                 CancellationToken.None
             |> fun task -> task.GetAwaiter().GetResult()
@@ -175,7 +175,7 @@ let tests =
         | Outcome.Succeeded page ->
             Expect.equal
                 (page.Items |> List.map (fun row -> CaseReference.format row.Reference))
-                [ "VISIBLE-2" ]
+                [ references[1] ]
                 "An installation read must exclude the refused scope and retain unrelated cases"
 
             let row = List.exactlyOne page.Items
@@ -195,7 +195,11 @@ let tests =
         | _ -> failtestf "Expected an authorized unrelated-case page, got %A" listed
 
         for query, expected in
-            [ "visible-1", None; "visible-2", Some "VISIBLE-2"; "VISIBLE", None ] do
+            [
+                references[0].ToLowerInvariant(), None
+                references[1].ToLowerInvariant(), Some references[1]
+                "CC-", None
+            ] do
             let request = Inputs.caseListPage { AfterCursor = None; Limit = 1 }
 
             let request =
@@ -220,7 +224,7 @@ let tests =
 
         let target =
             {
-                Target = CaseSelector.Reference "VISIBLE-2"
+                Target = CaseSelector.Reference references[1]
             }
 
         for principal, expected in
@@ -255,7 +259,7 @@ let tests =
                     "reminder.create"
                     (reminderId)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "VISIBLE-2"),
+                        (CaseSelector.Reference references[1]),
                         None
                     ))
                     (ClaimCore.TestSupport.Submissions.reminderPlan ("Review evidence") (dueDate)))

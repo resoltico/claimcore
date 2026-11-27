@@ -70,12 +70,12 @@ module internal RouteSupport =
         let response =
             match result.Response with
             | RouteBody.Json value -> reply value context
-            | RouteBody.Csv(bytes, filename, installation) ->
+            | RouteBody.Csv(body, filename, installation) ->
                 RequestLog.reply ClaimCore.Application.Contracts.ReplyKind.Succeeded context
-                WebWire.csv bytes filename installation
+                WebWire.csv body.Value.Bytes filename installation body.Value.NextCursor
             | RouteBody.Attachment(transfer, content, installation) ->
                 RequestLog.reply ClaimCore.Application.Contracts.ReplyKind.Succeeded context
-                WebWire.attachment transfer content installation
+                WebWire.attachment transfer content.Value installation
 
         response
 

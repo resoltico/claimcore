@@ -93,8 +93,10 @@ const caseReadAt = async (page: Page, path: string) => {
 
 test("recovers from a malformed reference through the existing Find dialog", async ({ page }) => {
   await openAuthenticated(page);
-  const reference = `FIND-ROUTE-${randomUUID().slice(0, 8).toUpperCase()}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `FIND-ROUTE-${randomUUID().slice(0, 8).toUpperCase()}`,
+  );
   const casePath = new URL(page.url()).pathname;
   const malformed = "CC-0000-0000-0000-0000-01";
   const malformedPath = `/cases/reference/${malformed}`;

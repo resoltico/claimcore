@@ -110,10 +110,17 @@ module internal PeopleQueries =
     let actors (services: ServiceContext) (request: ActorListRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! RequestRefusals.protectedLimit services token
             else
                 let! result =
-                    services.Store.Read
+                    DisclosureReads.pageRead
+                        services
+                        DisclosureKind.PeopleDirectory
+                        (fun _ -> None)
+                        (fun (page: ActorReviewPage) ->
+                            DisclosureReads.people
+                                (fun (item: ActorReviewItem) -> item.Actor.ActorId)
+                                page.Items)
                         {
                             Work =
                                 fun tx ->
@@ -170,7 +177,7 @@ module internal PeopleQueries =
                             CancellationToken = token
                         }
 
-                return readResult result
+                return result
         }
 
     let selectGrants
@@ -191,13 +198,21 @@ module internal PeopleQueries =
     let grants (services: ServiceContext) (request: GrantsRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! RequestRefusals.protectedLimit services token
             else
                 match ActorId.create request.ActorId with
-                | None -> return unavailable
+                | None -> return DisclosureReads.safeOutcome unavailable
                 | Some actorId ->
                     let! result =
-                        services.Store.Read
+                        DisclosureReads.pageRead
+                            services
+                            DisclosureKind.PeopleGrants
+                            (fun _ -> None)
+                            (fun (page: PeopleGrantPage) ->
+                                DisclosurePageEvidence.create
+                                    page.Items.Length
+                                    []
+                                    [ page.Actor.Actor.ActorId ])
                             {
                                 Work =
                                     fun tx ->
@@ -492,7 +507,7 @@ module internal PeopleQueries =
                                 CancellationToken = token
                             }
 
-                    return readResult result
+                    return result
         }
 
     let private selectHistory
@@ -512,16 +527,30 @@ module internal PeopleQueries =
             |> Result.bind (fun _ ->
                 cursor (Cursors.decodePeopleHistory installation target) request.AfterCursor)
 
-    let history (services: ServiceContext) (request: PeopleHistoryRequest) token =
+    let private historyWith
+        finalize
+        reject
+        (services: ServiceContext)
+        (request: PeopleHistoryRequest)
+        token
+        =
         task {
             if not (validLimit request.Limit) then
-                return! RequestRefusals.invalidLimit services token
+                return! reject services token QueryResults.invalidLimitRefusal
             else
                 let target = request.TargetActorId |> Option.bind ActorId.create
 
                 let! result =
-                    services.Store.Read(
-                        {
+                    DisclosureReads.pageReadWith
+                        finalize
+                        services
+                        DisclosureKind.PeopleHistory
+                        (fun _ -> None)
+                        (fun (page: PeopleHistoryPage) ->
+                            DisclosureReads.people
+                                (fun (item: PeopleHistoryEntry) -> item.Target.ActorId)
+                                page.Entries)
+                        ({
                             ReadOperation.Work =
                                 fun tx ->
                                     task {
@@ -605,8 +634,13 @@ module internal PeopleQueries =
                                                     |> succeeded
                                     }
                             CancellationToken = token
-                        }
-                    )
+                        })
 
-                return readResult result
+                return result
         }
+
+    let history services request token =
+        historyWith DisclosureReads.complete RequestRefusals.protectedRead services request token
+
+    let historyForExport services request token =
+        historyWith DisclosureReads.completePreparation RequestRefusals.read services request token

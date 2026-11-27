@@ -54,7 +54,6 @@ type InputTarget =
     | PrincipalKind
     | PrincipalIssuer
     | PrincipalSubject
-    | CaseReferencePolicy
     | ProfileDisplayName
     | ProfileContact
     | ProfileDigestEmail
@@ -72,7 +71,6 @@ type InputTarget =
     | AttachmentName
     | AttachmentLength
     | AttachmentDigest
-    | NewCaseReference
     | LinkId
     | LinkTargetReference
     | LinkTargetId

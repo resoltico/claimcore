@@ -13,13 +13,6 @@ open ClaimCore.Application.Storage
 
 /// Delivery wrappers bind the shared engine to one authorized store snapshot or write transaction.
 module internal OperationService =
-    let private mutationResult =
-        function
-        | Verdict.Refuse error -> ExecuteResult.Rejected error
-        | Verdict.Fail fault -> ExecuteResult.Failed fault
-        | Verdict.Proceed receipt -> ExecuteResult.Accepted receipt
-        | Verdict.Replay receipt -> ExecuteResult.AlreadyAccepted receipt
-
     let private mutationFailure =
         function
         | StoreFailure.Cancelled -> ExecuteResult.Failed CoreFault.StoreUnavailable
@@ -64,6 +57,7 @@ module internal OperationService =
                     DisclosureReads.capturedCaseRead
                         services.Principal
                         access
+                        DisclosureKind.OperationPreview
                         caseId
                         attachment
                         receipt
@@ -103,19 +97,44 @@ module internal OperationService =
                             refusal
 
                     match explained, current.Case with
-                    | Ok(Refusal.RevisionConflict conflict), Some record ->
-                        match conflict.Changes with
-                        | Some(ConflictChanges.Page _) ->
-                            return
-                                DisclosureReads.capturedCaseRead
-                                    services.Principal
-                                    current.Actor
-                                    record.CaseId
-                                    None
-                                    explained
-                        | _ -> return explained, None
+                    | Ok(Refusal.RevisionConflict conflict), Some record when
+                        conflict.Changes.IsSome || conflict.ReadCaseId.IsSome
+                        ->
+                        let result, event =
+                            DisclosureReads.capturedCaseRead
+                                services.Principal
+                                current.Actor
+                                DisclosureKind.RevisionConflict
+                                record.CaseId
+                                None
+                                explained
+
+                        let event =
+                            match conflict.Changes with
+                            | Some(ConflictChanges.Page page) ->
+                                event
+                                |> Option.map (fun event ->
+                                    { event with
+                                        Page = Some(DisclosureReads.rows page.Entries)
+                                    })
+                            | _ -> event
+
+                        return result, event
                     | _ -> return explained, None
             | _ -> return Ok refusal, None
+        }
+
+    let private decide services (tx: WriteTx) selected operation binding inputs verified =
+        task {
+            let! decisionContext = context services tx true
+
+            match!
+                Engine.prepare tx tx.Head decisionContext selected operation binding inputs verified
+            with
+            | Ok(PreparedDecision.Opening(frame, facts)) ->
+                return! Engine.acceptOpening tx frame facts
+            | Ok(PreparedDecision.Ordinary(plan, _)) -> return Ok plan
+            | Error stop -> return Error stop
         }
 
     let private inTransaction
@@ -125,31 +144,15 @@ module internal OperationService =
         operation
         binding
         inputs
-        verified
-        captureDisclosure
         =
         task {
-            let! decisionContext = context services tx true
-
-            let! proposed =
-                Engine.prepare tx tx.Head decisionContext selected operation binding inputs verified
-
-            let! proposed =
-                match proposed with
-                | Ok(PreparedDecision.Opening(frame, facts)) -> Engine.acceptOpening tx frame facts
-                | Ok(PreparedDecision.Ordinary(plan, _)) ->
-                    System.Threading.Tasks.Task.FromResult(Ok plan)
-                | Error stop -> System.Threading.Tasks.Task.FromResult(Error stop)
+            let! proposed = decide services tx selected operation binding inputs None
 
             match proposed with
-            | Error(ExecutionStop.Refused refusal) ->
-                let! explained, disclosure = explainRefusal services tx binding refusal
-                captureDisclosure disclosure
-                return explained |> Result.map Verdict.Refuse |> Result.defaultWith Verdict.Fail
+            | Error(ExecutionStop.Refused refusal) -> return Verdict.Refuse refusal
             | Error(ExecutionStop.Failed fault) -> return Verdict.Fail fault
             | Error(ExecutionStop.AlreadyAccepted record) ->
-                let! receipt, disclosure = replayReceipt services tx record
-                captureDisclosure disclosure
+                let! receipt, _ = replayReceipt services tx record
                 return receipt |> Result.map Verdict.Replay |> Result.defaultWith Verdict.Fail
             | Ok plan ->
                 let! accepted = Engine.commit tx plan
@@ -213,7 +216,7 @@ module internal OperationService =
                         Previewed.Reviewed
                             {
                                 OperationReview.Task = frame.Declaration.Id
-                                Target = ReviewTarget.Opening(OpeningIntent.requested facts.Intent)
+                                Target = ReviewTarget.Opening
                                 References = { Actors = []; Cases = [] }
                                 Binding = frame.Binding
                                 Changes = []
@@ -228,7 +231,19 @@ module internal OperationService =
 
                 match duplicate with
                 | Some(RetainedAttachmentMetadataMatch id) ->
-                    return Outcome.Rejected(Refusal.AttachmentDuplicate id), None
+                    match plan.Changes.Head.Aggregate with
+                    | AggregateReference.Family caseId ->
+                        let _, evidence =
+                            DisclosureReads.capturedCaseRead
+                                services.Principal
+                                plan.Frame.Requester
+                                DisclosureKind.OperationPreview
+                                caseId
+                                (Some id)
+                                (Ok())
+
+                        return Outcome.Rejected(Refusal.AttachmentDuplicate id), evidence
+                    | _ -> return Outcome.Failed CoreFault.StoreIntegrityError, None
                 | None ->
                     let target =
                         match plan.Before, plan.After with
@@ -315,6 +330,151 @@ module internal OperationService =
                 | _, Some intent -> Ok intent
                 | _ -> Error uploadRequired))
 
+    let private settle (services: ServiceContext) token selected operation binding inputs verified =
+        services.Store.Write
+            {
+                RequiresEncryption = true
+                CancellationToken = token
+                Work =
+                    fun tx ->
+                        task {
+                            match!
+                                decide services tx selected operation binding inputs verified
+                            with
+                            | Error(ExecutionStop.Refused refusal) -> return Verdict.Refuse refusal
+                            | Error(ExecutionStop.Failed fault) -> return Verdict.Fail fault
+                            | Error(ExecutionStop.AlreadyAccepted _) -> return Verdict.Replay()
+                            | Ok plan ->
+                                match! Engine.commit tx plan with
+                                | Ok _ -> return Verdict.Proceed()
+                                | Error fault -> return Verdict.Fail fault
+                        }
+            }
+
+    let private releaseReceipt (services: ServiceContext) operation replayed token =
+        task {
+            let! result =
+                services.Store.Read
+                    {
+                        CancellationToken = token
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! access =
+                                        ExecutionEnvironment.requester tx services.Principal
+
+                                    let! entry =
+                                        OperationStorage.find
+                                            tx.Connection
+                                            tx.Cipher
+                                            operation
+                                            tx.CancellationToken
+
+                                    match access.Actor, entry with
+                                    | Some requester, Some record when
+                                        Access.validActor services.Principal access
+                                        && (record.Root.Header.Authority =
+                                                Authority.Actor requester.ActorId
+                                            || Engine.canObserve
+                                                services.Principal
+                                                access
+                                                record.Changes.Head.Aggregate)
+                                        ->
+                                        let! receipt =
+                                            ReceiptReads.read
+                                                (ServiceContext.basis services tx.ObservedAt)
+                                                services.Principal
+                                                access
+                                                tx
+                                                record
+
+                                        let caseId, attachment =
+                                            DisclosureReads.receiptTarget record.Changes.Head
+                                            |> Option.map (fun (id, attachment) ->
+                                                Some id, attachment)
+                                            |> Option.defaultValue (None, None)
+
+                                        return
+                                            DisclosureReads.observe
+                                                services.Principal
+                                                access
+                                                DisclosureKind.OperationReceipt
+                                                caseId
+                                                attachment
+                                                (Outcome.ofResult receipt)
+                                    | _ ->
+                                        return
+                                            QueryResults.unavailable,
+                                            DisclosureReads.refused
+                                                services.Principal
+                                                access
+                                                DisclosureKind.OperationReceipt
+                                }
+                    }
+
+            let! released = DisclosureReads.complete services token result
+            return DisclosureReads.executeReceipt replayed released
+        }
+
+    let private releaseRefusal (services: ServiceContext) observe token =
+        task {
+            let! result =
+                services.Store.Read
+                    {
+                        CancellationToken = token
+                        Work = observe
+                    }
+
+            let! released = DisclosureReads.complete services token result
+            return DisclosureReads.executeRefusal released
+        }
+
+    let private observeConflict services binding refusal tx =
+        task {
+            let! explained, disclosure = explainRefusal services tx binding refusal
+
+            return
+                explained |> Result.map Outcome.Rejected |> Result.defaultWith Outcome.Failed,
+                disclosure
+        }
+
+    let private observeDuplicate services selected operation binding inputs verified id tx =
+        task {
+            let! decisionContext = context services tx true
+            let! head = OperationStorage.position tx.Connection tx.CancellationToken
+
+            let! decision =
+                Engine.prepare tx head decisionContext selected operation binding inputs verified
+
+            match binding, decision with
+            | Binding.AttachmentNew target,
+              Error(ExecutionStop.Refused(Refusal.AttachmentDuplicate current)) when current = id ->
+                let! subject = CaseReadContext.load services tx target
+
+                match subject.Case with
+                | Some record ->
+                    let _, evidence =
+                        DisclosureReads.capturedCaseRead
+                            services.Principal
+                            subject.Actor
+                            DisclosureKind.OperationReceipt
+                            record.CaseId
+                            (Some id)
+                            (Ok())
+
+                    return Outcome.Rejected(Refusal.AttachmentDuplicate id), evidence
+                | None -> return Outcome.Failed CoreFault.StoreIntegrityError, None
+            | _ ->
+                let! access = ExecutionEnvironment.requester tx services.Principal
+
+                return
+                    QueryResults.unavailable,
+                    DisclosureReads.refused
+                        services.Principal
+                        access
+                        DisclosureKind.OperationReceipt
+        }
+
     let private execute
         (services: ServiceContext)
         (submission: OperationSubmission)
@@ -325,7 +485,10 @@ module internal OperationService =
             let! outcome =
                 task {
                     if ct.IsCancellationRequested then
-                        return ExecuteResult.Failed CoreFault.StoreUnavailable
+                        return
+                            DisclosureReads.safeExecute (
+                                ExecuteResult.Failed CoreFault.StoreUnavailable
+                            )
                     else
                         let prepared =
                             admitted submission
@@ -348,59 +511,94 @@ module internal OperationService =
                                         )
                                     | _ -> Error uploadRequired))
 
-                        // Replay and conflict metadata accompany the verdict without changing its
-                        // commit/rollback behavior. Record it only after the transaction returns.
-                        let mutable disclosure = None
-
-                        let! result =
-                            match prepared with
-                            | Error refusal -> RequestRefusals.write services ct refusal
-                            | Ok(selected, operation, input, verified) ->
-                                services.Store.Write
-                                    {
-                                        WriteOperation.RequiresEncryption = true
-                                        CancellationToken = ct
-                                        Work =
-                                            fun tx ->
-                                                disclosure <- None
-
-                                                inTransaction
-                                                    services
-                                                    tx
-                                                    selected
-                                                    operation
-                                                    input.Binding
-                                                    input.Inputs
-                                                    verified
-                                                    (fun captured -> disclosure <- captured)
-                                    }
-
-                        match result, disclosure with
-                        | Ok verdict, Some event ->
-                            match! DisclosureReads.record services ct event with
-                            | Ok() -> return mutationResult verdict
-                            | Error fault ->
-                                // A privacy failure after a known acceptance cannot prove non-execution.
-                                match verdict with
-                                | Verdict.Proceed _
-                                | Verdict.Replay _ -> return ExecuteResult.OutcomeUnknown
-                                | Verdict.Refuse _
-                                | Verdict.Fail _ -> return ExecuteResult.Failed fault
-                        | Ok verdict, None -> return mutationResult verdict
-                        | Error failure, _ -> return mutationFailure failure
+                        match prepared with
+                        | Error refusal ->
+                            match! RequestRefusals.write services ct refusal with
+                            | Ok(Verdict.Refuse refusal) ->
+                                return DisclosureReads.safeExecute (ExecuteResult.Rejected refusal)
+                            | Ok(Verdict.Fail fault) ->
+                                return DisclosureReads.safeExecute (ExecuteResult.Failed fault)
+                            | Ok _ ->
+                                return
+                                    DisclosureReads.safeExecute (
+                                        ExecuteResult.Failed CoreFault.StoreIntegrityError
+                                    )
+                            | Error failure ->
+                                return DisclosureReads.safeExecute (mutationFailure failure)
+                        | Ok(selected, operation, input, verified) ->
+                            match!
+                                settle
+                                    services
+                                    ct
+                                    selected
+                                    operation
+                                    input.Binding
+                                    input.Inputs
+                                    verified
+                            with
+                            | Ok(Verdict.Proceed()) ->
+                                return! releaseReceipt services operation false ct
+                            | Ok(Verdict.Replay()) ->
+                                return! releaseReceipt services operation true ct
+                            | Ok(Verdict.Refuse(Refusal.RevisionConflict _ as refusal)) ->
+                                return!
+                                    releaseRefusal
+                                        services
+                                        (observeConflict services input.Binding refusal)
+                                        ct
+                            | Ok(Verdict.Refuse(Refusal.AttachmentDuplicate id)) ->
+                                return!
+                                    releaseRefusal
+                                        services
+                                        (observeDuplicate
+                                            services
+                                            selected
+                                            operation
+                                            input.Binding
+                                            input.Inputs
+                                            verified
+                                            id)
+                                        ct
+                            | Ok(Verdict.Refuse refusal) ->
+                                return DisclosureReads.safeExecute (ExecuteResult.Rejected refusal)
+                            | Ok(Verdict.Fail fault) ->
+                                return DisclosureReads.safeExecute (ExecuteResult.Failed fault)
+                            | Error failure ->
+                                return DisclosureReads.safeExecute (mutationFailure failure)
                 }
 
-            return
-                {
-                    ExecuteReply.OperationId = submission.OperationId
-                    Outcome = outcome
-                }
+            return DisclosureReads.execute submission.OperationId outcome
         }
 
     let executeSubmission services submission ct = execute services submission None ct
 
     let executeAttachmentUpload services submission bytes ct =
         execute services submission (Some bytes) ct
+
+    let private previewObservation services tx selected operation binding inputs =
+        task {
+            let! outcome, earlier = inSnapshot services tx selected operation binding inputs
+
+            match earlier with
+            | Some _ -> return outcome, earlier
+            | None ->
+                let! access = ExecutionEnvironment.requester tx services.Principal
+
+                let subject =
+                    match outcome with
+                    | Outcome.Succeeded(Previewed.Reviewed { Target = ReviewTarget.Case(id, _) }) ->
+                        Some id
+                    | _ -> None
+
+                return
+                    DisclosureReads.observe
+                        services.Principal
+                        access
+                        DisclosureKind.OperationPreview
+                        subject
+                        None
+                        outcome
+        }
 
     let previewSubmission
         (services: ServiceContext)
@@ -411,7 +609,8 @@ module internal OperationService =
             let! outcome =
                 task {
                     if ct.IsCancellationRequested then
-                        return Outcome.Failed CoreFault.StoreUnavailable
+                        return
+                            DisclosureReads.safeOutcome (Outcome.Failed CoreFault.StoreUnavailable)
                     else
                         let prepared =
                             admitted submission
@@ -420,7 +619,7 @@ module internal OperationService =
                                 |> Result.map (fun (input, _) -> selected, operation, input))
 
                         match prepared with
-                        | Error refusal -> return! RequestRefusals.read services ct refusal
+                        | Error refusal -> return! RequestRefusals.protectedRead services ct refusal
                         | Ok(selected, operation, input) ->
                             let! result =
                                 services.Store.Read
@@ -428,7 +627,7 @@ module internal OperationService =
                                         CancellationToken = ct
                                         Work =
                                             fun tx ->
-                                                inSnapshot
+                                                previewObservation
                                                     services
                                                     tx
                                                     selected
@@ -440,19 +639,10 @@ module internal OperationService =
                             return! DisclosureReads.complete services ct result
                 }
 
-            return
-                {
-                    PreviewReply.OperationId = submission.OperationId
-                    Outcome = outcome
-                }
+            return DisclosureReads.preview submission.OperationId outcome
         }
 
-    let private initialOwnerInput
-        (services: ServiceContext)
-        (profile: ActorProfileInput)
-        roles
-        policy
-        =
+    let private initialOwnerInput (services: ServiceContext) (profile: ActorProfileInput) roles =
         let kind, issuer, subject = PrincipalKey.parts services.Principal
 
         let text input value =
@@ -460,7 +650,6 @@ module internal OperationService =
 
         let values =
             [
-                text InputTarget.CaseReferencePolicy (CaseReferencePolicy.token policy)
                 text InputTarget.PrincipalKind (Vocabulary.token PrincipalKind.vocabulary kind)
                 text InputTarget.PrincipalIssuer issuer
                 text InputTarget.PrincipalSubject subject
@@ -482,11 +671,9 @@ module internal OperationService =
 
         InputMap.create values (Map.ofList [ TaskCollectionId.PeopleGrants, grants ])
 
-    let internal provisionOwnerInTransaction services tx operationId profile roles policy =
+    let internal provisionOwnerInTransaction services tx operationId profile roles =
         task {
-            match
-                OperationId.create operationId, initialOwnerInput services profile roles policy
-            with
+            match OperationId.create operationId, initialOwnerInput services profile roles with
             | None, _ ->
                 return
                     Verdict.Refuse(
@@ -514,18 +701,14 @@ module internal OperationService =
                         operation
                         (Binding.PeopleNew Revision.zero)
                         inputs
-                        None
-                        ignore
         }
 
-    let internal provisionOwner services operationId profile roles policy token =
+    let internal provisionOwner services operationId profile roles token =
         services.Store.Write
             {
                 WriteOperation.RequiresEncryption = true
                 CancellationToken = token
-                Work =
-                    fun tx ->
-                        provisionOwnerInTransaction services tx operationId profile roles policy
+                Work = fun tx -> provisionOwnerInTransaction services tx operationId profile roles
             }
 
     let internal recoverOwnerInTransaction (services: ServiceContext) tx operation binding name =
@@ -551,5 +734,3 @@ module internal OperationService =
             operation
             binding
             inputs
-            None
-            ignore

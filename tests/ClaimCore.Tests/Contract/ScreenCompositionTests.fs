@@ -29,21 +29,13 @@ let redesignDeclarations =
     testList
         "workspace presentation declarations"
         [
-            testCase "opening declares an optional retained reference override" (fun () ->
-                let input =
-                    ClaimCore.Domain.Tasks.Case.Open.declaration.Inputs
-                    |> List.find (fun input ->
-                        input.Input =
-                            TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
+            testCase "opening exposes only server-assigned permanent references" (fun () ->
+                let reference = TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
 
-                Expect.equal input.Mode TaskInputMode.Optional "Omission requests assignment"
-
-                Expect.equal
-                    input.Retention
-                    InputRetention.Retained
-                    "Authored reference survives erasure"
-
-                Expect.isFalse input.Clearable "Null is refused")
+                Expect.isFalse
+                    (ClaimCore.Domain.Tasks.Case.Open.declaration.Inputs
+                     |> List.exists (fun input -> input.Input = reference))
+                    "The opening declaration has no authored reference")
             testCase "all chip vocabularies declare exactly one supported tone per code" (fun () ->
                 let tokens vocabulary =
                     Vocabulary.name vocabulary, Set.ofList (Vocabulary.tokens vocabulary)
@@ -799,7 +791,7 @@ let tests =
                     let prepared =
                         Grammar.prepare
                             (fun () -> failtest "A read must not allocate an operation ID")
-                            [ "case"; "get"; "CASE-1"; "--details" ]
+                            [ "case"; "get"; "CC-55KW-SSJ4-8HMS-G1BH-73"; "--details" ]
                         |> Result.defaultWith (fun error -> failtestf "%A" error)
 
                     Expect.isTrue prepared.Details "The flag reaches the renderer")

@@ -53,7 +53,7 @@ let tests =
                             "work.update"
                             (id fixture 99103)
                             (ClaimCore.Application.Contracts.OperationBinding.Work(
-                                (CaseSelector.Reference "TIMELINE-1"),
+                                (caseTarget fixture "TIMELINE-1"),
                                 (0L)
                             ))
                             (ClaimCore.TestSupport.Submissions.work (
@@ -88,7 +88,7 @@ let tests =
                                 taskName
                                 (id fixture number)
                                 (OperationBinding.Reminder(
-                                    CaseSelector.Reference "TIMELINE-1",
+                                    caseTarget fixture "TIMELINE-1",
                                     selected
                                 ))
                                 values)
@@ -104,7 +104,9 @@ let tests =
                                 fun tx ->
                                     task {
                                         let! parent =
-                                            FamilyReads.findCaseByReference tx "TIMELINE-1"
+                                            FamilyReads.findCase
+                                                tx
+                                                (CaseFixtures.caseId (id fixture 99100))
 
                                         let parent =
                                             parent

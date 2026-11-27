@@ -742,12 +742,13 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeDisclosureTrail installation scope (recordedAt: DateTimeOffset, id: int64) =
+    let encodeDisclosureTrail installation scope throughId (recordedAt: DateTimeOffset, id: int64) =
         encode
             installation
             [
                 "kind", JsonValue.String "DISCLOSURE_TRAIL"
                 "scope", JsonValue.String scope
+                "throughId", JsonValue.Integer throughId
                 "beforeId", JsonValue.Integer id
                 "beforeInstant",
                 JsonValue.String(
@@ -763,9 +764,10 @@ module Cursors =
             | JsonValue.Object [ "beforeId", JsonValue.Integer id
                                  "beforeInstant", JsonValue.String recordedAt
                                  "kind", JsonValue.String "DISCLOSURE_TRAIL"
-                                 "scope", JsonValue.String expected ] when
-                expected = scope && id > 0L
+                                 "scope", JsonValue.String expected
+                                 "throughId", JsonValue.Integer throughId ] when
+                expected = scope && id > 0L && throughId >= id && throughId <= 9007199254740991L
                 ->
-                instant recordedAt |> Option.map (fun recordedAt -> recordedAt, id)
+                instant recordedAt |> Option.map (fun recordedAt -> (recordedAt, id), throughId)
             | _ -> None)
             token

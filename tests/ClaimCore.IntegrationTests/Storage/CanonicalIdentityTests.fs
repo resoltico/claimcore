@@ -133,14 +133,16 @@ let private peoplePairs (database: PostgresFixture.Database) =
                     target
                     None
                     taskName
-                    (Submissions.grant (grant "Canonical-Reference"))
+                    (Submissions.grant (grant (CaseReference.format parent.Reference)))
 
             let right =
                 Submissions.createRaw
                     taskName
                     left.OperationId
                     left.Envelope.Binding
-                    (Submissions.grant (grant "canonical-reference"))
+                    (Submissions.grant (
+                        grant ((CaseReference.format parent.Reference).ToLowerInvariant())
+                    ))
 
             let! first = Service.executeSubmission actor ((left)) token
             let receipt = accepted first
@@ -274,13 +276,14 @@ let private submissionMaps (database: PostgresFixture.Database) =
         let opening = opening database.Fixture 9400 "Map-Replay" "10.50" "Claimant"
 
         let! opened = Service.executeSubmission actor opening token
-        accepted opened |> ignore
+        let parent = accepted opened |> caseReceipt
         let operation = (id database.Fixture 9401).ToString("D")
 
         let raw inputs =
             sprintf
-                """{"operationId":"%s","task":"case.amendRegistration","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"Map-Replay"},"expectedRevision":1},"inputs":{%s}}"""
+                """{"operationId":"%s","task":"case.amendRegistration","binding":{"kind":"CASE","target":{"kind":"ID","caseId":"%s"},"expectedRevision":1},"inputs":{%s}}"""
                 operation
+                (CaseId.format parent.CaseId)
                 inputs
 
         let first =

@@ -128,7 +128,9 @@ it("renders exact endpoint-supplied details and typed event arguments without a 
     ),
   );
   const user = userEvent.setup();
-  render(<CaseTimeline target={{ kind: "REFERENCE", caseReference: "CASE-1" }} />);
+  render(
+    <CaseTimeline target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }} />,
+  );
   await user.click(await screen.findByRole("button", { name: "Actions for Results" }));
   await user.click(screen.getByRole("menuitem", { name: "View details" }));
   const detail = screen.getByRole("dialog", { name: "View details" });

@@ -306,7 +306,6 @@ module RelatedCaseLinks =
 
 type CaseReadModel =
     {
-        MatchedReference: CaseReference option
         RelatedCases: RelatedCaseLinks
         FamilySequence: Sequence
         Snapshot: CaseSnapshot

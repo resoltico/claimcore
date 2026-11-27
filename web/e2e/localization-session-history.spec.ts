@@ -151,8 +151,10 @@ test("preserves language and independent display preferences through real logout
 test("keeps exact old and new facts in the real timeline view", async ({ page }) => {
   await openAuthenticated(page);
   await selectFormat(page, "en-GB");
-  const reference = `EXACT-HISTORY-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(
+    page,
+    `EXACT-HISTORY-${randomUUID().slice(0, 8)}`,
+  );
   await applyPeople(page, {
     operationId: mintOperationId(),
     task: "case.amendRegistration",

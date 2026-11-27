@@ -151,19 +151,7 @@ module PartDescriptions =
 
                         Ok(PartDescription.Reminder(ReminderDescription.describe before value))
                     | PartValue.Link value ->
-                        let before =
-                            LinkId.create change.PartId
-                            |> Option.bind (fun id ->
-                                prior |> Option.bind (fun state -> Map.tryFind id state.Links))
-                            |> Option.bind _.Value.Content
-
-                        Ok(
-                            PartDescription.Link
-                                {
-                                    Before = before
-                                    After = value.Content
-                                }
-                        )
+                        Ok(PartDescription.Link { Before = None; After = value.Content })
                     | PartValue.Attachment value -> Ok(attachment value)
                     | PartValue.Note value ->
                         match NoteId.create change.PartId with

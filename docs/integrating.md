@@ -54,7 +54,7 @@ filters and choices.
 ```sh
 claimcore help case list
 claimcore case list
-claimcore case get DEMO-0001
+claimcore case get CC-7K3M-Q8T2-PW6D-X9HR-49
 claimcore people history
 ```
 
@@ -151,8 +151,8 @@ reflects current read access and facts. Same-day changes can move results betwee
 continuation binds the requester, installation, selection and business date. Restart after a
 change to any of those inputs.
 
-Use `claimcore case summary --format=csv` for the current report page. Add `--all` to stream
-its continuation pages with one header. HTTP offers a bounded complete download.
+Use `claimcore case summary --format=csv` for the bounded complete report. Add `--all` to
+stream audited server pages with one header.
 
 ### Reminder query selections
 
@@ -174,11 +174,9 @@ only the fields that the task declares. Send `{operationId, task, binding, input
 tokens. Omit Update inputs to keep values; use `null` only where `clearable` permits it. Existing-person
 changes select an actor ID and require `binding.expectedRevision`. Acquire the positive account
 `revision` from the DATA `people.grants` reply (or use the supplied HUMAN action binding). Creation
-of a case or person uses an explicit zero revision and no new-target selector. For `case.open`, omit
-`field:caseReference` to request assignment at acceptance. Only `CUSTOM_ALLOWED` installations
-permit a caller to supply it. The raw scalar schema allows null so the server can identify the
-invalid field. Admission rejects null, an empty string and malformed input. The same rules apply to
-people and service accounts. Creating a reminder or note selects its parent case, without a
+of a case or person uses an explicit zero revision and no new-target selector. ClaimCore assigns
+the permanent case reference at acceptance. Record external identifiers in business fields such as
+policy number or insurer claim reference. Creating a reminder or note selects its parent case, without a
 child identity or child revision. Binding schemas distinguish case, reviewed-family case, payment
 selection, work, reminder, note and person shapes. A nonledger command control supplies its typed
 request directly.
@@ -194,18 +192,13 @@ binding, including these preconditions. The exact operation request is specified
 `claimcore schema operation.preview request` or `claimcore schema operation.execute request` to inspect it.
 
 The DATA opening preview identifies an `OPENING` target and supplies typed `opening` changes.
-There is no Case ID or case link to use during preview. A custom request can appear as
-`requestedReference`; reservation is checked only when the operation is submitted. Preserve the
-same inputs and operation ID from review to submission. The accepted receipt contains the issued
-reference and Case ID. Use the ID to navigate to the current record. Access to the original opening
-snapshot determines whether a replay or operation lookup returns the historical opening reference.
+The accepted opening supplies the Case ID and permanent reference. Preserve the same inputs and
+operation ID from review to submission. Use the accepted Case ID to navigate to the current record.
+Replay and operation lookup apply current disclosure rights before releasing historical detail.
 
 Generated references use `CC-XXXX-XXXX-XXXX-XXXX-DD`, with sixteen Crockford Base32 payload symbols
 and two decimal check digits. Exact selectors require the hyphens and validate the check digits.
 ASCII letter case is ignored for exact reference identity. Partial search accepts fragments.
-Custom values use 1–32 ASCII letters, digits and single hyphens between groups, starting with a
-letter. The whole `CC-` prefix is reserved. For CLI callers, replace the former positional opening
-reference with `--case-reference REF` when using custom assignment.
 
 Typed offline checks apply the same ranges and applicability rules to supplied preconditions.
 Draft syntax may omit metadata for later explicit acquisition; complete erasure input requires its
@@ -418,8 +411,8 @@ must establish their current account and installation again.
 ## Export
 
 Use DATA JSON when you need typed facts and proof fields. CSV is available on the commands advertised
-by help. Wire owns its columns, canonical scalar formatting and RFC 4180 serialization; the CLI
-streams records and supported continuations.
+by help. Web and CLI get CSV from the same server export capability. The server owns its
+columns, canonical scalar formatting and RFC 4180 serialization.
 
 CSV cells beginning with formula-trigger characters are prefixed, including after leading spaces.
 Preserve that prefix when passing exports to spreadsheet software. CSV is not a new authorization or
@@ -429,7 +422,7 @@ retention boundary: exported copies remain the recipient's responsibility after 
 
 `POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
 `case.summary`, `case.timeline`, `reminder.list` or `people.history`; `selection` uses that query's existing filters
-without `cursor` or `limit`. It always starts a fresh traversal. Supply the normal contract,
+without `cursor` or `limit`. Bounded mode starts a fresh traversal. Supply the normal contract,
 authentication/origin/antiforgery and installation headers. CSV is not a representation token.
 
 A success is complete UTF-8 `text/csv` with identity content encoding, exact `Content-Length`, a fixed
@@ -448,8 +441,11 @@ against the buffered output. A changed or erased disclosure fails the download. 
 observation is the disclosure cut. Revocation after that cut applies to subsequent requests.
 ClaimCore commits the disclosure audit event and obtains independent recovery acknowledgement before sending successful bytes.
 CSV scalar formatting is canonical and fallback account captions use the source English catalog.
-CLI streaming keeps bytes already emitted and exits nonzero with the failure and last cursor when
-a traversal becomes incomplete. It does not restart automatically. Browser downloads validate media, identity encoding, complete declared byte
+For an explicit page traversal, the client sends `ClaimCore-Export-Page-Size` and passes each
+`ClaimCore-Export-Next` value back as `ClaimCore-Export-After`. Each page has its own release cut
+and event. The CSV header appears on the first page. CLI streaming keeps bytes already emitted
+and reports incomplete output with a nonzero exit if a later page fails. Browser downloads validate
+media, identity encoding, complete declared byte
 length and owner/installation scope before creating a Blob, then release temporary object URLs.
 
 ## CLI use

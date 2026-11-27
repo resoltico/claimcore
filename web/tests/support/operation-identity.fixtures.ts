@@ -19,7 +19,7 @@ export const effect = (id = "preview"): EffectIdentity => ({
   id,
   contextGeneration: 0,
   credential: "token",
-  target: "CASE:CASE-SERIALIZATION",
+  target: "CASE:CC-3PBY-1JRP-Z70W-2VXH-71",
 });
 export const initial = (): OperationState => {
   const context = {
@@ -27,7 +27,7 @@ export const initial = (): OperationState => {
     owner,
     epoch: 0,
     credential: "token",
-    target: "CASE:CASE-SERIALIZATION",
+    target: "CASE:CC-3PBY-1JRP-Z70W-2VXH-71",
   };
   return {
     outbox: [],
@@ -37,12 +37,12 @@ export const initial = (): OperationState => {
         subject: "CASE",
         kind: "case.close",
       },
-      target: "CASE:CASE-SERIALIZATION",
+      target: "CASE:CC-3PBY-1JRP-Z70W-2VXH-71",
       binding: {
         kind: "CASE",
         target: {
           kind: "REFERENCE",
-          caseReference: "CASE-SERIALIZATION",
+          caseReference: "CC-3PBY-1JRP-Z70W-2VXH-71",
         },
         expectedRevision: 4,
       },

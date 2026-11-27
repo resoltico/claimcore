@@ -43,6 +43,15 @@ module internal RequestRefusals =
                 return QueryResults.readResult result
         }
 
+    let protectedRead services token refusal =
+        task {
+            let! outcome = read services token refusal
+            return DisclosureReads.safeOutcome outcome
+        }
+
+    let protectedLimit services token =
+        protectedRead services token QueryResults.invalidLimitRefusal
+
     let write (services: ServiceContext) (token: CancellationToken) refusal =
         task {
             if token.IsCancellationRequested then

@@ -385,10 +385,6 @@
     "text": "请停止操作，并联系管理员调查。",
     "source": "5b8f17a04e98"
   },
-  "cli.next.chooseReference": {
-    "text": "请选择另一个编号。",
-    "source": "aa70b7e71443"
-  },
   "cli.next.askAccess": {
     "text": "请联系所有者检查您的访问权限。",
     "source": "a18257b39d89"

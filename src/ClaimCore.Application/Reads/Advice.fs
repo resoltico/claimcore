@@ -84,8 +84,7 @@ module internal Advice =
 
                 let environment =
                     {
-                        FamilyEnvironment.CaseReferencePolicy = tx.CaseReferencePolicy
-                        Requester = actor
+                        FamilyEnvironment.Requester = actor
                         RequesterPrincipal = services.Principal
                         Maintenance = maintenance.Active
                         RelatedCase = fun _ -> None
@@ -235,7 +234,6 @@ module internal Advice =
                                                 maintenance.Active
                                                 snapshot
                                     }
-                                MatchedReference = None
                                 RelatedCases = RelatedCaseLinks.empty
                                 FamilySequence = familySequence
                                 Snapshot = snapshot
@@ -273,7 +271,7 @@ module internal Advice =
             | _ -> return Error CoreFault.StoreIntegrityError
         }
 
-    let installationOffers policy principal actor =
+    let installationOffers principal actor =
         Registry.clientDeclarations
         |> List.choose (fun declaration ->
             if
@@ -284,8 +282,7 @@ module internal Advice =
                        Access.can principal actor capability Scope.Installation)
             then
                 match declaration.Target with
-                | ActSubject.Case ->
-                    Some(InstallationOffer.Open(Registry.openCase.EditableInputs policy))
+                | ActSubject.Case -> Some(InstallationOffer.Open(Registry.openCase.EditableInputs))
                 | ActSubject.People -> Some(InstallationOffer.PeopleAct declaration.Id)
                 | _ -> None
             else

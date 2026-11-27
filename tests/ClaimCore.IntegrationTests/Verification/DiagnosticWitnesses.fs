@@ -228,7 +228,11 @@ let internal registrationRequests fixture () =
 
 let internal controlRequests fixture () =
     [
-        openRequest fixture 10 "bad reference"
+        Submissions.createRaw
+            "case.close"
+            (id fixture 10)
+            (OperationBinding.Case(CaseSelector.Reference "bad reference", 1L, None, None))
+            CaseTransitionInputs.closed
         ClaimCore.TestSupport.Submissions.withOperationId
             (Guid.Empty)
             (openRequest fixture 10 "REACH-1")
@@ -236,10 +240,7 @@ let internal controlRequests fixture () =
             "case.open"
             (id fixture 10)
             (OperationBinding.CaseNew -1L)
-            (Submissions.fields (RegistrationInput.values registration)
-             |> Map.add
-                 (Submissions.field BusinessField.CaseReference)
-                 (SubmissionValue.Text "REACH-1"))
+            (Submissions.fields (RegistrationInput.values registration))
     ]
 
 let internal progressRequests fixture () =
@@ -334,7 +335,7 @@ let internal workScalarRequests fixture () =
             "work.update"
             (id fixture operation)
             (ClaimCore.Application.Contracts.OperationBinding.Work(
-                (CaseSelector.Reference "REACH-WORK"),
+                (caseTarget fixture "REACH-WORK"),
                 (revision)
             ))
             (ClaimCore.TestSupport.Submissions.work (
@@ -348,7 +349,7 @@ let internal workScalarRequests fixture () =
         Submissions.createRaw
             taskName
             (id fixture operation)
-            (OperationBinding.Reminder((CaseSelector.Reference "REACH-WORK"), selected))
+            (OperationBinding.Reminder((caseTarget fixture "REACH-WORK"), selected))
             values
 
     [

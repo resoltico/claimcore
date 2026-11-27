@@ -65,14 +65,14 @@ it("keeps a failed history page request-local without erasing current case data"
   );
   render(
     <CaseDetail
-      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByRole("heading", { name: "CASE-1" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "CC-55KW-SSJ4-8HMS-G1BH-73" })).toBeVisible();
   expect(await screen.findByRole("alert")).toBeVisible();
 });
 const readableCurrent = (history: "NONE" | "FULL" = "FULL") =>
@@ -112,7 +112,7 @@ it("revalidates readable current fields and drops the old history after current 
   fetch.mockReturnValueOnce(revalidation);
   render(
     <CaseDetail
-      target={{ kind: "REFERENCE", caseReference: "CASE-1" }}
+      target={{ kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" }}
       reloadSignal={0}
       definition={definition.catalog}
       onBack={vi.fn()}
@@ -216,9 +216,16 @@ it("opens a literal filter for padded input and reserves exact reads for valid r
   expect(new URLSearchParams(location.search).get("q")).toBe(" REF ");
   view.unmount();
   render(<FindCase open returnFocusId="workspace-find" setOpen={vi.fn()} />);
-  await user.type(screen.getByRole("combobox", { name: "Find a case" }), "REF{Enter}");
+  await user.type(
+    screen.getByRole("combobox", { name: "Find a case" }),
+    "CC-0000-0000-0000-0000-98{Enter}",
+  );
   await waitFor(() => {
-    expect(get).toHaveBeenCalledExactlyOnceWith("REF", "token", expect.any(AbortSignal));
+    expect(get).toHaveBeenCalledExactlyOnceWith(
+      "CC-0000-0000-0000-0000-98",
+      "token",
+      expect.any(AbortSignal),
+    );
   });
 });
 

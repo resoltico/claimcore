@@ -75,31 +75,22 @@ let private caseFlow (database: PostgresFixture.Database) storage =
                 "METRIC-ACCEPTANCE"
                 0L
                 "case.open"
-                (Submissions.fields (RegistrationInput.values registration)
-                 |> Map.add
-                     (Submissions.field BusinessField.CaseReference)
-                     (SubmissionValue.Text "METRIC-ACCEPTANCE"))
+                (Submissions.fields (RegistrationInput.values registration))
 
         do! call host Api.operationPreview operation antiforgery ReplyKind.Reviewed
         do! call host Api.operationExecute operation antiforgery ReplyKind.Accepted
         do! call host Api.operationExecute operation antiforgery ReplyKind.AlreadyAccepted
 
-        do!
-            call
-                host
-                Api.caseGet
-                {
-                    Target = CaseSelector.Reference("METRIC-ACCEPTANCE")
-                }
-                antiforgery
-                ReplyKind.Succeeded
+        let target = caseTarget database.Fixture "METRIC-ACCEPTANCE"
+
+        do! call host Api.caseGet { Target = target } antiforgery ReplyKind.Succeeded
 
         do!
             call
                 host
                 Api.caseGet
                 {
-                    Target = CaseSelector.Reference("METRIC-MISSING")
+                    Target = CaseSelector.Id(CaseFixtures.caseId (id database.Fixture 602))
                 }
                 antiforgery
                 ReplyKind.Rejected
@@ -111,15 +102,7 @@ let private caseFlow (database: PostgresFixture.Database) storage =
         do! call host Api.caseList page antiforgery ReplyKind.Succeeded
         host.HandlerStub.RuntimeAvailable <- false
 
-        do!
-            call
-                host
-                Api.caseGet
-                {
-                    Target = CaseSelector.Reference("METRIC-ACCEPTANCE")
-                }
-                antiforgery
-                ReplyKind.Failed
+        do! call host Api.caseGet { Target = target } antiforgery ReplyKind.Failed
 
         host.HandlerStub.RuntimeAvailable <- true
         let! status, _ = host.Send(HttpMethod.Get, "/api/not-a-real-endpoint", None, [])

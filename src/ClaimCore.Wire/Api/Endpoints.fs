@@ -2,7 +2,6 @@ namespace ClaimCore.Wire
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
-open ClaimCore.Wire.Export
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -57,13 +56,6 @@ type OperationEcho<'Input, 'Output> =
     }
 
 [<NoEquality; NoComparison>]
-type CsvExport<'output> =
-    {
-        Header: byte array
-        Rows: (string -> Map<string, string> -> string) -> 'output -> byte array option
-    }
-
-[<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =
     {
         Id: EndpointId
@@ -73,7 +65,6 @@ type Endpoint<'In, 'Out> =
         Output: Codec<'Out>
         Classify: 'Out -> ReplyKind
         ReadReply: 'Out -> RepresentationReply<HumanReadReply, Outcome<unit>> option
-        Csv: CsvExport<'Out> option
         Correlation: OperationEcho<'In, 'Out> option
         Unavailable: 'In -> 'Out
     }
@@ -137,20 +128,6 @@ module EndpointValues =
         |> Option.bind (function
             | RepresentationReply.Human reply -> Some reply
             | RepresentationReply.Data _ -> None)
-
-    let csvHeader (input: IEndpointInput) =
-        input.Accept
-            { new IEndpointInputVisitor<byte array option> with
-                member _.Visit<'input, 'output>(endpoint: Endpoint<'input, 'output>, _) =
-                    endpoint.Csv |> Option.map _.Header
-            }
-
-    let csvRows render (output: IEndpointOutput) =
-        output.Accept
-            { new IEndpointOutputVisitor<byte array option> with
-                member _.Visit<'input, 'output>(endpoint: Endpoint<'input, 'output>, value) =
-                    endpoint.Csv |> Option.bind (fun export -> export.Rows render value)
-            }
 
     let tryInput (endpoint: Endpoint<'input, 'output>) (value: IEndpointInput) =
         value.Accept
@@ -264,7 +241,6 @@ module Api =
             Output = output
             Classify = OutcomePresentation.classify
             ReadReply = fun _ -> None
-            Csv = None
             Correlation = None
             Unavailable = fun _ -> Outcome.Failed CoreFault.StoreUnavailable
         }
@@ -283,25 +259,6 @@ module Api =
               RequestCodecs.empty
               (ReplyCodecs.readReply "LogoutReply" ResponseCodecs.logoutHandoff) with
             Effect = EndpointEffect.OperationalWrite
-        }
-
-    let private withCsv
-        header
-        rows
-        (endpoint: Endpoint<'input, RepresentationReply<HumanReadReply, Outcome<'page>>>)
-        =
-        { endpoint with
-            Csv =
-                Some
-                    {
-                        Header = header
-                        Rows =
-                            fun render reply ->
-                                match reply with
-                                | RepresentationReply.Data(Outcome.Succeeded page) ->
-                                    Some(rows render page)
-                                | _ -> None
-                    }
         }
 
     let private actorEndpoint endpoint input name data =
@@ -337,7 +294,6 @@ module Api =
                         outcome
                     |> RepresentationReply.Data
                     |> Some
-            Csv = None
             Correlation = None
             Unavailable =
                 fun _ -> RepresentationReply.Data(Outcome.Failed CoreFault.StoreUnavailable)
@@ -379,8 +335,6 @@ module Api =
             RequestCodecs.caseListRequest
             "CasePageReply"
             ResponseCodecs.casesPage
-        |> withCsv CaseCsv.csvHeader (fun _ (page: CaseSummaryPage) ->
-            CaseCsv.csvRows page.Basis page.Items)
 
     let caseSummary =
         actorRead
@@ -388,7 +342,6 @@ module Api =
             RequestCodecs.caseSummaryRequest
             "CaseSummaryReply"
             CaseTotalsCodecs.summary
-        |> withCsv CaseSummaryCsv.header (fun _ summary -> CaseSummaryCsv.rows summary)
 
     let caseTimeline =
         actorRead
@@ -396,8 +349,6 @@ module Api =
             RequestCodecs.timelineRequest
             "CaseTimelineReply"
             TimelineCodecs.page
-        |> withCsv TimelineCsv.csvHeader (fun _ (page: CaseTimelinePage) ->
-            TimelineCsv.csvRows page)
 
     let casePayments =
         actorRead
@@ -426,8 +377,6 @@ module Api =
             RequestCodecs.reminderListRequest
             "ReminderListReply"
             WorkReadCodecs.reminders
-        |> withCsv ReminderCsv.csvHeader (fun render (page: ReminderPage) ->
-            ReminderCsv.csvRows render page.Items)
 
     let reminder =
         actorRead
@@ -470,7 +419,6 @@ module Api =
                     HumanOperationReply.classifyPreview
                     OutcomePresentation.classifyPreview
             ReadReply = fun _ -> None
-            Csv = None
             Correlation =
                 Some
                     {
@@ -495,7 +443,6 @@ module Api =
                 RepresentationReply.fold HumanOperationReply.classifyExecute (fun reply ->
                     OutcomePresentation.classifyExecute reply.Outcome)
             ReadReply = fun _ -> None
-            Csv = None
             Correlation =
                 Some
                     {
@@ -520,7 +467,6 @@ module Api =
                 RepresentationReply.fold HumanOperationReply.classifyLookup (fun reply ->
                     OutcomePresentation.classifyOperationGet reply.Outcome)
             ReadReply = fun _ -> None
-            Csv = None
             Correlation =
                 Some
                     {
@@ -550,8 +496,6 @@ module Api =
             RequestCodecs.peopleHistoryRequest
             "PeopleHistoryReply"
             PeopleHistoryCodecs.page
-        |> withCsv PeopleHistoryCsv.csvHeader (fun render (page: PeopleHistoryPage) ->
-            PeopleHistoryCsv.csvRows render page.Entries)
 
     let peopleRequests =
         actorRead
@@ -630,7 +574,6 @@ module Api =
                     Some(RepresentationReply.Data(Outcome.Failed fault))
                 | RepresentationReply.Human(HumanSessionTerminationResult.OutcomeUnknown _)
                 | RepresentationReply.Data SessionTerminationResult.OutcomeUnknown -> None
-            Csv = None
             Correlation = None
             Unavailable =
                 fun _ ->
@@ -695,20 +638,8 @@ module Api =
             EndpointDefinition.create terminatePersonSessions
 
     let definitions =
-        ((HostEndpoint.all |> List.map defineHost)
-         @ (ActorEndpoint.all |> List.map defineActor))
-        |> List.map (fun definition ->
-            definition.Accept
-                { new IEndpointVisitor<IEndpointDefinition> with
-                    member _.Visit<'input, 'output>(endpoint: Endpoint<'input, 'output>) =
-                        match EndpointDeclarations.find endpoint.Token with
-                        | Some declaration when declaration.Csv <> endpoint.Csv.IsSome ->
-                            invalidOp (
-                                endpoint.Token
-                                + " CSV binding disagrees with its endpoint declaration."
-                            )
-                        | _ -> definition
-                })
+        (HostEndpoint.all |> List.map defineHost)
+        @ (ActorEndpoint.all |> List.map defineActor)
 
     let forHost host =
         definitions

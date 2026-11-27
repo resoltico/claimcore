@@ -134,10 +134,7 @@ let private scenario (database: PostgresFixture.Database) =
                     (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
                     (ClaimCore.TestSupport.Submissions.fields (
                         RegistrationInput.values (DomainInputs.registration)
-                     )
-                     |> Map.add
-                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                         (ClaimCore.Application.Contracts.SubmissionValue.Text("PG-NAMED-WORK")))))
+                    ))))
 
         for number, person in [ 8, alice; 9, bob ] do
             let! _ =
@@ -151,7 +148,7 @@ let private scenario (database: PostgresFixture.Database) =
                         (ClaimCore.TestSupport.Submissions.grant (
                             {
                                 Role = Role.CaseHandler
-                                Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
+                                Scope = GrantTarget.CaseId(CaseFixtures.caseId (id fixture 7))
                             }
                         )))
 
@@ -162,7 +159,7 @@ let private scenario (database: PostgresFixture.Database) =
                 "work.update"
                 (id fixture number)
                 (ClaimCore.Application.Contracts.OperationBinding.Work(
-                    (CaseSelector.Reference "PG-NAMED-WORK"),
+                    (CaseSelector.Id(CaseFixtures.caseId (id fixture 7))),
                     (revision)
                 ))
                 (ClaimCore.TestSupport.Submissions.work (
@@ -248,7 +245,7 @@ let private scenario (database: PostgresFixture.Database) =
                     (ClaimCore.TestSupport.Submissions.grant (
                         {
                             Role = Role.CaseReader
-                            Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
+                            Scope = GrantTarget.CaseId(CaseFixtures.caseId (id fixture 7))
                         }
                     )))
 
@@ -391,13 +388,13 @@ let private scenario (database: PostgresFixture.Database) =
                     "case.erase"
                     (id fixture 18)
                     (ClaimCore.Application.Contracts.OperationBinding.Case(
-                        CaseSelector.Reference("PG-NAMED-WORK"),
+                        CaseSelector.Id(CaseFixtures.caseId (id fixture 7)),
                         (1L),
                         None,
                         (Some(
                             reviewedFamilySequence
                                 fixture.Store
-                                (CaseSelector.Reference "PG-NAMED-WORK")
+                                (CaseSelector.Id(CaseFixtures.caseId (id fixture 7)))
                         ))
                     ))
                     (Map.empty)))

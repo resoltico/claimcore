@@ -17,6 +17,10 @@ open ClaimCore.TestSupport
 let private accepted result =
     Result.defaultWith (fun error -> failtestf "%A" error) result
 
+let private visibleReference = "CC-0000-0000-0000-0000-98"
+let private exactReference = "CC-0000-0000-0000-0001-95"
+let private issuedKey = exactReference.ToLowerInvariant()
+
 let private withCases check =
     let principal = PrincipalKey.human "https://issuer.example/" "reader" |> accepted
 
@@ -42,7 +46,6 @@ let private withCases check =
                 Contact = None
             }
             []
-            CaseReferencePolicy.CustomAllowed
             CancellationToken.None
         |> fun pending -> pending.GetAwaiter().GetResult()
 
@@ -78,26 +81,40 @@ let private withCases check =
 
     let current = core principal
 
-    for index, reference in List.indexed [ "A-MATCH-1"; "Match-1" ] do
+    for index, policy in List.indexed [ exactReference + " matching-policy"; "matching-policy" ] do
+        let draw () =
+            let bytes = Array.zeroCreate<byte> CaseReference.EntropyBytes
+            bytes[bytes.Length - 1] <- byte index
+            bytes
+
+        let opener =
+            current
+            |> Service.mapStore (fun _ ->
+                LedgerStore(
+                    database.RuntimeSource,
+                    database.Installation,
+                    database.Cipher,
+                    Transactions.timeouts,
+                    caseReferenceEntropy = draw
+                )
+                :> IStore)
+
         let reply =
             Service.executeSubmission
-                current
-                ((ClaimCore.TestSupport.Submissions.createRaw
+                opener
+                (Submissions.createRaw
                     "case.open"
                     (operationId (index + 3))
-                    (ClaimCore.Application.Contracts.OperationBinding.CaseNew(0L))
-                    (ClaimCore.TestSupport.Submissions.fields (
-                        RegistrationInput.values (DomainInputs.registration)
-                     )
-                     |> Map.add
-                         (TaskInputId.Target(InputTarget.Field BusinessField.CaseReference))
-                         (ClaimCore.Application.Contracts.SubmissionValue.Text(reference)))))
+                    (OperationBinding.CaseNew 0L)
+                    (Map.ofList
+                        [
+                            Submissions.field BusinessField.PolicyNumber,
+                            SubmissionValue.Text policy
+                        ]))
                 CancellationToken.None
             |> fun task -> task.GetAwaiter().GetResult()
 
-        match reply.Outcome with
-        | ExecuteResult.Accepted _ -> ()
-        | other -> failtestf "Fixture opening failed: %A" other
+        StoreFixtures.accepted reply |> ignore
 
     let scopedPrincipal =
         PrincipalKey.human "https://issuer.example/" "scoped" |> accepted
@@ -156,10 +173,9 @@ let private expectExact operationId (value: CaseSummaryPage) =
         (Some
             {
                 CaseId = CaseFixtures.caseId (operationId 4)
-                CaseReference = CaseReference.parse "Match-1" |> accepted
-                MatchedReference = None
+                CaseReference = ClaimCore.TestSupport.DomainInputs.reference exactReference
             })
-        "Original authored reference and creation identity"
+        "Issued reference and creation identity"
 
 [<Tests>]
 let tests =
@@ -203,7 +219,7 @@ let tests =
                         Expect.equal
                             (trailing.Items
                              |> List.map (fun item -> CaseReference.format item.Reference))
-                            [ "Match-1" ]
+                            [ exactReference ]
                             "The continuation returns the remaining readable case"
 
                         Expect.isNone
@@ -217,20 +233,20 @@ let tests =
                 "visible exact identity and original spelling survive case-insensitive matching"
                 (fun () ->
                     withCases (fun core _ operationId ->
-                        let result = read core "match-1" [] 50 |> page
+                        let result = read core issuedKey [] 50 |> page
                         expectExact operationId result
 
                         Expect.equal
                             (result.Items
                              |> List.map (fun item -> CaseReference.format item.Reference))
-                            [ "A-MATCH-1"; "Match-1" ]
+                            [ visibleReference; exactReference ]
                             "Independently selected rows"))
             testCase
                 "authorized exact identity remains available outside the current page or filter"
                 (fun () ->
                     withCases (fun core _ operationId ->
-                        read core "match-1" [] 1 |> page |> expectExact operationId
-                        let empty = read core "match-1" [ CaseStatus.Closed ] 50 |> page
+                        read core issuedKey [] 1 |> page |> expectExact operationId
+                        let empty = read core issuedKey [ CaseStatus.Closed ] 50 |> page
                         Expect.isEmpty empty.Items "No closed rows"
 
                         Expect.isFalse
@@ -242,7 +258,7 @@ let tests =
                 "partial, absent and malformed references do not become exact identities"
                 (fun () ->
                     withCases (fun core _ _ ->
-                        for query, count in [ "match", 2; "MISSING", 0; "two words", 0 ] do
+                        for query, count in [ "matching-policy", 2; "MISSING", 0; "two words", 0 ] do
                             let result = read core query [] 50 |> page
                             Expect.equal result.Items.Length count "Independently selected rows"
 
@@ -255,20 +271,22 @@ let tests =
                 "unreadable exact target stays undisclosed beside a visible partial match"
                 (fun () ->
                     withCases (fun _ scoped _ ->
-                        let result = read scoped "match-1" [] 50 |> page
+                        let result = read scoped issuedKey [] 50 |> page
 
                         Expect.equal
                             (result.Items
                              |> List.map (fun item -> CaseReference.format item.Reference))
-                            [ "A-MATCH-1" ]
+                            [ visibleReference ]
                             "Only the granted case is disclosed"
 
                         Expect.isNone
                             result.ExactReference
                             "The unreadable exact identity is withheld"
 
-                        let visible = read scoped "a-match-1" [] 50 |> page
-                        let hidden = read scoped "match-1" [ CaseStatus.Closed ] 50 |> page
+                        let visible =
+                            read scoped (visibleReference.ToLowerInvariant()) [] 50 |> page
+
+                        let hidden = read scoped issuedKey [ CaseStatus.Closed ] 50 |> page
                         let unknown = read scoped "unknown-2" [ CaseStatus.Closed ] 50 |> page
 
                         Expect.isEmpty hidden.Items "The display filter excludes the visible peer"
@@ -289,7 +307,7 @@ let tests =
                         Expect.equal
                             (visible.ExactReference
                              |> Option.map (fun item -> CaseReference.format item.CaseReference))
-                            (Some "A-MATCH-1")
+                            (Some visibleReference)
                             "Scoped visible exact identity"))
             testCase "erasure preserves exact authorized reference identity" (fun () ->
                 withCases (fun core _ operationId ->
@@ -310,7 +328,7 @@ let tests =
                                 Some(
                                     StoreFixtures.reviewedFamilySequence
                                         core.Store
-                                        (CaseSelector.Reference "Match-1")
+                                        (CaseSelector.Reference exactReference)
                                 )
                             else
                                 None
@@ -322,7 +340,7 @@ let tests =
                                     taskName
                                     (operationId operation)
                                     (OperationBinding.Case(
-                                        CaseSelector.Reference "Match-1",
+                                        CaseSelector.Reference exactReference,
                                         revision,
                                         None,
                                         family
@@ -335,5 +353,5 @@ let tests =
                         | ExecuteResult.Accepted _ -> ()
                         | other -> failtestf "Fixture erasure failed: %A" other
 
-                    read core "match-1" [] 50 |> page |> expectExact operationId))
+                    read core issuedKey [] 50 |> page |> expectExact operationId))
         ]

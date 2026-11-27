@@ -78,7 +78,7 @@ it("renders supplied stage controls and follows its supplied query link", async 
     labelId: "task.case.close.label",
     binding: {
       kind: "CASE",
-      target: { kind: "REFERENCE", caseReference: "CASE-1" },
+      target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
       expectedRevision: 4,
     },
     seeds: {},
@@ -104,7 +104,9 @@ it("renders supplied stage controls and follows its supplied query link", async 
               value: null,
               link: {
                 endpoint: "case.get",
-                input: { target: { kind: "REFERENCE", caseReference: "CASE-1" } },
+                input: {
+                  target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
+                },
               },
               actions: [action],
             },
@@ -119,9 +121,9 @@ it("renders supplied stage controls and follows its supplied query link", async 
   await userEvent.setup().click(button);
   expect(onAction).toHaveBeenCalledExactlyOnceWith(action, undefined, expect.any(String));
   const link = screen.getByRole("link", { name: "Opened" });
-  expect(link).toHaveAttribute("href", "/cases/reference/CASE-1");
+  expect(link).toHaveAttribute("href", "/cases/reference/CC-55KW-SSJ4-8HMS-G1BH-73");
   await userEvent.setup().click(link);
-  expect(follow).toHaveBeenCalledExactlyOnceWith("/cases/reference/CASE-1");
+  expect(follow).toHaveBeenCalledExactlyOnceWith("/cases/reference/CC-55KW-SSJ4-8HMS-G1BH-73");
   follow.mockRestore();
 });
 
@@ -146,7 +148,7 @@ it("keeps a supplied blocked stage action disabled", async () => {
                   labelId: "task.case.close.label",
                   binding: {
                     kind: "CASE",
-                    target: { kind: "REFERENCE", caseReference: "CASE-1" },
+                    target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
                     expectedRevision: 4,
                   },
                   seeds: {},

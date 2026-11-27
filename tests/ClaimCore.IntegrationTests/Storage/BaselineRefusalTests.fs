@@ -5,6 +5,7 @@ open ClaimCore.CommandLine
 open ClaimCore.TestSupport
 
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Json
@@ -59,7 +60,7 @@ let private install identifier format (bytes: byte array) (source: NpgsqlDataSou
         let! _ =
             DatabaseSession.execute
                 connection
-                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,case_reference_policy,wrapped_data_key) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1,'CUSTOM_ALLOWED',$2)"
+                "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,wrapped_data_key) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1,$2)"
                 [| box format; box (Array.zeroCreate<byte> 92) |]
                 token
 
@@ -152,7 +153,10 @@ let tests =
         [
             testCaseAsync
                 "a synthetic baseline differing by one SQL statement is refused untouched"
-                (refusedInstallation Baseline.identifier 12s alteredBaseline)
+                (refusedInstallation
+                    Baseline.identifier
+                    (int16 InstallationFormat.Current)
+                    alteredBaseline)
             testCaseAsync
                 "the published format 11 and baseline identity refuse without mutation"
                 (refusedInstallation "claimcore-format-11" 11s (fun () ->
@@ -164,5 +168,8 @@ let tests =
                     |> Encoding.UTF8.GetBytes))
             testCaseAsync
                 "an earlier development baseline with the same format and a different checksum refuses untouched"
-                (refusedInstallation Baseline.identifier 12s differentChecksum)
+                (refusedInstallation
+                    Baseline.identifier
+                    (int16 InstallationFormat.Current)
+                    differentChecksum)
         ]

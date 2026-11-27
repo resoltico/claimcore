@@ -34,10 +34,7 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let first = succeeded first
 
-        Expect.equal
-            (first.Items |> List.map reference)
-            [ "case-A" ]
-            "Folded order retains authored spelling"
+        Expect.hasLength first.Items 1 "First page uses the requested limit"
 
         let! rest =
             (Service.list
@@ -52,10 +49,17 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let rest = succeeded rest
 
+        let rows = first.Items @ rest.Items
+
         Expect.equal
-            (rest.Items |> List.map reference)
-            [ "CASE-B"; "Case-c" ]
-            "Limits may change between pages"
+            (rows |> List.map _.CaseId |> List.sort)
+            ([ 10; 11; 12 ] |> List.map (id fixture >> CaseFixtures.caseId) |> List.sort)
+            "Limits may change without omitting any case"
+
+        Expect.equal
+            (List.map reference rows)
+            (List.map reference rows |> List.sort)
+            "Continuation follows the issued reference order"
 
         Expect.isNone rest.NextCursor "No omitted row"
     }
@@ -83,7 +87,7 @@ let private requesterBinding (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.equal
             ((succeeded ownPage).Items |> List.map reference)
-            [ "case-A" ]
+            ((succeeded first).Items |> List.map reference)
             "The second requester can independently read the same cases"
 
         let! crossed =
@@ -104,7 +108,7 @@ let private requesterBinding (_: PostgresFixture.Database) (fixture: Fixture) =
                 owner
                 {
                     Role = Role.CaseReader
-                    Scope = (GrantTarget.CaseReference "CASE-C")
+                    Scope = (caseGrant fixture "Case-c")
                 }
                 true
 
@@ -127,9 +131,19 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
         let! actor = caseWorker fixture
         do! createHistory fixture actor
 
+        let! opened =
+            Service.get
+                actor
+                {
+                    Target = caseTarget fixture "HISTORY-1"
+                }
+                CancellationToken.None
+
+        let issued = (succeeded opened).Snapshot.Reference |> CaseReference.format
+
         let query: CaseTimelineRequest =
             {
-                Target = CaseSelector.Reference("HISTORY-1")
+                Target = CaseSelector.Reference issued
                 AfterCursor = None
                 Limit = 1
                 Filter = Some TimelineFilter.Facts
@@ -143,7 +157,7 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.timeline
                 actor
                 ({ query with
-                    Target = CaseSelector.Reference("history-1")
+                    Target = CaseSelector.Reference(issued.ToLowerInvariant())
                     AfterCursor = first.NextCursor
                     Limit = 2
                 })
@@ -256,7 +270,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.timeline
                 actor
                 ({
-                    Target = CaseSelector.Reference("CASE-A")
+                    Target = caseTarget fixture "case-A"
                     AfterCursor = None
                     Limit = 1
                     Filter = Some TimelineFilter.Facts
@@ -313,7 +327,7 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
                 principal
                 {
                     Role = Role.CaseRegistrar
-                    Scope = (GrantTarget.CaseReference "CASE-A")
+                    Scope = (caseGrant fixture "case-A")
                 }
                 true
 
@@ -342,9 +356,7 @@ let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.contains
             offers
-            (InstallationOffer.Open(
-                ClaimCore.Domain.Tasks.Case.Open.editableInputs CaseReferencePolicy.CustomAllowed
-            ))
+            (InstallationOffer.Open(ClaimCore.Domain.Tasks.Case.Open.editableInputs))
             "Same-page people supplies registration advice"
 
         Expect.contains
@@ -369,7 +381,7 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
 
         let query: CaseTimelineRequest =
             {
-                Target = CaseSelector.Reference("LONG-HISTORY")
+                Target = caseTarget fixture "LONG-HISTORY"
                 AfterCursor = None
                 Limit = 50
                 Filter = Some TimelineFilter.Facts

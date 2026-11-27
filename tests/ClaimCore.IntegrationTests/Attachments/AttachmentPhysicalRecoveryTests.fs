@@ -1004,7 +1004,36 @@ let private qualifyWitnessedRestore
 
         use witnessOwner = NpgsqlDataSource.Create witnessConnection
         let installation = database.Installation
-        let! actor = Attachments.setup database
+        let! initial = bootstrap database.Fixture
+
+        let! enrolled =
+            WitnessEnrollment.enroll
+                database.OwnerSource
+                witnessOwner
+                installation.InstallationId
+                token
+
+        use witness =
+            new RecoveryWitness(
+                NpgsqlDataSource.Create runtimeConnection,
+                installation.InstallationId
+            )
+
+        let storage =
+            LedgerStore(
+                database.RuntimeSource,
+                installation,
+                database.Cipher,
+                Transactions.timeouts,
+                caseReferenceEntropy = (fun () -> Array.zeroCreate CaseReference.EntropyBytes),
+                witness = (witness, enrolled)
+            )
+            :> IStore
+
+        let actor = { initial with Store = storage }
+        do! grantCaseWork database.Fixture actor
+        do! addPopulatedCase database actor
+        do! Attachments.grantAttachmentRoles database.Fixture actor
 
         let! _ =
             Attachments.upload
@@ -1032,7 +1061,7 @@ let private qualifyWitnessedRestore
         let! profiled = Service.executeSubmission actor profile token
         acceptedPeople profiled
 
-        let target = CaseSelector.Reference "synthetic-a"
+        let target = CaseSelector.Reference populatedReference
 
         let assigned =
             Submissions.createRaw
@@ -1119,19 +1148,6 @@ let private qualifyWitnessedRestore
                 weakerCheckpoint.Position
                 (Some approvedCutoff)
             |> Option.get
-
-        let! enrolled =
-            WitnessEnrollment.enroll
-                database.OwnerSource
-                witnessOwner
-                installation.InstallationId
-                token
-
-        use witness =
-            new RecoveryWitness(
-                NpgsqlDataSource.Create runtimeConnection,
-                installation.InstallationId
-            )
 
         let alias =
             NpgsqlConnectionStringBuilder(
@@ -1243,8 +1259,6 @@ let private qualifyWitnessedRestore
             trusted.Position
             "Disclosure did not extend the business ledger"
 
-        do! archivePoint database "after_witnessed_disclosure"
-
         do! runDigest host dispatchDate
         let! originalSends = sent ()
 
@@ -1252,6 +1266,9 @@ let private qualifyWitnessedRestore
             originalSends
             1L
             "The admitted original primary actually passed one digest to the isolated relay"
+
+        // Digest dispatch now commits its own protected observation before sending.
+        do! archivePoint database "after_witnessed_disclosure"
 
         let transition = Guid.NewGuid()
 

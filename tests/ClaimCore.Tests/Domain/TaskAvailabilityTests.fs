@@ -150,8 +150,7 @@ let tests =
                         |> accepted
                         |> apply zeroBase
 
-                    let common =
-                        [ "case.close"; "case.void"; "case.erase"; "case.changeReference" ]
+                    let common = [ "case.close"; "case.void"; "case.erase" ]
 
                     let rows =
                         [
@@ -202,13 +201,7 @@ let tests =
                         Expect.equal
                             (offered environment closed)
                             (Set.ofList
-                                [
-                                    "case.correct"
-                                    "case.reopen"
-                                    "case.void"
-                                    "case.erase"
-                                    "case.changeReference"
-                                ])
+                                [ "case.correct"; "case.reopen"; "case.void"; "case.erase" ])
                             "Closed-case offers"
 
                         let voided = state |> setCase Lifecycle.Voided state.Case.Value.Status

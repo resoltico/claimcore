@@ -75,7 +75,6 @@ type CaseRefusal =
     | WorkNoChanges
     | AssigneeUnavailable
     | FamilyChanged
-    | ReferenceUnavailable
     | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
     | CorrectionRequiresExistingValue
@@ -132,7 +131,7 @@ module Refusal =
         function
         | Refusal.Case(CaseRefusal.NotOffered _)
         | Refusal.Reminder(ReminderRuleRefusal.NotOffered _) -> true
-        | Refusal.Case(CaseRefusal.ReferenceUnavailable | CaseRefusal.WorkNoChanges | CaseRefusal.AssigneeUnavailable | CaseRefusal.FamilyChanged | CaseRefusal.CorrectionNoChanges | CaseRefusal.CorrectionRequiresExistingValue | CaseRefusal.PaymentNotFound | CaseRefusal.PartyLimit | CaseRefusal.SelfLink | CaseRefusal.DuplicateLink | CaseRefusal.LinkLimitReached)
+        | Refusal.Case(CaseRefusal.WorkNoChanges | CaseRefusal.AssigneeUnavailable | CaseRefusal.FamilyChanged | CaseRefusal.CorrectionNoChanges | CaseRefusal.CorrectionRequiresExistingValue | CaseRefusal.PaymentNotFound | CaseRefusal.PartyLimit | CaseRefusal.SelfLink | CaseRefusal.DuplicateLink | CaseRefusal.LinkLimitReached)
         | Refusal.Reminder ReminderRuleRefusal.NoChanges
         | Refusal.People(PeopleRefusal.LastOwner | PeopleRefusal.DistinctOwnerRequired | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown | PeopleRefusal.ActorChanged | PeopleRefusal.HumanPrincipalRequired | PeopleRefusal.RoleScopeNotApplicable | PeopleRefusal.IdentityReserved | PeopleRefusal.NoChanges)
         | Refusal.Access(AccessRefusal.ResourceUnavailable | AccessRefusal.NotAuthorized _)

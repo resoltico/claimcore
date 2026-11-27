@@ -15,30 +15,27 @@ open ClaimCore.Application.Contracts
 module internal OperationQueries =
     let private receipt (services: ServiceContext) (tx: ReadTx) operation discloseForeign =
         task {
-            let! entry =
-                OperationStorage.find tx.Connection tx.Cipher operation tx.CancellationToken
-
             let! caller = ExecutionEnvironment.requester tx services.Principal
 
-            let target =
-                entry
-                |> Option.bind (fun stored -> DisclosureReads.receiptTarget stored.Changes.Head)
-
-            let capture outcome =
-                match target with
-                | Some(caseId, attachment) ->
-                    DisclosureReads.observe
-                        services.Principal
-                        caller
-                        DisclosureKind.CaseRead
-                        (Some caseId)
-                        attachment
-                        outcome
-                | None -> outcome, None
+            let capture target outcome =
+                DisclosureReads.observe
+                    services.Principal
+                    caller
+                    DisclosureKind.OperationLookup
+                    (target |> Option.map fst)
+                    (target |> Option.bind snd)
+                    outcome
 
             if not (Access.validActor services.Principal caller) then
-                return capture QueryResults.unavailable
+                return capture None QueryResults.unavailable
             else
+                let! entry =
+                    OperationStorage.findStructure
+                        tx.Connection
+                        tx.InstallationId
+                        operation
+                        tx.CancellationToken
+
                 match entry, caller.Actor with
                 | Some entry, Some requester when entry.Root.Header.OperationId = operation ->
                     let own = entry.Root.Header.Authority = Authority.Actor requester.ActorId
@@ -53,33 +50,33 @@ module internal OperationQueries =
                                     entry.Changes.Head.Aggregate
                             ))
                     then
-                        let disclosure =
-                            target
-                            |> Option.bind (fun (caseId, attachment) ->
-                                DisclosureReads.refused
+                        return capture None (Outcome.Succeeded None)
+                    else
+                        match!
+                            OperationStorage.find
+                                tx.Connection
+                                tx.Cipher
+                                operation
+                                tx.CancellationToken
+                        with
+                        | Some complete ->
+                            let! receipt =
+                                ReceiptReads.read
+                                    (ServiceContext.basis services tx.ObservedAt)
                                     services.Principal
                                     caller
-                                    (Some caseId)
-                                    attachment)
+                                    tx
+                                    complete
 
-                        return Outcome.Succeeded None, disclosure
-                    else
-                        let! receipt =
-                            ReceiptReads.read
-                                (ServiceContext.basis services tx.ObservedAt)
-                                services.Principal
-                                caller
-                                tx
-                                entry
-
-                        return
-                            receipt
-                            |> Result.map (fun receipt ->
-                                Some(OperationLookupResult.Accepted(receipt, own)))
-                            |> Outcome.ofResult
-                            |> capture
+                            return
+                                receipt
+                                |> Result.map (fun receipt ->
+                                    Some(OperationLookupResult.Accepted(receipt, own)))
+                                |> Outcome.ofResult
+                                |> capture (DisclosureReads.receiptTarget entry.Changes.Head)
+                        | None -> return Outcome.Failed CoreFault.StoreIntegrityError, None
                 | Some _, _ -> return Outcome.Failed CoreFault.StoreIntegrityError, None
-                | None, _ -> return Outcome.Succeeded None, None
+                | None, _ -> return capture None (Outcome.Succeeded None)
         }
 
     let private confirm (services: ServiceContext) operation token =
@@ -95,14 +92,16 @@ module internal OperationQueries =
 
                                     match found with
                                     | Outcome.Succeeded(Some accepted) ->
-                                        return Verdict.Proceed(accepted, disclosure)
+                                        return
+                                            Verdict.Proceed(Outcome.Succeeded accepted, disclosure)
                                     | Outcome.Succeeded None ->
                                         let! frontier = RegisterReads.expiredBefore tx ()
 
                                         if OperationLifetime.expiredBefore frontier operation then
                                             return
                                                 Verdict.Proceed(
-                                                    OperationLookupResult.NotAccepted,
+                                                    Outcome.Succeeded
+                                                        OperationLookupResult.NotAccepted,
                                                     disclosure
                                                 )
                                         else
@@ -118,7 +117,8 @@ module internal OperationQueries =
                                                 then
                                                     return
                                                         Verdict.Proceed(
-                                                            OperationLookupResult.NotAccepted,
+                                                            Outcome.Succeeded
+                                                                OperationLookupResult.NotAccepted,
                                                             disclosure
                                                         )
                                                 else
@@ -127,12 +127,15 @@ module internal OperationQueries =
                                             else
                                                 return
                                                     Verdict.Proceed(
-                                                        OperationLookupResult.Pending(
-                                                            OperationLifetime.finalAt operation
+                                                        Outcome.Succeeded(
+                                                            OperationLookupResult.Pending(
+                                                                OperationLifetime.finalAt operation
+                                                            )
                                                         ),
                                                         disclosure
                                                     )
-                                    | Outcome.Rejected refusal -> return Verdict.Refuse refusal
+                                    | Outcome.Rejected refusal ->
+                                        return Verdict.Proceed(Outcome.Rejected refusal, disclosure)
                                     | Outcome.Failed fault -> return Verdict.Fail fault
                                 }
 
@@ -141,9 +144,8 @@ module internal OperationQueries =
 
             return
                 match result with
-                | Ok(Verdict.Proceed(value, disclosure)) -> Outcome.Succeeded value, disclosure
-                | Ok(Verdict.Replay receipt) ->
-                    Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)), None
+                | Ok(Verdict.Proceed(value, disclosure)) -> value, disclosure
+                | Ok(Verdict.Replay _) -> Outcome.Failed CoreFault.StoreIntegrityError, None
                 | Ok(Verdict.Refuse refusal) -> Outcome.Rejected refusal, None
                 | Ok(Verdict.Fail fault) -> Outcome.Failed fault, None
                 | Error(StoreFailure.Cancelled | StoreFailure.CommitOutcomeUnknown) ->
@@ -153,14 +155,14 @@ module internal OperationQueries =
 
     type private LookupPhase<'disclosure> =
         | Resolve of Outcome<OperationLookupResult> * 'disclosure option
-        | ConfirmAbsence of OperationId * 'disclosure option
+        | ConfirmAbsence of OperationId
 
     let get (services: ServiceContext) (request: OperationLookup) token =
         task {
             match OperationId.create request.OperationId with
             | None ->
                 return!
-                    RequestRefusals.read
+                    RequestRefusals.protectedRead
                         services
                         token
                         (Refusal.invalidInput (
@@ -198,7 +200,7 @@ module internal OperationQueries =
                         if
                             observedAt - OperationId.issuedAt operation > OperationLifetime.window
                         then
-                            ConfirmAbsence(operation, disclosure)
+                            ConfirmAbsence operation
                         else
                             try
                                 Resolve(
@@ -223,13 +225,9 @@ module internal OperationQueries =
                 match phase with
                 | Resolve(outcome, disclosure) ->
                     return! DisclosureReads.release services token (outcome, disclosure)
-                | ConfirmAbsence(operation, priorDisclosure) ->
+                | ConfirmAbsence operation ->
                     // The read scope is complete before confirmation acquires head-write capacity.
                     let! outcome, disclosure = confirm services operation token
 
-                    return!
-                        DisclosureReads.release
-                            services
-                            token
-                            (outcome, Option.orElse priorDisclosure disclosure)
+                    return! DisclosureReads.release services token (outcome, disclosure)
         }

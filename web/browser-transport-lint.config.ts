@@ -3,6 +3,7 @@ import type { OxlintConfig } from "oxlint";
 type Override = NonNullable<OxlintConfig["overrides"]>[number];
 
 const transportPath = "src/api/transport.ts";
+const displayLifecyclePath = "src/hooks/EndpointProvider.tsx";
 const transportGlobals = ["fetch", "XMLHttpRequest", "WebSocket", "EventSource"].map((name) => ({
   name,
   message: "Use the validated browser API boundary in src/api/transport.ts.",
@@ -54,8 +55,16 @@ export const browserTransportPolicy: Override[] = [
   },
   {
     files: coordinatorFiles,
-    excludeFiles: [transportPath],
+    excludeFiles: [transportPath, displayLifecyclePath],
     rules: restrictedGlobals([...transportGlobals, ...presentationGlobals]),
+  },
+  {
+    files: [displayLifecyclePath],
+    // The display lifecycle observes browser connectivity; operation state and transport do not.
+    rules: restrictedGlobals([
+      ...transportGlobals,
+      ...presentationGlobals.filter(({ name }) => name !== "navigator"),
+    ]),
   },
   {
     files: [transportPath],

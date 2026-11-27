@@ -450,7 +450,8 @@ let tests =
                                         OperationStorage.append
                                             connection
                                             database.Cipher
-                                            root
+                                            (RetainedOperation.restore root
+                                             |> Result.defaultWith (sprintf "%A" >> failtest))
                                             token
 
                                     return None
@@ -530,7 +531,7 @@ let tests =
                                             CaseReadContext.load
                                                 actor
                                                 tx
-                                                (CaseSelector.Reference "synthetic-snapshot")
+                                                (caseTarget database.Fixture "synthetic-snapshot")
                                     CancellationToken = token
                                 }
 
@@ -560,7 +561,7 @@ let tests =
                                             CaseReadContext.load
                                                 actor
                                                 tx
-                                                (CaseSelector.Reference "synthetic-snapshot")
+                                                (caseTarget database.Fixture "synthetic-snapshot")
                                     CancellationToken = token
                                 }
 

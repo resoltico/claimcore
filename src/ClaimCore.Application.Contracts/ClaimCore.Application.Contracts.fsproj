@@ -23,10 +23,10 @@
     <Compile Include="CaseTotals.fs" />
     <Compile Include="PeoplePages.fs" />
     <Compile Include="WorkReads.fs" />
+    <Compile Include="TaskIdentities.fs" />
     <Compile Include="Disclosure.fs" />
     <Compile Include="ViewCounts.fs" />
     <Compile Include="Replies.fs" />
-    <Compile Include="TaskIdentities.fs" />
     <Compile Include="ExportSelection.fs" />
     <Compile Include="EndpointDeclarations.fs" />
     <Compile Include="TaskDeclarations.fs" />

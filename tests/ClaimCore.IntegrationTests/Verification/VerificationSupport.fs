@@ -90,10 +90,11 @@ let finding expected (database: PostgresFixture.Database) =
         | _ -> failtest "Tampering was not detected"
     }
 
-let populated (database: PostgresFixture.Database) =
-    task {
-        let! actor = caseWorker database.Fixture
+/// The common fixture opens one case using the independently reviewed all-zero entropy vector.
+let populatedReference = "CC-0000-0000-0000-0000-98"
 
+let addPopulatedCase (database: PostgresFixture.Database) actor =
+    task {
         let! opened =
             (Service.executeSubmission
                 actor
@@ -110,6 +111,24 @@ let populated (database: PostgresFixture.Database) =
 
         accepted opened |> ignore
         let! _ = verified database
+        return ()
+    }
+
+let populated (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+
+        let store =
+            LedgerStore(
+                database.RuntimeSource,
+                database.Installation,
+                database.Cipher,
+                Transactions.timeouts,
+                caseReferenceEntropy = (fun () -> Array.zeroCreate CaseReference.EntropyBytes)
+            )
+            :> IStore
+
+        do! addPopulatedCase database { actor with Store = store }
         return actor
     }
 

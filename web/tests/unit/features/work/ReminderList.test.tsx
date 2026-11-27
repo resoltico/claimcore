@@ -31,7 +31,7 @@ const row = (
       },
     },
     values: [
-      { kind: "REFERENCE", value: "TIMING-CASE" },
+      { kind: "REFERENCE", value: "CC-HEC4-YPQC-DGG8-KQRF-06" },
       { kind: "TEXT", value: `Action ${index}` },
       { kind: "DATE", value: "2026-11-01" },
       { kind: "CODE", vocabulary: "reminderState", token: state },
@@ -138,7 +138,7 @@ for (const [language, labels, pending] of [
         <ReminderList
           filter={{ state: "PENDING" }}
           {...(scoped
-            ? { target: { kind: "REFERENCE" as const, caseReference: "TIMING-CASE" } }
+            ? { target: { kind: "REFERENCE" as const, caseReference: "CC-HEC4-YPQC-DGG8-KQRF-06" } }
             : {})}
         />,
       );
@@ -152,7 +152,7 @@ for (const [language, labels, pending] of [
         expect(item).toHaveTextContent(pending);
         if (!scoped) {
           expect(
-            within(item as HTMLElement).getByRole("link", { name: "TIMING-CASE" }),
+            within(item as HTMLElement).getByRole("link", { name: "CC-HEC4-YPQC-DGG8-KQRF-06" }),
           ).toHaveAttribute(
             "href",
             `/cases/id/00000000-0000-4000-8000-000000000099/reminders/00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,

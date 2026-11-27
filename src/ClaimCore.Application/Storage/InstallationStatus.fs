@@ -53,7 +53,6 @@ module internal InstallationStatus =
                         Baseline = Baseline.identifier
                         BaselineSha256 = Convert.ToHexStringLower Baseline.digest
                         BusinessTimeZone = installation.BusinessTimeZone
-                        CaseReferencePolicy = installation.CaseReferencePolicy
                         ObservedAt = instant
                         Position =
                             StoredEntries.position

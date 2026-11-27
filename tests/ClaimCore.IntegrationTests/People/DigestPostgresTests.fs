@@ -192,7 +192,7 @@ let private integration (database: PostgresFixture.Database) =
             Service.get
                 owner
                 {
-                    Target = CaseSelector.Reference "synthetic-a"
+                    Target = caseTarget fixture "synthetic-a"
                 }
                 token
 
@@ -454,8 +454,13 @@ let private integration (database: PostgresFixture.Database) =
 
         use interrupted = CancellationTokenSource.CreateLinkedTokenSource token
 
-        let loseAcknowledgement recipient _ ct =
+        let loseAcknowledgement
+            (released: Released<EmailAddress * Map<DigestCountKind, int64>>)
+            ct
+            =
             task {
+                let recipient, _ = released.Value
+
                 let! accepted =
                     DigestSmtp.send
                         config.Smtp

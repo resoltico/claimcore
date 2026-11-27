@@ -184,14 +184,6 @@ module CaseListScreen =
                             "field.caseReference.label"
                             Prominence.Primary
                             (PresentedValue.Reference exact.CaseReference)
-                        match exact.MatchedReference with
-                        | Some reference ->
-                            value
-                                "matchedReference"
-                                "label.referenceChangedFrom"
-                                Prominence.Secondary
-                                (PresentedValue.Reference reference)
-                        | None -> ()
                     ]
 
                 Screen.withRegions
@@ -205,16 +197,10 @@ module CaseListScreen =
         let links =
             value.ExactReference
             |> Option.map (fun value ->
-                let destination =
-                    match value.MatchedReference with
-                    | Some matched ->
-                        Link.CaseGet
-                            {
-                                Target = CaseSelector.Reference(CaseReference.format matched)
-                            }
-                    | None -> Link.caseById value.CaseId
-
-                NamedLink.create "field.caseReference.label" LinkRelation.OpenCase destination)
+                NamedLink.create
+                    "field.caseReference.label"
+                    LinkRelation.OpenCase
+                    (Link.caseById value.CaseId))
             |> Option.toList
 
         HumanDocument.snapshot

@@ -106,14 +106,7 @@ module ReplyCodecs =
                     (record (fun id reference -> id, reference)
                      |> field "caseId" fst ResponseScalars.caseId
                      |> field "caseReference" snd ResponseScalars.caseReference)
-                variant
-                    "OPENING"
-                    ReviewTarget.Opening
-                    (function
-                    | ReviewTarget.Opening value -> Some value
-                    | _ -> None)
-                    (record id
-                     |> optionalField "requestedReference" id ResponseScalars.caseReference)
+                unitVariant "OPENING" ReviewTarget.Opening
                 variant
                     "PERSON"
                     ReviewTarget.Person
@@ -235,6 +228,13 @@ module ReplyCodecs =
                     | _ -> None)
                     (record id |> field "fault" id DiagnosticCodecs.fault)
                 |> namedTaggedVariant "Failed"
+                variant
+                    "RECEIPT_UNAVAILABLE"
+                    (fun () -> ExecuteResult.ReceiptUnavailable)
+                    (function
+                    | ExecuteResult.ReceiptUnavailable -> Some()
+                    | _ -> None)
+                    (data nullValue)
                 variant
                     "OUTCOME_UNKNOWN"
                     (fun () -> ExecuteResult.OutcomeUnknown)

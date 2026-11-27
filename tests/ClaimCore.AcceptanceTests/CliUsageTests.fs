@@ -19,12 +19,16 @@ let smoke =
                     directory.FullName
                     "ClaimCore.Cli"
 
+            let caseId = "10000000-0000-7000-8000-000000000001"
+
             for arguments, expectedCode, expectedText in
                 [
-                    [ "case"; "close"; "--outcome"; "other"; "REF" ], 64, "--expected-revision"
+                    [ "case"; "close"; "--case-id"; caseId; "--outcome"; "other" ],
+                    64,
+                    "--expected-revision"
                     [ "help"; "case"; "open" ], 0, "Open a case"
                     [ "schema"; "invocation" ], 0, "endpoint"
-                    [ "case"; "get"; "REF"; "--dry-run" ], 0, "case.get"
+                    [ "case"; "get"; "--case-id"; caseId; "--dry-run" ], 0, "case.get"
                 ] do
                 let result =
                     ProcessRunner.dotnet 8_000 cli arguments (Dictionary<string, string>()) None

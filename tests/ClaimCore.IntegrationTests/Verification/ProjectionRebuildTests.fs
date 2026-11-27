@@ -39,7 +39,7 @@ let private seeded database =
                     "work.update"
                     (id database.Fixture 100)
                     (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "synthetic-a"),
+                        (caseTarget database.Fixture "synthetic-a"),
                         (0L)
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
@@ -60,7 +60,7 @@ let private seeded database =
                 "reminder.create"
                 (id database.Fixture 101)
                 (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                    (CaseSelector.Reference "synthetic-a"),
+                    (caseTarget database.Fixture "synthetic-a"),
                     None
                 ))
                 (ClaimCore.TestSupport.Submissions.reminderPlan
@@ -111,7 +111,7 @@ let private repairs database =
             Service.get
                 (core database.Fixture database.Fixture.Owner)
                 {
-                    Target = CaseSelector.Reference "synthetic-a"
+                    Target = caseTarget database.Fixture "synthetic-a"
                 }
                 token
 
@@ -248,7 +248,7 @@ let private erasedIdentity database =
                 (((request (database.Fixture) (103) ("synthetic-a") (1L) "case.erase" (Map.empty))))
                 token
 
-        accepted erased |> ignore
+        let erased = accepted erased |> caseReceipt
         do! enterMaintenance database
         let! checkpoint = checkpoint database
 
@@ -339,7 +339,7 @@ let private erasedIdentity database =
             Service.get
                 actor
                 {
-                    Target = CaseSelector.Reference("SYNTHETIC-A")
+                    Target = CaseSelector.Reference(CaseReference.format erased.Reference)
                 }
                 token
 
@@ -352,7 +352,7 @@ let private erasedIdentity database =
 
             Expect.equal
                 (CaseReference.format view.Snapshot.Reference)
-                "synthetic-a"
+                (CaseReference.format erased.Reference)
                 "The original reference spelling survives"
 
             Expect.equal

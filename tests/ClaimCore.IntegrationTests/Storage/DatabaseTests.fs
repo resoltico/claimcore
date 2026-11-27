@@ -73,11 +73,11 @@ let private databaseProfile (database: PostgresFixture.Database) =
 
         do!
             expectProfileRefusal "Initialize" (fun () ->
-                administration.Initialize("Etc/UTC", owner, None, token))
+                administration.Initialize("Etc/UTC", owner, token))
 
         do!
             expectProfileRefusal "Initialize if missing" (fun () ->
-                administration.InitializeIfMissing("Etc/UTC", owner, None, token))
+                administration.InitializeIfMissing("Etc/UTC", owner, token))
 
         do! expectProfileRefusal "Status" (fun () -> administration.Status token)
         do! expectProfileRefusal "Checkpoint capture" (fun () -> administration.Head token)
@@ -538,7 +538,6 @@ let tests =
                                     administration.Initialize(
                                         "Etc/UTC",
                                         initialOwner database,
-                                        None,
                                         token
                                     ))
                                 "Public initialization refuses an existing schema"
@@ -562,7 +561,6 @@ let tests =
                                         administration.InitializeIfMissing(
                                             "Etc/UTC",
                                             initialOwner database,
-                                            None,
                                             token
                                         )
 
@@ -619,7 +617,7 @@ let tests =
                         do!
                             sql
                                 database
-                                "UPDATE claimcore.cases SET case_reference='forged-reference' WHERE case_reference='synthetic-a'"
+                                "UPDATE claimcore.cases SET case_reference='forged-reference' WHERE snapshot IS NULL"
 
                         let! changed =
                             Verification.verify

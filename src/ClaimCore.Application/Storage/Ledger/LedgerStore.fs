@@ -83,7 +83,6 @@ type internal LedgerStore
                             CredentialUsable = usable
                             AuthorityVersion = authorityVersion
                             ObservedAt = observedAt
-                            CaseReferencePolicy = installation.CaseReferencePolicy
                         }
                 })
 

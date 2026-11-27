@@ -85,7 +85,6 @@ let private scalarAdmission () =
             DomainInputs.registration
         |> RegistrationInput.values
         |> Submissions.fields
-        |> Map.add (Submissions.field BusinessField.CaseReference) (SubmissionValue.Text "")
         |> Submissions.create "case.open" (Guid.Parse id) (Binding.CaseNew Revision.zero)
         |> OperationSubmissionCodecs.submission.Write
         |> WireWriter.bytes

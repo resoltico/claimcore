@@ -67,7 +67,8 @@ let tests =
             testCase "query fact selection is independent of human table selection" (fun () ->
                 let fields =
                     {
-                        CaseFields.CaseReference = DomainInputs.reference "LIST-1"
+                        CaseFields.CaseReference =
+                            DomainInputs.reference "CC-3MZN-97Y4-MEJD-DZCC-26"
                         Handling = Handling.Open
                         Registration = DomainInputs.admittedRegistration DomainInputs.registration
                         Finance = FinancialPosition.undecided

@@ -46,7 +46,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                         CaseFixtures.caseId (
                             System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                         )
-                    Reference = CaseFixtures.reference "UNIT-001"
+                    Reference = CaseFixtures.reference "CC-ZQ16-FT6R-54T8-E39K-67"
                     Revision = CaseFixtures.revision 1L
                     Act = (TaskId.ofLiteral "case.open")
                     Snapshot =
@@ -116,10 +116,7 @@ let internal caseRequest values =
         "case.open"
         id
         (Binding.CaseNew Revision.zero)
-        (Submissions.fields (RegistrationInput.values values)
-         |> Map.add
-             (Submissions.field BusinessField.CaseReference)
-             (SubmissionValue.Text "UNIT-001"))
+        (Submissions.fields (RegistrationInput.values values))
 
 let internal artifact name =
     JsonDocument.Parse(

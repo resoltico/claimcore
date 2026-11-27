@@ -91,17 +91,10 @@ let tests =
                     let reference =
                         TaskInputId.Target(InputTarget.Field BusinessField.CaseReference)
 
-                    let created = declaration "case.open" |> input reference
-
-                    Expect.equal
-                        created.Source
-                        InputSource.Authored
-                        "The creation reference is authored"
-
-                    Expect.equal
-                        created.Retention
-                        InputRetention.Retained
-                        "The reference stays reserved and disclosed after family erasure"
+                    Expect.isFalse
+                        ((declaration "case.open").Inputs
+                         |> List.exists (fun item -> item.Input = reference))
+                        "The opening specification only admits erasable registration inputs"
 
                     let claimant =
                         declaration "case.open"

@@ -320,7 +320,13 @@ let tests =
                 for words in
                     [
                         baseWords "disable" @ [ "--expected-revision"; "2" ]
-                        [ "case"; "erase"; "CASE-1"; "--expected-family-sequence"; "10" ]
+                        [
+                            "case"
+                            "erase"
+                            "CC-55KW-SSJ4-8HMS-G1BH-73"
+                            "--expected-family-sequence"
+                            "10"
+                        ]
                     ] do
                     Expect.isNone
                         (InteractiveReview.prepare console words |> CaseBuilders.accepted)
@@ -406,9 +412,23 @@ let tests =
             testCase "malformed case work reminder and people drafts make zero exchanges" (fun () ->
                 let invalid =
                     [
-                        [ "case"; "amend-registration"; "R-1"; "--policy-number"; "" ]
-                        [ "work"; "update"; "R-1"; "--handling-summary"; "" ]
-                        [ "reminder"; "create"; "R-1"; "--action"; ""; "--due"; "2026-11-04" ]
+                        [
+                            "case"
+                            "amend-registration"
+                            "CC-NVJN-9VCD-PZVY-CKAX-07"
+                            "--policy-number"
+                            ""
+                        ]
+                        [ "work"; "update"; "CC-NVJN-9VCD-PZVY-CKAX-07"; "--handling-summary"; "" ]
+                        [
+                            "reminder"
+                            "create"
+                            "CC-NVJN-9VCD-PZVY-CKAX-07"
+                            "--action"
+                            ""
+                            "--due"
+                            "2026-11-04"
+                        ]
                         baseWords "set-profile" @ [ "--name"; "" ]
                     ]
 
@@ -430,7 +450,7 @@ let tests =
                             Task = TaskId.ofLiteral "case.close"
                             Binding =
                                 OperationBinding.Case(
-                                    CaseSelector.Reference "R-1",
+                                    CaseSelector.Reference "CC-NVJN-9VCD-PZVY-CKAX-07",
                                     None,
                                     None,
                                     None
@@ -453,7 +473,7 @@ let tests =
                             OperationId = Some Guid.Empty
                             Binding =
                                 OperationBinding.Case(
-                                    CaseSelector.Reference "R-1",
+                                    CaseSelector.Reference "CC-NVJN-9VCD-PZVY-CKAX-07",
                                     Some -1L,
                                     None,
                                     None

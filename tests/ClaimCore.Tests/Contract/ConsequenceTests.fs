@@ -12,7 +12,6 @@ let private acts =
     [
         (TaskId.ofLiteral "case.open"), Consequence.Routine
         (TaskId.ofLiteral "case.amendRegistration"), Consequence.Routine
-        (TaskId.ofLiteral "case.changeReference"), Consequence.Routine
         (TaskId.ofLiteral "case.correct"), Consequence.Routine
         (TaskId.ofLiteral "case.decide"), Consequence.Routine
         (TaskId.ofLiteral "case.withdrawDecision"), Consequence.Routine

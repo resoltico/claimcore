@@ -16,7 +16,7 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let internal target = CaseSelector.Reference "synthetic-a"
+let internal target = CaseSelector.Reference populatedReference
 let internal bytes = Encoding.UTF8.GetBytes "abc"
 
 let private digest =
@@ -144,7 +144,7 @@ let private expectBlocked (reply: ExecuteReply) =
         (ExecuteResult.Rejected blockedType)
         "The type decision refuses before retention checks"
 
-let private grantAttachmentRoles (fixture: Fixture) owner =
+let internal grantAttachmentRoles (fixture: Fixture) owner =
     task {
         for number, role in [ 11, Role.DataSteward; 12, Role.Auditor ] do
             let! reply =
@@ -271,7 +271,7 @@ let private lifecycle (database: PostgresFixture.Database) =
             (accepted acceptedReply)
             "Exact retry keeps the receipt"
 
-        let secondTarget = CaseSelector.Reference "synthetic-b"
+        let secondTarget = caseTarget fixture "synthetic-b"
 
         let! opened =
             Service.executeSubmission
@@ -1214,27 +1214,17 @@ let private readAcrossWithdrawal (database: PostgresFixture.Database) =
             owner
             |> Service.mapStore (fun _ ->
                 { new IStore with
-                    member _.RecordDisclosure(event, token) = inner.RecordDisclosure(event, token)
-
                     member _.Context query = inner.Context query
                     member _.Write operation = inner.Write operation
+                    member _.Read operation = inner.Read operation
 
-                    member _.Read operation =
-                        inner.Read
-                            { operation with
-                                Work =
-                                    fun tx ->
-                                        task {
-                                            let! _ =
-                                                OperationStorage.position
-                                                    tx.Connection
-                                                    tx.CancellationToken
-
-                                            pinned.SetResult()
-                                            do! resume.Task.WaitAsync(tx.CancellationToken)
-                                            return! operation.Work tx
-                                        }
-                            }
+                    member _.RecordDisclosure(event, ct) =
+                        task {
+                            let! committed = inner.RecordDisclosure(event, ct)
+                            pinned.TrySetResult() |> ignore
+                            do! resume.Task.WaitAsync(ct)
+                            return committed
+                        }
                 })
 
         let old = download delayed attachment
@@ -1293,7 +1283,7 @@ let private encryptedRows (database: PostgresFixture.Database) =
         accepted opened |> ignore
         let! first = uploadTo target 71
         let first = accepted first |> attachmentReceipt
-        let! second = uploadTo (CaseSelector.Reference "encrypted-second-case") 72
+        let! second = uploadTo (caseTarget fixture "encrypted-second-case") 72
         let second = accepted second |> attachmentReceipt
         let! downloaded = download owner first.AttachmentId
         assertDownload bytes downloaded

@@ -90,21 +90,21 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   publish();
   if (quiet && isReadBusy(result)) {
     sinks.setRefreshBusy(true);
+    previousPage.current = null;
+    sinks.setCursor(null);
+    sinks.setPages([]);
     sinks.setLoading(false);
     return;
   }
   sinks.setRefreshBusy(false);
   const page = result.kind === "outcome" ? select(result.value) : null;
   if (page === null) {
-    const rejected = result.kind === "outcome" && result.value.outcome.kind === "REJECTED";
-    if (isDisclosureRefused(result) || rejected) {
-      if (isDisclosureRefused(result)) {
-        sinks.onDisclosureChanged?.(resultNotice(result));
-      }
-      previousPage.current = null;
-      sinks.setCursor(null);
-      sinks.setPages([]);
+    if (isDisclosureRefused(result)) {
+      sinks.onDisclosureChanged?.(resultNotice(result));
     }
+    previousPage.current = null;
+    sinks.setCursor(null);
+    sinks.setPages([]);
     sinks.setMessage(resultNotice(result));
   } else {
     acceptPage(page, sinks, cursor, previousPage, continuationKey);
@@ -332,7 +332,7 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
   return {
     ...pages,
     refresh: () => {
-      void cache.revalidate(window.location.pathname, performance.now(), true);
+      void cache.revalidate(window.location.pathname);
     },
   };
 };

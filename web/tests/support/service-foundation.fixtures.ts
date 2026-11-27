@@ -1,7 +1,7 @@
 import { registration } from "./inputs";
 import type { CaseFields } from "@contracts/client";
 export const caseFields: CaseFields = {
-  caseReference: "CASE-1",
+  caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73",
   handling: { kind: "OPEN" },
   registration: registration(),
   finance: {

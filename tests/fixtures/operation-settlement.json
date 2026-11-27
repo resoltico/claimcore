@@ -5,5 +5,6 @@
   { "observation": "PENDING", "settlement": "PENDING", "final": false },
   { "observation": "REJECTED", "settlement": "REFUSED", "final": false },
   { "observation": "FAILED", "settlement": "UNRESOLVED", "final": false },
+  { "observation": "RECEIPT_UNAVAILABLE", "settlement": "UNRESOLVED", "final": false },
   { "observation": "OUTCOME_UNKNOWN", "settlement": "UNRESOLVED", "final": false }
 ]

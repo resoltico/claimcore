@@ -2,6 +2,7 @@ module ClaimCore.Tests.Tasks.CaseLinkTests
 
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Domain.Changes
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Tests.TaskBuilders
 
@@ -69,24 +70,36 @@ let tests =
                     add 2 state target (fun _ -> Some(target, Lifecycle.Erased))
                     |> expectRefusal refusal)
             testCase
-                "removal is unavailable when the related case is unreadable or erased"
+                "a source handler can remove an active link without reading its target"
                 (fun () ->
                     let initial = family ()
                     let related = CaseId.ofOperationId (operation 99)
                     let state = add 2 initial related live |> accepted |> apply initial
-                    let binding = Binding.Link(target state, LinkId.ofOperationId (operation 2))
+                    let handle = LinkId.ofOperationId (operation 2)
+                    let binding = Binding.Link(target state, handle)
                     let facts = Some(DecisionFacts.fromReplay state)
-                    let refusal = Refusal.Access AccessRefusal.ResourceUnavailable
 
                     match Remove.task with
                     | ClaimCore.Domain.Tasks.Task.Family remove ->
-                        for resolved in [ None; Some(related, Lifecycle.Erased) ] do
-                            let attempt =
-                                { environment with
-                                    RelatedCase = fun _ -> resolved
-                                }
+                        let hidden =
+                            { environment with
+                                RelatedCase =
+                                    fun _ -> failtest "Blind unlink cannot acquire the target"
+                            }
 
-                            remove.Decide (context 3) attempt facts binding (inputs [])
-                            |> expectRefusal refusal
+                        let change =
+                            remove.Decide (context 3) hidden facts binding (inputs [])
+                            |> accepted
+                            |> List.exactlyOne
+
+                        Expect.equal
+                            change.Value
+                            (PartValue.Link { Removed = true; Content = None })
+                            "Blind removal carries only the source-side effect"
+
+                        Expect.equal
+                            change.PartId
+                            (LinkId.value handle)
+                            "Remove the intended relationship"
                     | _ -> failtest "Link removal requires a case family")
         ]

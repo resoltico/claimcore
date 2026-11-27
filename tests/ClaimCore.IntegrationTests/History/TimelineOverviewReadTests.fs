@@ -67,27 +67,19 @@ let private case (core: ServiceContext) ids number revision taskName values =
         ClaimCore.Domain.Tasks.Registry.findDeclaration (TaskId.ofLiteral taskName)
         |> Option.get
 
-    let reference = "TIMELINE-OVERVIEW"
+    let target = CaseSelector.Id(CaseFixtures.caseId (id ids 10))
 
     let binding, values =
         if declaration.Creates then
-            OperationBinding.CaseNew revision,
-            values
-            |> Map.add
-                (Submissions.field BusinessField.CaseReference)
-                (SubmissionValue.Text reference)
+            OperationBinding.CaseNew revision, values
         else
             let family =
                 if declaration.ReviewsFamilySequence then
-                    Some(
-                        StoreFixtures.reviewedFamilySequence
-                            core.Store
-                            (CaseSelector.Reference reference)
-                    )
+                    Some(StoreFixtures.reviewedFamilySequence core.Store target)
                 else
                     None
 
-            OperationBinding.Case(CaseSelector.Reference reference, revision, None, family), values
+            OperationBinding.Case(target, revision, None, family), values
 
     Submissions.createRaw taskName (id ids number) binding values
 
@@ -95,12 +87,12 @@ let private people (core: ServiceContext) ids number (person: Actor) taskName va
     StoreFixtures.personSubmission core.Store (id ids number) person.Principal None taskName values
     |> get
 
-let private page core filter cursor limit : CaseTimelinePage =
+let private page core target filter cursor limit : CaseTimelinePage =
     match
         (Service.timeline
             core
             {
-                Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
+                Target = target
                 Filter = filter
                 AfterCursor = cursor
                 Limit = limit
@@ -111,9 +103,9 @@ let private page core filter cursor limit : CaseTimelinePage =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected readable timeline: %A" other
 
-let private collect core filter =
+let private collect core target filter =
     let rec next cursor collected =
-        let current = page core filter cursor 1
+        let current = page core target filter cursor 1
         let all = collected @ current.Items
 
         match current.NextCursor with
@@ -159,7 +151,6 @@ let private fixture () =
                     Contact = None
                 }
                 []
-                CaseReferencePolicy.CustomAllowed
                 token
             |> get
 
@@ -271,7 +262,7 @@ let private fixture () =
                     "reminder.create"
                     (id ids number)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "TIMELINE-OVERVIEW"),
+                        (CaseSelector.Id(CaseFixtures.caseId (id ids 10))),
                         None
                     ))
                     (ClaimCore.TestSupport.Submissions.reminderPlan (action) (due)))
@@ -283,7 +274,7 @@ let private fixture () =
                 "work.update"
                 (id ids 14)
                 (ClaimCore.Application.Contracts.OperationBinding.Work(
-                    (CaseSelector.Reference "TIMELINE-OVERVIEW"),
+                    (CaseSelector.Id(CaseFixtures.caseId (id ids 10))),
                     (0L)
                 ))
                 (ClaimCore.TestSupport.Submissions.work (
@@ -313,7 +304,7 @@ let private reminder ids number taskName selected values =
     Submissions.createRaw
         taskName
         (id ids number)
-        (OperationBinding.Reminder((CaseSelector.Reference "TIMELINE-OVERVIEW"), selected))
+        (OperationBinding.Reminder((CaseSelector.Id(CaseFixtures.caseId (id ids 10))), selected))
         values
 
 let private stalePreview ids core number identity expected =
@@ -332,13 +323,13 @@ let private stalePreview ids core number identity expected =
         | other -> failtestf "Expected disclosed conflict page: %A" other
     | other -> failtestf "Expected stale preview refusal: %A" other
 
-let private conflictContinuation core (changes: ChangePage) =
+let private conflictContinuation core target (changes: ChangePage) =
     let cursor =
         changes.NextCursor
         |> Option.defaultWith (fun () -> failtest "A bounded conflict must issue its continuation")
 
     let rec remaining cursor accumulated =
-        let current = page core None (Some cursor) 50
+        let current = page core target None (Some cursor) 50
         Expect.isLessThanOrEqual current.Items.Length 10 "Full-detail pages remain bounded."
         let items = accumulated @ current.Items
 
@@ -359,6 +350,10 @@ let tests =
                 "zero reminder revisions refuse cleanly without append while revision one stays valid"
                 (fun () ->
                     let database, core, _, _, _, _ = fixture ()
+
+                    let target =
+                        CaseSelector.Id(CaseFixtures.caseId (StoreFixtures.id database.Fixture 10))
+
                     let ids = database.Fixture.OperationIds
 
                     use _owned =
@@ -368,7 +363,7 @@ let tests =
 
                     let before = ledgerCount database
 
-                    let target =
+                    let reminderIdentity =
                         CaseFixtures.operationId (id ids 12)
                         |> ReminderId.ofOperationId
                         |> ReminderId.value
@@ -378,7 +373,7 @@ let tests =
                             (ids)
                             (401)
                             "reminder.update"
-                            (Some((target), (0L)))
+                            (Some((reminderIdentity), (0L)))
                             (ClaimCore.TestSupport.Submissions.reminderPlan
                                 ("Invalid zero")
                                 ("2026-11-15"))
@@ -414,7 +409,7 @@ let tests =
                         "The authorized invalid-input snapshot appends no ledger entry"
 
                     Expect.equal
-                        (collect core None).Length
+                        (collect core target None).Length
                         5
                         "No existing case/reminder event changed"
 
@@ -423,7 +418,7 @@ let tests =
                             (ids)
                             (402)
                             "reminder.update"
-                            (Some((target), (1L)))
+                            (Some((reminderIdentity), (1L)))
                             (ClaimCore.TestSupport.Submissions.reminderPlan
                                 ("Valid one")
                                 ("2026-11-15"))
@@ -437,6 +432,10 @@ let tests =
                 "accepted paired effects stay isolated in both stale previews and fixed-range continuations"
                 (fun () ->
                     let database, core, owner, _, _, _ = fixture ()
+
+                    let target =
+                        CaseSelector.Id(CaseFixtures.caseId (StoreFixtures.id database.Fixture 10))
+
                     let ids = database.Fixture.OperationIds
 
                     use _owned =
@@ -567,8 +566,8 @@ let tests =
                                 ("2026-11-21")))
                     |> ignore
 
-                    let oldEntry = conflictContinuation core originalPage
-                    let nextEntry = conflictContinuation core nextPage
+                    let oldEntry = conflictContinuation core target originalPage
+                    let nextEntry = conflictContinuation core target nextPage
 
                     Expect.equal
                         oldEntry.OperationId
@@ -600,7 +599,7 @@ let tests =
                         "Next continuation uses its retained first update, not latest state"
 
                     // Existing reminder ids commands require positive revisions; only this Core-issued history range includes birth revision one.
-                    let currentPage = page core None None 1
+                    let currentPage = page core target None None 1
                     let scope = TimelineHistory.binding currentPage.CaseId owner.ActorId None
 
                     let birthRange =
@@ -623,7 +622,7 @@ let tests =
                             (Some birthRange)
                             before
 
-                    let birthPage = page core None (Some birthCursor) 50
+                    let birthPage = page core target None (Some birthCursor) 50
 
                     Expect.equal
                         birthPage.Items.Length
@@ -719,6 +718,10 @@ let tests =
                 "shared snapshot producer pages all five events and honors current names and history rights"
                 (fun () ->
                     let database, core, _, assigned, reader, _ = fixture ()
+
+                    let target =
+                        CaseSelector.Id(CaseFixtures.caseId (StoreFixtures.id database.Fixture 10))
+
                     let ids = database.Fixture.OperationIds
 
                     use _owned =
@@ -726,7 +729,7 @@ let tests =
                             member _.Dispose() = database.Fixture.Dispose()
                         }
 
-                    let initial = collect core None
+                    let initial = collect core target None
                     Expect.equal initial.Length 5 "Page boundaries retain every ledger event"
 
                     Expect.equal
@@ -787,12 +790,12 @@ let tests =
                         "Full initial fields remain present"
 
                     Expect.equal
-                        (collect core (Some TimelineFilter.Facts) |> List.length)
+                        (collect core target (Some TimelineFilter.Facts) |> List.length)
                         2
                         "Core filter and cursor stay independent of overview shape"
 
                     Expect.equal
-                        (collect core (Some TimelineFilter.Work) |> List.length)
+                        (collect core target (Some TimelineFilter.Work) |> List.length)
                         3
                         "Both reminder and work entries remain ordered"
 
@@ -813,7 +816,7 @@ let tests =
                             )))
                     |> ignore
 
-                    match (collect core None |> List.head |> disclosed).Overview.Event with
+                    match (collect core target None |> List.head |> disclosed).Overview.Event with
                     | TimelineEvent.ResponsibilityAssigned value ->
                         Expect.equal
                             value.DisplayName
@@ -821,7 +824,7 @@ let tests =
                             "Names refresh independently of accepted case-work values"
                     | other -> failtestf "%A" other
 
-                    let summaryOnly = collect (service database reader) None
+                    let summaryOnly = collect (service database reader) target None
 
                     Expect.equal
                         summaryOnly.Length
@@ -834,7 +837,7 @@ let tests =
                         "No overview can carry full values across the disclosure union"
 
                     let reply =
-                        { (page core None None 50) with
+                        { (page core target None None 50) with
                             Items = summaryOnly
                         }
 
@@ -853,7 +856,7 @@ let tests =
                         (people (core) (ids) (21) (assigned) "people.eraseProfile" (Map.empty))
                     |> ignore
 
-                    match (collect core None |> List.head |> disclosed).Overview.Event with
+                    match (collect core target None |> List.head |> disclosed).Overview.Event with
                     | TimelineEvent.ResponsibilityAssigned value ->
                         Expect.equal
                             value.DisplayName
@@ -864,6 +867,10 @@ let tests =
                 "erased parent exposes no overview values and unavailable callers retain non-disclosure"
                 (fun () ->
                     let database, core, _, _, _, steward = fixture ()
+
+                    let target =
+                        CaseSelector.Id(CaseFixtures.caseId (StoreFixtures.id database.Fixture 10))
+
                     let ids = database.Fixture.OperationIds
 
                     use _owned =
@@ -893,7 +900,7 @@ let tests =
                     execute stewardCore (case (core) (ids) (31) (3L) "case.erase" (Map.empty))
                     |> ignore
 
-                    let erased = collect core None
+                    let erased = collect core target None
 
                     Expect.isTrue
                         (erased
@@ -906,7 +913,7 @@ let tests =
                         (Service.timeline
                             (service database unknown)
                             {
-                                Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
+                                Target = target
                                 Filter = None
                                 AfterCursor = None
                                 Limit = 50

@@ -97,7 +97,7 @@ let private qualify fixture =
                         "reminder.create"
                         (id fixture.Database.Fixture number)
                         (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                            (CaseSelector.Reference reference),
+                            ((caseTarget fixture.Database.Fixture reference)),
                             None
                         ))
                         (ClaimCore.TestSupport.Submissions.reminderPlan
@@ -113,7 +113,7 @@ let private qualify fixture =
                     "work.update"
                     (id fixture.Database.Fixture 6607)
                     (ClaimCore.Application.Contracts.OperationBinding.Work(
-                        (CaseSelector.Reference "work-01"),
+                        ((caseTarget fixture.Database.Fixture "work-01")),
                         (0L)
                     ))
                     (ClaimCore.TestSupport.Submissions.work (
@@ -130,7 +130,7 @@ let private qualify fixture =
                     "reminder.complete"
                     (id fixture.Database.Fixture 6608)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "mix-04"),
+                        ((caseTarget fixture.Database.Fixture "mix-04")),
                         Some((id fixture.Database.Fixture 6604), (1L))
                     ))
                     (Map.empty))
@@ -153,7 +153,7 @@ let private qualify fixture =
                     "reminder.cancel"
                     (id fixture.Database.Fixture 6610)
                     (ClaimCore.Application.Contracts.OperationBinding.Reminder(
-                        (CaseSelector.Reference "Work-11"),
+                        ((caseTarget fixture.Database.Fixture "Work-11")),
                         Some((id fixture.Database.Fixture 6605), (1L))
                     ))
                     (Map.empty))

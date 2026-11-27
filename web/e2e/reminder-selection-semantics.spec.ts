@@ -45,8 +45,7 @@ test("the supplied case link and ordinary Any control expose pending completed a
   test.setTimeout(90_000);
   await openAuthenticated(page);
   await selectLanguage(page, "en");
-  const reference = `MIXED-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `MIXED-${randomUUID().slice(0, 8)}`);
   const pending = `${reference} pending`;
   const completed = `${reference} completed`;
   const cancelled = `${reference} cancelled`;
@@ -93,12 +92,12 @@ test("a Completed view shows its owner inactive default and explicit false remov
   const marker = `INACTIVE-${randomUUID().slice(0, 8)}`;
   const opened = `${marker}-open`;
   const closed = `${marker}-closed`;
-  for (const [reference, caption, close] of [
+  for (const [label, caption, close] of [
     [`${marker}-A`, opened, false],
     [`${marker}-B`, closed, true],
   ] as const) {
     await page.goto("/cases");
-    await openCase(page, reference);
+    const { caseReference: reference } = await openCase(page, label);
     const id = await createReminder(page, reference, caption);
     await finish(page, reference, id, "reminder.complete");
     if (close) {

@@ -133,8 +133,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     page,
   }) => {
     await openAuthenticated(page);
-    const reference = `MISSING-${randomUUID().slice(0, 8)}`;
-    await openCase(page, reference);
+    const { caseReference: reference } = await openCase(
+      page,
+      `MISSING-${randomUUID().slice(0, 8)}`,
+    );
     await startClose(page);
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");

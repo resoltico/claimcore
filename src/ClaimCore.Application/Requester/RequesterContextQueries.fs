@@ -18,7 +18,6 @@ module internal RequesterContextQueries =
     let contextResult
         (services: ServiceContext)
         observedAt
-        policy
         (maintenance: RegisterMaintenance)
         (actor: AccessView)
         (roles: ActorRoleSummary list)
@@ -48,7 +47,7 @@ module internal RequesterContextQueries =
                     if maintenance.Active then
                         []
                     else
-                        Advice.installationOffers policy principal actor
+                        Advice.installationOffers principal actor
                 Capability =
                     Capability.all
                     |> List.filter (fun capability ->
@@ -132,13 +131,13 @@ module internal RequesterContextQueries =
                         CancellationToken = token
                     }
 
-            return
-                result
-                |> Result.map (fun facts ->
+            match result with
+            | Error error -> return DisclosureReads.safeOutcome (QueryResults.failure error)
+            | Ok facts ->
+                let outcome =
                     contextResult
                         services
                         facts.ObservedAt
-                        facts.CaseReferencePolicy
                         facts.Facts.Maintenance
                         facts.Facts.People
                         facts.Facts.AssignedRoles
@@ -146,6 +145,20 @@ module internal RequesterContextQueries =
                         facts.RequestPending
                         facts.CredentialUsable
                         facts.AuthorityVersion
-                        facts.TerminationCutoff)
-                |> readResult
+                        facts.TerminationCutoff
+
+                match outcome, facts.Association with
+                | Outcome.Succeeded {
+                                        Requester = RequesterState.Active _ | RequesterState.NoRoles _ | RequesterState.Disabled _
+                                    },
+                  PrincipalAssociation.Current actor ->
+                    let evidence =
+                        DisclosureReads.success
+                            actor.ActorId
+                            DisclosureKind.RequesterContext
+                            None
+                            None
+
+                    return! DisclosureReads.release services token (outcome, Some evidence)
+                | _ -> return DisclosureReads.safeContext outcome
         }

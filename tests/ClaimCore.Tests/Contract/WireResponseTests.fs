@@ -33,6 +33,7 @@ let private expectedExit =
     | "ALREADY_ACCEPTED" -> 0
     | "REJECTED"
     | "NOT_ACCEPTED" -> 2
+    | "RECEIPT_UNAVAILABLE"
     | "FAILED" -> 3
     | "OUTCOME_UNKNOWN"
     | "PENDING" -> 4

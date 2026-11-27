@@ -296,30 +296,12 @@ module Reason =
     let admit (Reason value) =
         PartyName.admit value |> Result.map Reason
 
-[<RequireQualifiedAccess>]
-type CaseReferencePolicy =
-    | SystemAssignedOnly
-    | CustomAllowed
-
-module CaseReferencePolicy =
-    let vocabulary =
-        Vocabulary.ofUnion<CaseReferencePolicy>
-            "caseReferencePolicy"
-            TokenCasing.ScreamingSnake
-            None
-
-    let token = Vocabulary.token vocabulary
-    let parse = Vocabulary.tryParse vocabulary
-
-    let allowsCustom policy =
-        policy = CaseReferencePolicy.CustomAllowed
-
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type CaseReference = private CaseReference of authored: string * key: string
 
 module CaseReference =
     [<Literal>]
-    let MaximumCharacters = 32
+    let MaximumCharacters = 25
 
     [<Literal>]
     let EntropyBytes = 10
@@ -333,29 +315,7 @@ module CaseReference =
     let private generatedGrammar =
         "[Cc][Cc]-" + group + "(" + "-" + group + "){3}-[0-9]{2}"
 
-    // A case-insensitive CC- is absent from the custom lexical grammar, including the
-    // spelling where it would be followed by only one character.
-    let CustomGrammar =
-        let alphaNumeric = "[A-Za-z0-9]"
-        let lettersExceptC = "[A-BD-Za-bd-z]"
-        let alphaNumericExceptC = "[A-BD-Za-bd-z0-9]"
-
-        let firstGroup =
-            "("
-            + lettersExceptC
-            + alphaNumeric
-            + "*"
-            + "|[Cc]("
-            + alphaNumericExceptC
-            + alphaNumeric
-            + "*)?"
-            + "|[Cc][Cc]"
-            + alphaNumeric
-            + "+)"
-
-        "(" + firstGroup + "(-" + alphaNumeric + "+)*|[Cc][Cc])"
-
-    let Grammar = "(" + generatedGrammar + "|" + CustomGrammar + ")"
+    let Grammar = generatedGrammar
     let descriptor = ScalarText.descriptor (Some Grammar) (Some MaximumCharacters)
 
     /// ASCII identity folding never consults culture or Unicode normalization.
@@ -389,31 +349,19 @@ module CaseReference =
             else
                 Ok text)
 
-    let private custom text =
-        if ScalarText.matches CustomGrammar text then
-            Ok(admitted text)
-        else
-            Error Violation.ReferenceFormat
-
-    let parseCustom value = parseText value |> Result.bind custom
-
     let parse value =
         parseText value
         |> Result.bind (fun text ->
-            let folded = key text
+            if ScalarText.matches Grammar text then
+                let folded = key text
+                let payload = folded.Substring(prefix.Length, 19).Replace("-", "")
 
-            if folded.StartsWith(prefix, StringComparison.Ordinal) then
-                if ScalarText.matches generatedGrammar text then
-                    let payload = folded.Substring(prefix.Length, 19).Replace("-", "")
-
-                    if folded.EndsWith(checkDigits payload, StringComparison.Ordinal) then
-                        Ok(CaseReference(text, folded))
-                    else
-                        Error Violation.ReferenceFormat
+                if folded.EndsWith(checkDigits payload, StringComparison.Ordinal) then
+                    Ok(admitted folded)
                 else
                     Error Violation.ReferenceFormat
             else
-                custom text)
+                Error Violation.ReferenceFormat)
 
     /// Encode all 80 input bits in big-endian order. The caller supplies entropy.
     let generate (entropy: byte array) =

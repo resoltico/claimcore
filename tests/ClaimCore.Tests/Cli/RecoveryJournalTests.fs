@@ -376,7 +376,7 @@ let settlementContract =
                 )
             )
 
-        Expect.equal (cases.RootElement.GetArrayLength()) 7 "The settlement control set is present"
+        Expect.equal (cases.RootElement.GetArrayLength()) 8 "The settlement control set is present"
 
         for item in cases.RootElement.EnumerateArray() do
             let token = item.GetProperty("observation").GetString() |> nonNull

@@ -27,7 +27,7 @@ let entriesEvidence () =
             }
 
         let! actor = caseWorker fixture
-        let target = CaseSelector.Reference "ENTRY-WITNESSES"
+        let target () = caseTarget fixture "ENTRY-WITNESSES"
         let results = ResizeArray<_>()
         let mutable number = 7000
 
@@ -37,8 +37,7 @@ let entriesEvidence () =
 
         let case revision taskName values =
             let submission =
-                request fixture 0 "ENTRY-WITNESSES" revision taskName values
-                |> Submissions.withOperationId (next ())
+                requestAs fixture (next ()) "ENTRY-WITNESSES" revision taskName values
 
             Service.executeSubmission actor submission ct
 
@@ -124,7 +123,7 @@ let entriesEvidence () =
                     (Submissions.createRaw
                         taskName
                         (next ())
-                        (OperationBinding.Note(target, selected))
+                        (OperationBinding.Note(target (), selected))
                         values)
                     ct
 
@@ -293,17 +292,11 @@ let associationEvidence () =
                 ct
 
         let openCase reference additional =
-            let values =
-                additional
-                |> Map.add
-                    (Submissions.field BusinessField.CaseReference)
-                    (SubmissionValue.Text reference)
+            let input = requestAs fixture (next ()) reference 0L "case.open" additional
+            Service.executeSubmission actor input ct
 
-            move "case.open" (OperationBinding.CaseNew 0L) values
-
-        let source = CaseSelector.Reference "DIAG-ASSOCIATIONS"
         let! opened = openCase "DIAG-ASSOCIATIONS" Map.empty
-        accepted opened |> ignore
+        let source = CaseSelector.Id((accepted opened |> caseReceipt).CaseId)
 
         let basicParty =
             fields [ InputTarget.PartyRole, "OTHER"; InputTarget.PartyName, "Synthetic witness" ]
@@ -347,7 +340,7 @@ let associationEvidence () =
         let! over =
             move
                 "party.add"
-                (OperationBinding.Party(CaseSelector.Reference "DIAG-PARTIES-FULL", None))
+                (OperationBinding.Party(caseTarget fixture "DIAG-PARTIES-FULL", None))
                 basicParty
 
         witnesses.Add(refused over)
@@ -356,11 +349,13 @@ let associationEvidence () =
             move "link.add" (OperationBinding.Link(source, None)) (fields values)
 
         let target name =
-            [ InputTarget.LinkTargetReference, name ]
+            match caseTarget fixture name with
+            | CaseSelector.Id id -> [ InputTarget.LinkTargetId, CaseId.format id ]
+            | CaseSelector.Reference _ -> failtest "Positive link witness requires an opened case"
 
         for invalid in
             [
-                target "not a reference"
+                [ InputTarget.LinkTargetReference, "not a reference" ]
                 [ InputTarget.LinkTargetId, "not-a-case-id" ]
                 target "DIAG-ASSOCIATIONS"
             ] do
@@ -438,9 +433,6 @@ let authoredIdentityAndClosureEvidence () =
 
         for number, taskName, values in
             [
-                8601,
-                "case.changeReference",
-                Map.ofList [ input InputTarget.NewCaseReference "invalid reference" ]
                 8602, "case.close", Map.ofList [ field BusinessField.Outcome "UNKNOWN" ]
                 8603,
                 "case.close",
@@ -525,7 +517,7 @@ let authoredIdentityAndClosureEvidence () =
 
         witnesses.Add(refused invalidEmail)
 
-        let target = CaseSelector.Reference "DIAG-AUTHORED"
+        let target = caseTarget fixture "DIAG-AUTHORED"
         let plan = Submissions.reminderPlan "Synthetic follow-up" "2026-11-18"
 
         let reminder number taskName selected values =
@@ -576,9 +568,8 @@ let attachmentEvidence () =
 
         let! actor = caseWorker fixture
         let reference = "ATTACHMENT-WITNESSES"
-        let target = CaseSelector.Reference reference
         let! opened = Service.executeSubmission actor (openRequest fixture 8700 reference) ct
-        accepted opened |> ignore
+        let target = CaseSelector.Id((accepted opened |> caseReceipt).CaseId)
 
         let draft number name length digest =
             Submissions.createRaw

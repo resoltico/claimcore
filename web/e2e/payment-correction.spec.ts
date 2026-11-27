@@ -14,8 +14,7 @@ test("corrects selected payment atomically with both identities in receipt timel
 }) => {
   test.setTimeout(60_000);
   await openAuthenticated(page);
-  const reference = `CORRECT-${randomUUID().slice(0, 8)}`;
-  await openCase(page, reference);
+  const { caseReference: reference } = await openCase(page, `CORRECT-${randomUUID().slice(0, 8)}`);
   await completeAct(page, "case.decide", {
     "Payment decision date": "2026-09-03",
     "Payable amount": "100",
