@@ -23,6 +23,7 @@ type internal ReadOperation<'result> =
 type internal WriteOperation<'result> =
     {
         Work: WriteTx -> Task<Verdict<'result>>
+        RequiresEncryption: bool
         CancellationToken: CancellationToken
     }
 

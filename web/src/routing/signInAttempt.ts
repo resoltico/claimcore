@@ -3,16 +3,21 @@ const attemptsKey = "claimcore.automaticSignIn";
 const windowMilliseconds = 60_000;
 const maximumAttempts = 2;
 
-export const signedOut = (storage: Storage): boolean => {
+const tabStorage = () => window.sessionStorage;
+
+export const signInBookkeeping = (
+  getStorage = tabStorage,
+): "signedOut" | "ready" | "unavailable" => {
   try {
-    return storage.getItem(signedOutKey) === "true";
+    return getStorage().getItem(signedOutKey) === "true" ? "signedOut" : "ready";
   } catch {
-    return false;
+    return "unavailable";
   }
 };
 
-export const markSignedOut = (storage: Storage): void => {
+export const markSignedOut = (getStorage = tabStorage): void => {
   try {
+    const storage = getStorage();
     storage.setItem(signedOutKey, "true");
     storage.removeItem(attemptsKey);
   } catch {
@@ -20,8 +25,9 @@ export const markSignedOut = (storage: Storage): void => {
   }
 };
 
-export const resetSignIn = (storage: Storage): void => {
+export const resetSignIn = (getStorage = tabStorage): void => {
   try {
+    const storage = getStorage();
     storage.removeItem(signedOutKey);
     storage.removeItem(attemptsKey);
   } catch {
@@ -29,8 +35,12 @@ export const resetSignIn = (storage: Storage): void => {
   }
 };
 
-export const recordAutomaticSignIn = (storage: Storage, now: number): boolean => {
+export const recordAutomaticSignIn = (now: number, getStorage = tabStorage): boolean => {
   try {
+    const storage = getStorage();
+    if (storage.getItem(signedOutKey) === "true") {
+      return false;
+    }
     const previous = (storage.getItem(attemptsKey) ?? "")
       .split(",")
       .filter((value) => value !== "")

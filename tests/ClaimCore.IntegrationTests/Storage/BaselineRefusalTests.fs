@@ -60,7 +60,7 @@ let private install identifier format (bytes: byte array) (source: NpgsqlDataSou
             DatabaseSession.execute
                 connection
                 "INSERT INTO claimcore.installation(installation_id,business_time_zone,installation_format,case_reference_policy,wrapped_data_key) VALUES ('10000000-0000-4000-8000-000000000001', 'Etc/UTC',$1,'CUSTOM_ALLOWED',$2)"
-                [| box format; box (Array.zeroCreate<byte> 60) |]
+                [| box format; box (Array.zeroCreate<byte> 92) |]
                 token
 
         do! transaction.CommitAsync()
@@ -152,17 +152,17 @@ let tests =
         [
             testCaseAsync
                 "a synthetic baseline differing by one SQL statement is refused untouched"
-                (refusedInstallation Baseline.identifier 11s alteredBaseline)
+                (refusedInstallation Baseline.identifier 12s alteredBaseline)
             testCaseAsync
                 "the preceding installation format and baseline identity refuse without mutation"
-                (refusedInstallation "claimcore-format-10" 10s (fun () ->
+                (refusedInstallation "claimcore-format-11" 11s (fun () ->
                     File
                         .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
-                        .Replace("installation_format = 11", "installation_format = 10")
-                        .Replace("installation_format=11", "installation_format=10")
-                        .Replace("p_format<>11", "p_format<>10")
+                        .Replace("installation_format = 12", "installation_format = 11")
+                        .Replace("installation_format=12", "installation_format=11")
+                        .Replace("p_format<>12", "p_format<>11")
                     |> Encoding.UTF8.GetBytes))
             testCaseAsync
                 "a schema with a different checksum is refused untouched"
-                (refusedInstallation Baseline.identifier 11s differentChecksum)
+                (refusedInstallation Baseline.identifier 12s differentChecksum)
         ]

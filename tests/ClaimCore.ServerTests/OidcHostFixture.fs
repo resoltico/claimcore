@@ -160,7 +160,7 @@ type Host
             web
             None
             (defaultArg handlers ClaimCore.Server.ApiRoutes.route)
-            (fun principal action ->
+            (fun principal _ action ->
                 task { let! value = action (forActor principal) in return Some value })
             application
 

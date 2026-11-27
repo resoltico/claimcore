@@ -31,6 +31,7 @@ let private interceptWrites (store: IStore) intercept =
 
         member _.Write
             ({
+                 WriteOperation.RequiresEncryption = needsEncryption
                  WriteOperation.Work = work
                  CancellationToken = token
              })
@@ -41,6 +42,7 @@ let private interceptWrites (store: IStore) intercept =
                 return!
                     store.Write(
                         {
+                            WriteOperation.RequiresEncryption = needsEncryption
                             WriteOperation.Work = work
                             CancellationToken = token
                         }

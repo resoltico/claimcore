@@ -495,11 +495,97 @@ let private mutableContinuation (database: PostgresFixture.Database) =
             "Fresh access-requests page has B, A and C"
     }
 
+let private utcExpiry (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = bootstrap fixture
+        let oldest = principal PrincipalKind.Human "dst-oldest"
+        let newest = principal PrincipalKind.Human "dst-newest"
+        let seen = DateTimeOffset(2026, 2, 6, 7, 30, 0, TimeSpan.Zero)
+        let equality = DateTimeOffset(2026, 3, 8, 7, 30, 0, TimeSpan.Zero)
+
+        for caller in [ oldest; newest ] do
+            let! _ = Service.context (core fixture caller) () token
+            ()
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.access_request SET first_seen=$1,last_seen=CASE subject WHEN 'dst-oldest' THEN $1 ELSE $2 END"
+                [| box seen; box (seen.AddDays 1.) |]
+
+        let at instant =
+            Service.mapStore
+                (fun original ->
+                    { new IStore with
+                        member _.Context request = original.Context request
+                        member _.Write request = original.Write request
+                        member _.RecordDisclosure(event, ct) = original.RecordDisclosure(event, ct)
+
+                        member _.Read request =
+                            original.Read
+                                { request with
+                                    Work =
+                                        fun tx ->
+                                            task {
+                                                let! _ =
+                                                    DatabaseSession.execute
+                                                        tx.Connection
+                                                        "SET LOCAL TIME ZONE 'America/New_York'"
+                                                        [||]
+                                                        tx.CancellationToken
+
+                                                tx.ObservedAt <- instant
+                                                return! request.Work tx
+                                            }
+                                }
+                    })
+                owner
+
+        let! first =
+            Service.accessRequests
+                (at (equality.AddTicks(-10L)))
+                { AfterCursor = None; Limit = 1 }
+                token
+
+        let page = read first
+
+        Expect.equal
+            (page.Items |> List.map _.Principal)
+            [ newest ]
+            "The first page is ordered newest first"
+
+        Expect.isSome page.NextCursor "Both identities are visible immediately before expiry"
+
+        let next =
+            {
+                AfterCursor = page.NextCursor
+                Limit = 1
+            }
+
+        let! exact = Service.accessRequests (at equality) next token
+
+        Expect.equal
+            ((read exact).Items |> List.map _.Principal)
+            [ oldest ]
+            "Exact UTC equality is still visible across spring forward"
+
+        let! after = Service.accessRequests (at (equality.AddTicks(10L))) next token
+
+        Expect.equal
+            after
+            (Outcome.Rejected Refusal.TraversalChanged)
+            "Expiry changes membership without a database write"
+    }
+
 [<Tests>]
 let tests =
     testList
         "requester context cache"
         [
+            testCaseAsync
+                "access-request continuation preserves UTC equality across a non-UTC DST transition"
+                (run utcExpiry)
             testCaseAsync
                 "access-request continuation requires restart after a requester refresh"
                 (run mutableContinuation)

@@ -24,8 +24,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "Cambio sin confirmar. Repite la solicitud exacta con {retryCommand} o compruébala con {statusCommand}. La respuesta será definitiva al terminar el plazo del cambio.",
-    "source": "0c2a0dcdff67"
+    "text": "Cambio sin confirmar. Compruébalo con {statusCommand} o repite la solicitud exacta con {retryCommand} mientras se conserve el mismo historial. Después de una restauración, pide al operador que confirme que el historial restaurado abarca el resultado anterior antes de repetir el cambio.",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "La autenticación ha fallado.",
@@ -148,8 +149,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "Si la entrega no se confirma, el código de salida 4 imprime la solicitud exacta para reenviarla.\nReenviarla no puede registrarla dos veces.\nUsa `claimcore recovery list` y `claimcore recovery check`; la respuesta será definitiva en {window}.",
-    "source": "d798be5ae516"
+    "text": "Si la entrega no se confirma, el código de salida 4 imprime la solicitud exacta.\nUsa `claimcore recovery list` y `claimcore recovery check` para consultar la operación original. Una vez transcurrido {window} desde que se preparó el cambio, una comprobación satisfactoria puede confirmar de forma definitiva que no consta en el historial actual.\nMientras se conserve el mismo historial, reenviar la misma solicitud no puede registrar el cambio dos veces. Después de una restauración, pide al operador que confirme que el historial restaurado abarca el resultado anterior antes de repetir el cambio.",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "Prepara las solicitudes sin conexión, revisa los esquemas y después envía un marco admitido.",

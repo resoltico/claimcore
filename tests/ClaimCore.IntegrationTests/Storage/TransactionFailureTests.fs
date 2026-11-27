@@ -61,6 +61,7 @@ let private programmerFailure () =
             let! outcome =
                 database.Fixture.Store.Write(
                     {
+                        WriteOperation.RequiresEncryption = false
                         WriteOperation.Work =
                             (fun _ ->
                                 task {

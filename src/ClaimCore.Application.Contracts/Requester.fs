@@ -81,6 +81,13 @@ type AccessRequest =
         Claims: RequesterClaims
     }
 
+module AccessRequest =
+    let private retention = System.TimeSpan.FromDays 30.
+
+    let cutoff (observed: System.DateTimeOffset) = observed.ToUniversalTime() - retention
+
+    let expiresAt (lastSeen: System.DateTimeOffset) = lastSeen.ToUniversalTime() + retention
+
 type AccessRequestPage =
     {
         Basis: WorkDateBasis

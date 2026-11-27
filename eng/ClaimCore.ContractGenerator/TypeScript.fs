@@ -172,6 +172,14 @@ module TypeScript =
             + JsonSerializer.Serialize(Tones.codeTones)
             + " as const;"
             "export const isRepresentable = (value:string):boolean => Array.from(value).every(character => { const scalar=character.codePointAt(0)!; return scalar!==0 && !(scalar>=0xd800&&scalar<=0xdfff) && !(scalar>=0xfdd0&&scalar<=0xfdef) && (scalar&0xffff)<0xfffe; });"
+            "export const operationSettlement = "
+            + (Vocabulary.all ReplyKind.vocabulary
+               |> List.map (fun kind ->
+                   ReplyKind.token kind,
+                   OperationSettlement.ofReply kind |> OperationSettlement.token)
+               |> Map.ofList
+               |> JsonSerializer.Serialize)
+            + " as const;"
             "const hostFailures = "
             + (HostFailureReason.all
                |> List.map (fun reason ->

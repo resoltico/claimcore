@@ -86,7 +86,7 @@ test("ready recovery work passes another identity's backoff and the next tab tak
             actorId: "fixture",
             operationId: id,
             attemptId: id,
-            format: 2,
+            format: 3,
             subject: "CASE",
             act: "case.close",
           } as const;

@@ -60,6 +60,7 @@ let private acceptAttachment fixture (actor: ServiceContext) number preview payl
         let! accepted =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = true
                     CancellationToken = token
                     Work =
                         fun tx ->

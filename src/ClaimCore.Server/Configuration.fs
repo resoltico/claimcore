@@ -39,6 +39,7 @@ type WebConfiguration =
         KeyRingDirectory: DirectoryInfo
         Binding: WebBinding
         ConnectionString: string
+        WitnessConnectionString: string
         DataKeyFile: string
         Certificate: ServerCertificateBundle
         SessionIdle: TimeSpan
@@ -200,6 +201,12 @@ module Configuration =
                 WebStartupProblem.ConnectionFileRefused
                 WebStartupProblem.ConnectionFileEmpty
 
+        let witnessConnection =
+            privateConnection
+                WebSetting.WitnessConnectionFile
+                (WebStartupProblem.InvalidSetting WebSetting.WitnessConnectionFile)
+                (WebStartupProblem.InvalidSetting WebSetting.WitnessConnectionFile)
+
         let dataKeyFile = required WebSetting.DataKeyFile
         let configuredLimits = requestLimits ()
 
@@ -250,6 +257,7 @@ module Configuration =
                 KeyRingDirectory = keyRingDirectory
                 Binding = configuredEndpoint
                 ConnectionString = configuredConnection
+                WitnessConnectionString = witnessConnection
                 DataKeyFile = dataKeyFile
                 Certificate = configuredCertificate
                 SessionIdle = sessionIdle

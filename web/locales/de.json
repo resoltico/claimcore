@@ -363,8 +363,9 @@
     "source": "1dc1592f82ad"
   },
   "ui.recoveryDescription": {
-    "text": "Es ließ sich nicht bestätigen, ob diese Änderungen erfasst wurden. ClaimCore prüft sie für Sie. Jede Antwort wird innerhalb von {window} endgültig.",
-    "source": "eff410b18411"
+    "text": "Es ließ sich nicht bestätigen, ob diese Änderungen erfasst wurden. ClaimCore prüft sie für Sie. Wenn die Vorbereitung einer Änderung {window} zurückliegt, kann eine erfolgreiche Prüfung endgültig bestätigen, dass sie im aktuellen Verlauf fehlt. Bitten Sie nach einer Wiederherstellung den Betreiber vor dem Wiederholen der Änderung zu bestätigen, dass der wiederhergestellte Verlauf das frühere Ergebnis abdeckt.",
+    "source": "ce73c48c3904",
+    "machineMade": true
   },
   "ui.recoveryEmpty": {
     "text": "Keine unbestätigten Änderungen.",
@@ -373,6 +374,16 @@
   "ui.recoveryCoordinationUnavailable": {
     "text": "Die automatische Wiederherstellung ist pausiert. Prüfen Sie einen gespeicherten Vorgang manuell oder stellen Sie den Zugriff auf den Browserspeicher wieder her, damit die automatischen Prüfungen fortgesetzt werden.",
     "source": "8a69c206fcd3",
+    "machineMade": true
+  },
+  "ui.recoveryEarlierFormat": {
+    "text": "Ihre früheren Wiederherstellungseinträge bleiben erhalten. Prüfen Sie diese Änderungen mit der früheren ClaimCore-Version und dem zugehörigen Dienst.",
+    "source": "822ed469aee8",
+    "machineMade": true
+  },
+  "ui.recoveryDamagedRecord": {
+    "text": "Einige Wiederherstellungseinträge konnten nicht identifiziert oder gelesen werden. Sie bleiben erhalten. Wenn Sie die Vorgangs-ID kennen, können Sie den Vorgang direkt prüfen.",
+    "source": "b169f2312f6d",
     "machineMade": true
   },
   "ui.recoveryListingUnavailable": {

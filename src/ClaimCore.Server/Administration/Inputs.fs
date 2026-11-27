@@ -26,6 +26,7 @@ type Command =
         skipExisting: bool
     | RecoverOwner of OwnerRecoveryInput
     | RotateMasterKey of newKeyFile: string
+    | RotateEncryptionGeneration of MaintenanceHandle
     | Verify of InstallationCheckpoint option
     | Rebuild of InstallationCheckpoint * MaintenanceHandle
     | RepairAttachment of
@@ -45,6 +46,7 @@ type CommandName =
     | Initialize
     | RecoverOwner
     | RotateMasterKey
+    | RotateEncryptionGeneration
     | Verify
     | Rebuild
     | RepairAttachment
@@ -77,6 +79,7 @@ module Command =
         | Initialize _ -> CommandName.Initialize
         | RecoverOwner _ -> CommandName.RecoverOwner
         | RotateMasterKey _ -> CommandName.RotateMasterKey
+        | RotateEncryptionGeneration _ -> CommandName.RotateEncryptionGeneration
         | Verify _ -> CommandName.Verify
         | Rebuild _ -> CommandName.Rebuild
         | RepairAttachment _ -> CommandName.RepairAttachment
@@ -132,6 +135,8 @@ module CommandName =
                 CommandArgument.Optional("--actor-id", "ID")
             ]
         | CommandName.RotateMasterKey -> [ CommandArgument.Operand "--new-key-file FILE" ]
+        | CommandName.RotateEncryptionGeneration ->
+            [ CommandArgument.Operand "--pause-generation GENERATION --pause-id PAUSE_ID" ]
         | CommandName.Verify -> [ CommandArgument.Optional("--checkpoint", "FILE") ]
         | CommandName.Rebuild ->
             [
@@ -440,6 +445,23 @@ module Inputs =
             match arguments with
             | [ "--new-key-file"; path ] -> Ok(RotateMasterKey path)
             | _ -> Error(UsageProblem(UsageError.MissingOperand "--new-key-file FILE"))
+        | CommandName.RotateEncryptionGeneration ->
+            match arguments with
+            | [ "--pause-generation"; generation; "--pause-id"; id ] ->
+                handle generation id
+                |> Option.map (RotateEncryptionGeneration >> Ok)
+                |> Option.defaultValue (
+                    Error(
+                        UsageProblem(UsageError.InvalidValue("--pause-generation/--pause-id", ""))
+                    )
+                )
+            | _ ->
+                Error(
+                    UsageProblem(
+                        UsageError.MissingOperand
+                            "--pause-generation GENERATION --pause-id PAUSE_ID"
+                    )
+                )
         | CommandName.Head -> noArguments Head arguments |> usage
         | CommandName.Status -> noArguments Status arguments |> usage
         | CommandName.Maintenance -> maintenance arguments |> usage
@@ -487,11 +509,8 @@ module Inputs =
                                 Usage = [ CommandName.synopsis name ]
                             })
 
-    let connection () =
-        match
-            Environment.GetEnvironmentVariable "CLAIMCORE_ADMIN_CONNECTION_FILE"
-            |> Option.ofObj
-        with
+    let private connectionAt setting =
+        match Environment.GetEnvironmentVariable setting |> Option.ofObj with
         | None -> Error OperatorFault.ConnectionFileRequired
         | Some path when String.IsNullOrWhiteSpace path ->
             Error OperatorFault.ConnectionFileRequired
@@ -511,6 +530,52 @@ module Inputs =
                         Error OperatorFault.ConnectionFileInvalid
                 finally
                     CryptographicOperations.ZeroMemory bytes
+
+    let connection () =
+        connectionAt "CLAIMCORE_ADMIN_CONNECTION_FILE"
+
+    let witnessConnection () =
+        let setting = "CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE"
+
+        if String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable setting) then
+            Ok None
+        else
+            connectionAt setting |> Result.map Some
+
+    let restoreWitness () =
+        let transition =
+            Environment.GetEnvironmentVariable "CLAIMCORE_RESTORE_TRANSITION"
+            |> Option.ofObj
+            |> Option.bind (fun text ->
+                match Guid.TryParseExact(text, "D") with
+                | true, id when id <> Guid.Empty && id.ToString("D") = text -> Some id
+                | _ -> None)
+
+        let history =
+            match
+                Environment.GetEnvironmentVariable "CLAIMCORE_RESTORE_HISTORY_FILE"
+                |> Option.ofObj
+            with
+            | None -> Ok None
+            | Some path ->
+                match PrivateFile.read 65536 path with
+                | Error _ -> Error OperatorFault.ConnectionFileRefused
+                | Ok bytes ->
+                    try
+                        Ok(
+                            Some(
+                                System.IO.Path.GetFileName path,
+                                UTF8Encoding(false, true).GetString bytes
+                            )
+                        )
+                    with :? DecoderFallbackException ->
+                        Error OperatorFault.ConnectionFileInvalid
+
+        match witnessConnection (), transition, history with
+        | Ok(Some connection), Some transition, Ok history -> Ok(connection, transition, history)
+        | Error fault, _, _
+        | _, _, Error fault -> Error fault
+        | _ -> Error OperatorFault.ConnectionFileRequired
 
     let keyFile path =
         ClaimCore.Server.MasterKeyFile.read path

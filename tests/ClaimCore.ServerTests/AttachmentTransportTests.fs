@@ -801,6 +801,7 @@ let private maximumKestrelFrame () =
 
         let invoke
             (principal: PrincipalKey)
+            (_: CancellationToken)
             (action: ServiceContext -> Task<Result<RouteReply, HostFailureReason>>)
             =
             task {

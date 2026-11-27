@@ -151,7 +151,8 @@ or credentials. Restart recovery checks the result and cannot reconstruct a subm
 `operation.get` returns accepted metadata under current disclosure rights, a pending deadline, or final
 NOT_ACCEPTED for the requester after locked absence confirmation. It appends nothing. Own metadata can
 remain available without case roles; business contents still require current rights.
-See [delivery recovery](integrating.md#recover-an-uncertain-change) and the [clock contract](operating.md#database-clock).
+See [Operation lookup](integrating.md#operation-lookup) for restore coverage and the
+[clock contract](operating.md#database-clock) for expiry.
 
 ## Inputs, outcomes and retained records
 

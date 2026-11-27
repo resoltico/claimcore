@@ -27,6 +27,7 @@ import { useRecoveryJournal } from "./JournalContext";
 import { subscribeRecovery } from "./indexedJournal";
 import {
   sameRecoveryScope,
+  type JournalIssue,
   type RecoveryScope,
   type RecoveryRecord,
 } from "../protocol/recoveryJournal";
@@ -56,6 +57,7 @@ type RecoveryView = {
   busy: string | null;
   notice: Notice | null;
   coordinationUnavailable: boolean;
+  journalIssues: ReadonlyArray<JournalIssue | "unavailable">;
 };
 const unobservedHandoffs = (
   scope: RecoveryScope,
@@ -82,6 +84,7 @@ const empty: RecoveryView = {
   busy: null,
   notice: null,
   coordinationUnavailable: false,
+  journalIssues: [],
 };
 
 type UpdateRecovery = (change: (previous: RecoveryView) => RecoveryView) => void;
@@ -329,7 +332,10 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
       return;
     }
     let leader: RecoveryLeadership | null = null;
-    let listing = false;
+    const listing = new Set<string>();
+    const issuesByRead = new Map<string, ReadonlySet<JournalIssue | "unavailable">>();
+    let pendingRecords: ReadonlyArray<RecoveryRecord> = [];
+    let confirmations: ReadonlyArray<RecoveryRecord> = [];
     let coordinationFailed = false;
     let automaticChecks = new AbortController();
     const controller = new AbortController();
@@ -421,37 +427,63 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
         }
       }
     };
-    const cycle = async () => {
-      if (listing || !current()) {
-        return;
-      }
-      listing = true;
-      try {
-        const operations = (await journal.list(owner.scope)).filter((record) =>
-          sameRecoveryScope(owner.scope, record),
-        );
-        const confirmed = (await journal.confirmed?.(owner.scope)) ?? [];
-        if (!current()) {
-          return;
-        }
-        const seen = viewRef.current.owner === owner ? viewRef.current.finals : {};
-        const handoffs = unobservedHandoffs(
+    const schedule = () => {
+      const seen = viewRef.current.owner === owner ? viewRef.current.finals : {};
+      scheduleCandidates(
+        pendingRecords,
+        unobservedHandoffs(
           owner.scope,
-          operations,
-          confirmed,
+          pendingRecords,
+          confirmations,
           observed,
           seen,
           cache.invalidation(),
-        );
-        scheduleCandidates(operations, handoffs);
+        ),
+      );
+    };
+    const discover = async (
+      name: string,
+      read: (issue: (fault: JournalIssue) => void) => Promise<void>,
+    ) => {
+      if (listing.has(name) || !current()) {
+        return;
+      }
+      listing.add(name);
+      const issues = new Set<JournalIssue | "unavailable">();
+      try {
+        await read((fault) => {
+          issues.add(fault);
+        });
       } catch {
-        unavailable();
+        issues.add("unavailable");
       } finally {
-        listing = false;
+        listing.delete(name);
+        if (current()) {
+          issuesByRead.set(name, issues);
+          const combined = new Set(
+            [...issuesByRead.values()].flatMap((value) => Array.from(value)),
+          );
+          update((previous) => ({ ...previous, journalIssues: [...combined] }));
+          if (name !== "diagnostics") {
+            schedule();
+          }
+        }
       }
     };
     const run = () => {
-      void cycle();
+      void discover("attempts", async (issue) => {
+        pendingRecords = (await journal.list(owner.scope, issue)).filter((record) =>
+          sameRecoveryScope(owner.scope, record),
+        );
+      });
+      void discover("confirmations", async (issue) => {
+        confirmations = (await journal.confirmed?.(owner.scope, issue)) ?? [];
+      });
+      if (journal.diagnose !== undefined) {
+        void discover("diagnostics", async (issue) => {
+          await journal.diagnose?.(issue);
+        });
+      }
     };
     const checkSelected = (record: RecoveryRecord) => {
       enqueue(record, false);
@@ -490,7 +522,14 @@ const useRecoveryNotice = (identity: RecoveryOwnerIdentity | null) => {
   const visible = view.owner === owner && owner !== null ? view : empty;
   const disclosed = verified
     ? visible
-    : { ...visible, notice: null, finals: {}, presentations: {}, coordinationUnavailable: false };
+    : {
+        ...visible,
+        notice: null,
+        finals: {},
+        presentations: {},
+        coordinationUnavailable: false,
+        journalIssues: [],
+      };
   return {
     ...disclosed,
     // Invalidation hides disclosed results synchronously without aborting an identity-only check.

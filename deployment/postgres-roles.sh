@@ -107,11 +107,18 @@ BEGIN
         ALTER DATABASE claimcore OWNER TO claimcore_owner;
         REVOKE ALL ON DATABASE claimcore FROM PUBLIC;
         GRANT CONNECT ON DATABASE claimcore TO claimcore_runtime;
+        GRANT EXECUTE ON FUNCTION pg_catalog.pg_control_system() TO claimcore_runtime, claimcore_owner;
         REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
     END IF;
 END;
 \$provision\$;
+SELECT pg_catalog.pg_get_userbyid(datdba)='claimcore_owner'
+   AND pg_catalog.to_regprocedure('claimcore_restore_provider.current_timeline_history()') IS NULL AS provision_history
+FROM pg_catalog.pg_database WHERE datname=current_database() \gset
+\if :provision_history
+\i /etc/claimcore-restore-provider.sql
+\endif
 COMMIT;
 SQL
 then

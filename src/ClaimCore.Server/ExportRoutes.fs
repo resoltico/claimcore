@@ -122,6 +122,7 @@ module internal ExportRoutes =
                                 let! result =
                                     withActor
                                         (AuthenticatedPrincipals.key principal)
+                                        budget.Token
                                         (fun services ->
                                             task {
                                                 if

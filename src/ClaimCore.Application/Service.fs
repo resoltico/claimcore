@@ -65,6 +65,30 @@ module Service =
                 })
             services
 
+    /// Each read and disclosure phase releases its capacity after the provider completes cleanup.
+    let withReadAdmission (acquire: CancellationToken -> Task<IDisposable>) services =
+        let admitted token run =
+            task {
+                use! _lease = acquire token
+                return! run ()
+            }
+
+        mapStore
+            (fun store ->
+                { new IStore with
+                    member _.Context query =
+                        admitted query.CancellationToken (fun () -> store.Context query)
+
+                    member _.Read operation =
+                        admitted operation.CancellationToken (fun () -> store.Read operation)
+
+                    member _.RecordDisclosure(event, token) =
+                        admitted token (fun () -> store.RecordDisclosure(event, token))
+
+                    member _.Write operation = store.Write operation
+                })
+            services
+
     /// A caller can observe an interrupted read before the query maps store failures to replies.
     let withReadCancellation (cancellation: CancellationToken) services =
         let propagate (token: CancellationToken) pending =

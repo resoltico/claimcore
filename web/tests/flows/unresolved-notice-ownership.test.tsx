@@ -95,7 +95,9 @@ it("automatically checks and clears final absence without resubmitting a change"
   expect(screen.queryByRole("button", { name: "Check now" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
   expect(
-    await screen.findByText("This change was not recorded. You can prepare it again."),
+    await screen.findByText(
+      "This change was not recorded in the current history. After a restore, ask the operator to confirm coverage of the earlier outcome before repeating the change.",
+    ),
   ).toBeVisible();
 });
 

@@ -12,6 +12,7 @@
     "src/features/case/pdf/viewer.ts!",
     "e2e/cli-pkce-driver.mjs",
     "e2e/deployment-qualification.mjs",
+    "e2e/production-image-smoke.mjs",
     "../contracts/*.ts",
     "src/protocol/schema.ts",
     "e2e/published-session-driver.mjs"

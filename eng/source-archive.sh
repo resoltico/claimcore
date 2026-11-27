@@ -11,7 +11,12 @@ output_directory="$(cd "${output_directory}" && pwd)"
 output="${output_directory}/${output_name}"
 cd "${root}"
 staging="$(mktemp -d)"
-trap 'rm -rf "${staging}"' EXIT
+temporary=""
+cleanup() {
+  rm -rf -- "${staging}"
+  if [[ -n "${temporary}" ]]; then rm -f -- "${temporary}"; fi
+}
+trap cleanup EXIT
 # Index membership selects source; working-tree bytes include unpublished modifications.
 if [[ -e .git ]]; then
   git ls-files -z > "${staging}/SOURCE-FILES"
@@ -24,4 +29,8 @@ fi
 # Untracked files are excluded. Stage new source files before publishing a checkout.
 tar --no-xattrs -cf "${staging}/source.tar" --null -T "${staging}/SOURCE-FILES"
 tar --no-xattrs -rf "${staging}/source.tar" -C "${staging}" SOURCE-FILES
-gzip -c "${staging}/source.tar" > "${output}"
+# Publish complete gzip bytes in one rename, even when two local publications share this path.
+temporary="$(mktemp "${output_directory}/.${output_name}.XXXXXX")"
+gzip -c "${staging}/source.tar" > "${temporary}"
+mv -f -- "${temporary}" "${output}"
+temporary=""

@@ -4,7 +4,8 @@ import { taskDefinitions } from "@contracts/client";
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 export type RecoveryScope = PrincipalScope;
-export const recoveryRecordFormat = 2;
+export const recoveryRecordFormat = 3;
+export const recoveryDatabaseName = "claimcore.operation-recovery.4";
 export type RecoveryRecord = RecoveryScope & {
   readonly format: typeof recoveryRecordFormat;
   readonly attemptId: string;
@@ -14,14 +15,20 @@ export type RecoveryRecord = RecoveryScope & {
   readonly act: string;
 };
 export type JournalPublication = "inserted" | "existing";
+export type JournalIssue = "damaged" | "unscoped" | "earlierFormat";
+type JournalDiscovery = (
+  scope: RecoveryScope,
+  issue?: (issue: JournalIssue) => void,
+) => Promise<ReadonlyArray<RecoveryRecord>>;
 export type RecoveryJournal = {
   readonly put: (record: RecoveryRecord) => Promise<JournalPublication>;
   readonly remove: (record: RecoveryRecord) => Promise<void>;
   readonly confirm?: (record: RecoveryRecord) => Promise<void>;
-  readonly confirmed?: (scope: RecoveryScope) => Promise<ReadonlyArray<RecoveryRecord>>;
-  readonly list: (scope: RecoveryScope) => Promise<ReadonlyArray<RecoveryRecord>>;
+  readonly confirmed?: JournalDiscovery;
+  readonly list: JournalDiscovery;
+  readonly diagnose?: (issue: (issue: JournalIssue) => void) => Promise<void>;
 };
-const isScope = (value: Record<string, unknown>): boolean =>
+export const isRecoveryScope = (value: Record<string, unknown>): boolean =>
   typeof value["serviceOrigin"] === "string" &&
   /^[!-~]{1,2048}$/u.test(value["serviceOrigin"]) &&
   isCanonicalUuid(value["installationId"]) &&
@@ -33,16 +40,19 @@ const isAttempt = (value: Record<string, unknown>): boolean =>
     String(value["subject"]),
   ) &&
   typeof value["act"] === "string" &&
-  taskDefinitions.some(
+  /^[a-zA-Z][a-zA-Z0-9.]{0,39}$/u.test(value["act"]);
+
+export const recoveryTask = (record: RecoveryRecord) =>
+  taskDefinitions.find(
     (task) =>
-      task.kind === "OPERATION" && task.subject === value["subject"] && task.id === value["act"],
+      task.kind === "OPERATION" && task.subject === record.subject && task.id === record.act,
   );
 
 export const isRecoveryRecord = (value: unknown): value is RecoveryRecord =>
   isObject(value) &&
   Object.keys(value).length === 8 &&
   value["format"] === recoveryRecordFormat &&
-  isScope(value) &&
+  isRecoveryScope(value) &&
   isAttempt(value);
 export const sameRecoveryScope = (left: RecoveryScope, right: RecoveryScope): boolean =>
   left.serviceOrigin === right.serviceOrigin &&
@@ -63,7 +73,7 @@ export const journalBeforeSend = async <T>(
   }
   let publication: JournalPublication;
   try {
-    if (!isRecoveryRecord(record)) {
+    if (!isRecoveryRecord(record) || recoveryTask(record) === undefined) {
       return { kind: "notSent", reason: "storage" };
     }
     publication = await journal.put(record);

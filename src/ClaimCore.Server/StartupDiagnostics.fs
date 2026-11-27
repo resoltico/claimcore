@@ -5,6 +5,7 @@ open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type WebSetting =
+    | WitnessConnectionFile
     | ConnectionFile
     | DataKeyFile
     | CertificatePath
@@ -49,6 +50,7 @@ module WebSettings =
 
     let private entries =
         [
+            WebSetting.WitnessConnectionFile, "CLAIMCORE_WITNESS_CONNECTION_FILE"
             WebSetting.ConnectionFile, "CLAIMCORE_CONNECTION_FILE"
             WebSetting.DataKeyFile, MasterKeyFile.setting
             WebSetting.KeyRingDirectory, "CLAIMCORE_WEB_KEY_RING_DIRECTORY"
@@ -77,6 +79,7 @@ module WebSettings =
     let required =
         [
             WebSetting.ConnectionFile
+            WebSetting.WitnessConnectionFile
             WebSetting.DataKeyFile
             WebSetting.CertificatePath
             WebSetting.KeyRingDirectory

@@ -139,6 +139,7 @@
       "claimcore-server": {
         "type": "Project",
         "dependencies": {
+          "Acornima": "[1.8.0, )",
           "ClaimCore.Application": "[0.23.0, )",
           "ClaimCore.Application.Contracts": "[0.23.0, )",
           "ClaimCore.CommandLine": "[0.23.0, )",
@@ -225,6 +226,12 @@
           "ClaimCore.RecordFormat": "[0.23.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
+      },
+      "Acornima": {
+        "type": "CentralTransitive",
+        "requested": "[1.8.0, )",
+        "resolved": "1.8.0",
+        "contentHash": "ZtcK7lu5LZZH5qDWfeUdBn/WXChWQjGdpB9sSFOJPyqnODGSMS1wqBoONP7GXzQRPHKoV8byWZT4EeBPI69ODQ=="
       },
       "MailKit": {
         "type": "CentralTransitive",

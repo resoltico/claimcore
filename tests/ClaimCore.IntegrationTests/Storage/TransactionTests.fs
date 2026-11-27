@@ -96,6 +96,7 @@ let private waiter (database: PostgresFixture.Database) settings =
     let result =
         store.Write(
             {
+                WriteOperation.RequiresEncryption = false
                 WriteOperation.Work =
                     (fun _ ->
                         Task.FromResult(
@@ -566,3 +567,167 @@ let tests =
                         snapshot after "Changed synthetic" false
                     }))
         ]
+
+[<Tests>]
+let encryptionBudget =
+    testCaseAsync
+        "encryption reservations survive rollback and retired generations only decrypt"
+        (async {
+            do!
+                task {
+                    let! database = PostgresFixture.create ()
+
+                    try
+                        let cipher = database.Cipher
+                        let generation = cipher.Generation
+
+                        let readReserved () =
+                            DatabaseSession.read
+                                database.OwnerSource
+                                CancellationToken.None
+                                (fun connection ->
+                                    task {
+                                        let! rows =
+                                            DatabaseSession.rows
+                                                connection
+                                                "SELECT reserved FROM claimcore.encryption_generations WHERE generation=$1"
+                                                [| box generation |]
+                                                CancellationToken.None
+
+                                        return DatabaseSession.value<int64> 0 rows.Head
+                                    })
+
+                        let! before = readReserved ()
+
+                        let! reserved =
+                            EncryptionBudget.reserve
+                                database.RuntimeSource
+                                generation
+                                1L
+                                CancellationToken.None
+
+                        Expect.equal
+                            reserved
+                            (Ok true)
+                            "A separately committed reservation admits one encryption"
+
+                        use writing = cipher.ForEncryption 1L
+                        let caseId, blobId = Guid.NewGuid(), Guid.NewGuid()
+                        let plain = [| 4uy; 5uy; 6uy |]
+
+                        let! abandoned =
+                            Transactions.write
+                                database.RuntimeSource
+                                Transactions.timeouts
+                                CancellationToken.None
+                                (fun _ ->
+                                    task {
+                                        return writing.EncryptBlob(caseId, blobId, plain), false
+                                    })
+
+                        let payload = abandoned |> Result.defaultWith (string >> failtest)
+                        let! after = readReserved ()
+
+                        Expect.equal
+                            after
+                            (before + 1L)
+                            "Business rollback cannot refund a reservation"
+
+                        Expect.throws
+                            (fun () -> writing.EncryptBlob(caseId, blobId, plain) |> ignore)
+                            "A spent allowance cannot encrypt twice"
+
+                        Expect.throws
+                            (fun () ->
+                                cipher.DecryptCompartment(1L, 0, "FAMILY", caseId, payload)
+                                |> ignore)
+                            "A different purpose cannot open the envelope"
+
+                        let requester = Guid.NewGuid()
+                        let cursor = cipher.SealCursor("synthetic-test", requester, plain)
+
+                        let! _ =
+                            DatabaseSession.transaction
+                                database.OwnerSource
+                                Data.IsolationLevel.ReadCommitted
+                                CancellationToken.None
+                                (fun connection tx ->
+                                    task {
+                                        let! _ =
+                                            DatabaseSession.execute
+                                                connection
+                                                "UPDATE claimcore.encryption_generations SET reserved=16777216 WHERE generation=$1"
+                                                [| box generation |]
+                                                CancellationToken.None
+
+                                        do! tx.CommitAsync()
+                                    })
+
+                        let! exhausted =
+                            EncryptionBudget.reserve
+                                database.RuntimeSource
+                                generation
+                                1L
+                                CancellationToken.None
+
+                        Expect.equal
+                            exhausted
+                            (Ok false)
+                            "The active generation refuses work after its budget is exhausted"
+
+                        let pause = Guid.NewGuid()
+                        let token = CancellationToken.None
+
+                        let! _ =
+                            RegisterMaintenanceStore.change
+                                database.OwnerSource
+                                database.MasterKey
+                                (MaintenanceChange.Acquire(0L, pause))
+                                token
+
+                        let handle = MaintenanceHandle.create 1L pause |> Option.get
+
+                        use owner =
+                            new ClaimCore.Application.Administration.Administration(
+                                PostgresFixture.ownerConnectionString database,
+                                "test",
+                                database.MasterKey
+                            )
+
+                        let! rotated = owner.RotateEncryptionGeneration(handle, token)
+                        Expect.notEqual rotated generation "Rotation selects a fresh identity"
+
+                        use! current =
+                            DatabaseSession.read database.OwnerSource token (fun connection ->
+                                Baseline.loadCipher
+                                    connection
+                                    database.Installation.InstallationId
+                                    database.MasterKey
+                                    token)
+
+                        Expect.sequenceEqual
+                            (current.DecryptBlob(caseId, blobId, payload))
+                            plain
+                            "Retained ciphertext remains decryptable"
+
+                        Expect.isNone
+                            (current.OpenCursor("synthetic-test", requester, cursor))
+                            "Cursors require a fresh traversal"
+
+                        let! retired =
+                            EncryptionBudget.reserve database.RuntimeSource generation 1L token
+
+                        Expect.equal
+                            retired
+                            (Ok false)
+                            "A retired generation cannot reserve encryption capacity"
+
+                        let! budget =
+                            EncryptionBudget.reserve database.RuntimeSource rotated 1L token
+
+                        Expect.equal budget (Ok true) "The fresh generation has its own budget"
+                    finally
+                        database.Fixture.Dispose()
+                }
+                |> Async.AwaitTask
+        })

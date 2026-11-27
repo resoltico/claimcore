@@ -56,6 +56,7 @@ module internal RequestRefusals =
                 return!
                     services.Store.Write
                         {
+                            WriteOperation.RequiresEncryption = false
                             CancellationToken = token
                             Work =
                                 fun tx ->

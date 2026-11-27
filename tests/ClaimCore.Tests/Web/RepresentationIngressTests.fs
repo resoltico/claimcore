@@ -52,6 +52,7 @@ let tests =
                         WebConfiguration.KeyRingDirectory = DirectoryInfo directory
                         Binding = WebBindings.create origin "127.0.0.1" origin.Port
                         ConnectionString = "Host=localhost;Database=synthetic;Username=synthetic"
+                        WitnessConnectionString = "synthetic-not-opened"
                         DataKeyFile = "synthetic-not-opened"
                         Certificate =
                             {
@@ -147,7 +148,7 @@ let tests =
                     Encoding.UTF8.GetBytes
                         """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.close","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"SYNTHETIC"},"expectedRevision":1},"inputs":{"field:outcome":"OTHER"}}"""
 
-                let withActor principal work =
+                let withActor principal _ work =
                     task {
                         let services =
                             ClaimCore.Tests.ReadFixtures.services

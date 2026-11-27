@@ -134,7 +134,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const operationId = newOperationId();
   const firstRecord: RecoveryRecord = {
     ...scope,
-    format: 2,
+    format: 3,
     operationId,
     attemptId: randomUUID(),
     subject: "CASE",
@@ -254,7 +254,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
 });
 const savedCaseAttempt = (scope: RecoveryScope): RecoveryRecord => ({
   ...scope,
-  format: 2,
+  format: 3,
   operationId: expiredOperationId(),
   attemptId: randomUUID(),
   subject: "CASE",
@@ -559,7 +559,7 @@ test("a first explicit non-start keeps the draft and leaves no unconfirmed recor
     expect(route.request().postDataJSON()).toMatchObject({ operationId });
     const saved = await recoveryRecords(page);
     expect(saved).toHaveLength(1);
-    expect(saved[0]).toMatchObject({ operationId, format: 2 });
+    expect(saved[0]).toMatchObject({ operationId, format: 3 });
     await route.fulfill({
       status: 429,
       json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
@@ -755,7 +755,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   for (const operationId of [newOperationId(), expiredOperationId()]) {
     passive.push({
       ...scope,
-      format: 2,
+      format: 3,
       operationId,
       attemptId: randomUUID(),
       subject: "CASE",
@@ -846,7 +846,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
   const scope = await scopeFor(page);
   const earlier: RecoveryRecord = {
     ...scope,
-    format: 2,
+    format: 3,
     operationId: newOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
@@ -891,7 +891,7 @@ test("a real blocked open refuses preparation and retains the earlier record @en
       let dispatched = false;
       const record: RecoveryRecord = {
         ...selectedScope,
-        format: 2,
+        format: 3,
         operationId: id,
         attemptId: crypto.randomUUID(),
         subject: "CASE",
@@ -953,7 +953,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
   const scope = await scopeFor(page);
   const record: RecoveryRecord = {
     ...scope,
-    format: 2,
+    format: 3,
     operationId: newOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
@@ -1090,7 +1090,7 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
   const scope = await scopeFor(page);
   const record: RecoveryRecord = {
     ...scope,
-    format: 2,
+    format: 3,
     operationId: expiredOperationId(),
     attemptId: randomUUID(),
     subject: "CASE",
@@ -1161,7 +1161,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
   const scope = await scopeFor(page);
   const work: RecoveryRecord = {
     ...scope,
-    format: 2,
+    format: 3,
     attemptId: randomUUID(),
     operationId: newOperationId(),
     subject: "WORK",
@@ -1169,7 +1169,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
   };
   const reminder: RecoveryRecord = {
     ...scope,
-    format: 2,
+    format: 3,
     attemptId: randomUUID(),
     operationId: newOperationId(),
     subject: "REMINDER",
@@ -1200,7 +1200,7 @@ test("real IndexedDB retains only current work and reminder identities and refus
     expect(Object.keys(record).sort()).toEqual(keys);
   }
   const result = await page.evaluate(
-    async ({ record, scope: selectedScope }) => {
+    async ({ record, healthy, scope: selectedScope }) => {
       const path = "/__claimcore_qa__/recovery/indexedJournal.js";
       const module = (await import(path)) as typeof IndexedJournalModule;
       const old = {
@@ -1224,6 +1224,15 @@ test("real IndexedDB retains only current work and reminder identities and refus
       await new Promise<void>((resolve, reject) => {
         const tx = database.transaction("attempts", "readwrite");
         tx.objectStore("attempts").add(old, key);
+        tx.objectStore("attempts").add(old, "unscopable-synthetic-key");
+        for (let index = 0; index < 1000; index += 1) {
+          tx.objectStore("attempts").add({ damaged: true }, [
+            old.serviceOrigin,
+            old.installationId,
+            "00000000-0000-4000-8000-ffffffffffff",
+            index.toString(),
+          ]);
+        }
         tx.oncomplete = () => {
           resolve();
         };
@@ -1231,11 +1240,32 @@ test("real IndexedDB retains only current work and reminder identities and refus
           reject(new Error(tx.error?.message ?? "IndexedDB transaction aborted"));
         };
       });
+      const journal = module.createIndexedJournal(indexedDB, "claimcore.qa.old-identity");
+      const faults: string[] = [];
+      const publication = await journal.put(healthy);
+      let visited = 0;
+      const cursorDescriptor = Object.getOwnPropertyDescriptor(IDBCursor.prototype, "continue")!;
+      const continuing = cursorDescriptor.value as (
+        this: IDBCursor,
+        position?: IDBValidKey,
+      ) => void;
+      Object.defineProperty(IDBCursor.prototype, "continue", {
+        ...cursorDescriptor,
+        value: function value(this: IDBCursor, position?: IDBValidKey) {
+          visited += 1;
+          continuing.call(this, position);
+        },
+      });
+      const listed = await journal
+        .list(selectedScope, (issue) => {
+          faults.push(issue);
+        })
+        .finally(() => {
+          Object.defineProperty(IDBCursor.prototype, "continue", cursorDescriptor);
+        });
       let refused = false;
       try {
-        await module
-          .createIndexedJournal(indexedDB, "claimcore.qa.old-identity")
-          .list(selectedScope);
+        await journal.put(record);
       } catch {
         refused = true;
       }
@@ -1253,19 +1283,85 @@ test("real IndexedDB retains only current work and reminder identities and refus
       return {
         refused,
         retained,
+        publication,
+        listed,
+        faults,
+        visited,
       };
     },
     {
       record: work,
+      healthy: reminder,
       scope,
     },
   );
   expect(result.refused).toBe(true);
+  expect(result.publication).toBe("inserted");
+  expect(result.listed).toEqual([reminder]);
+  expect(result.visited).toBe(2);
+  expect(result.faults).toEqual(["damaged"]);
   expect(result.retained).toEqual({
     ...work,
     format: 1,
   });
 });
+
+for (const failure of ["delayed", "failed"] as const) {
+  test(`healthy pending recovery progresses while confirmation discovery is ${failure} @chromium`, async ({
+    page,
+  }) => {
+    await openAuthenticated(page);
+    await adapter(page);
+    const scope = await scopeFor(page);
+    await page.evaluate((mode) => {
+      const descriptor = Object.getOwnPropertyDescriptor(IDBDatabase.prototype, "transaction")!;
+      const nativeTransaction = descriptor.value as (
+        this: IDBDatabase,
+        stores: string | string[],
+        access?: IDBTransactionMode,
+        options?: IDBTransactionOptions,
+      ) => IDBTransaction;
+      const completion = Object.getOwnPropertyDescriptor(IDBTransaction.prototype, "oncomplete");
+      IDBDatabase.prototype.transaction = function transaction(
+        this: IDBDatabase,
+        stores: string | string[],
+        access?: IDBTransactionMode,
+        options?: IDBTransactionOptions,
+      ) {
+        const handoffs =
+          this.name.endsWith(".4") && access === "readonly" && stores[0] === "confirmed";
+        if (handoffs && mode === "failed") {
+          throw new DOMException("Synthetic confirmation failure", "InvalidStateError");
+        }
+
+        const tx = nativeTransaction.call(this, stores, access, options);
+        if (handoffs) {
+          Object.defineProperty(tx, "oncomplete", {
+            get: () => completion?.get?.call(tx) as EventListener | null,
+            set: (listener: EventListener) => {
+              completion?.set?.call(tx, (event: Event) => {
+                window.setTimeout(() => {
+                  listener.call(tx, event);
+                }, 12_000);
+              });
+            },
+          });
+        }
+        return tx;
+      };
+    }, failure);
+
+    const pending = savedCaseAttempt(scope);
+    const checked = page.waitForResponse(
+      (response) => lookupObservation(response, pending.operationId),
+      {
+        timeout: 8_000,
+      },
+    );
+    expect(await saveAttempt(page, pending)).toBe("inserted");
+    expect(await (await checked).json()).toMatchObject({ outcome: { kind: "NOT_ACCEPTED" } });
+  });
+}
 
 test("the current IndexedDB journal neither reads nor changes the previous database @engine", async ({
   page,
@@ -1279,7 +1375,7 @@ test("the current IndexedDB journal neither reads nor changes the previous datab
 
   const recordsBeforeReload = await page.evaluate(
     async ({ previous: oldAttempt, current: newAttempt }) => {
-      const name = "claimcore.recovery";
+      const name = "claimcore.operation-recovery.3";
       const old = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open(name, 1);
         request.onupgradeneeded = () => {
@@ -1328,7 +1424,7 @@ test("the current IndexedDB journal neither reads nor changes the previous datab
     () =>
       new Promise<{ version: number; stores: string[]; records: RecoveryRecord[] }>(
         (resolve, reject) => {
-          const request = indexedDB.open("claimcore.recovery");
+          const request = indexedDB.open("claimcore.operation-recovery.3");
           request.onupgradeneeded = () => {
             request.transaction?.abort();
             reject(new Error("The earlier database was missing."));

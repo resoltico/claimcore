@@ -120,7 +120,7 @@ let tests =
                     let encoded =
                         snapshot () |> CaseRecord.encodeSnapshot |> Encoding.UTF8.GetString
 
-                    Expect.equal InstallationFormat.Current 11 "Fresh installation grammar"
+                    Expect.equal InstallationFormat.Current 12 "Fresh installation grammar"
 
                     for altered in
                         [

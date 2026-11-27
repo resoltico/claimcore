@@ -137,10 +137,15 @@ let internal createRoles (superuser: NpgsqlDataSource) token =
                 REVOKE ALL ON DATABASE {database} FROM PUBLIC;
                 GRANT CONNECT ON DATABASE {database} TO {runtimeRole};
                 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+                GRANT EXECUTE ON FUNCTION pg_catalog.pg_control_system() TO {runtimeRole},{ownerRole};
                 """
                 [||]
                 token
 
+        let provider =
+            File.ReadAllText(Path.Combine(RepositoryRoot.find (), "db", "restore-provider.sql"))
+
+        let! _ = DatabaseSession.execute connection provider [||] token
         return ()
     }
 
@@ -435,6 +440,8 @@ let internal createArchived () =
         builder
             .WithPortBinding(5433, true)
             .WithPortBinding(5434, true)
+            .WithPortBinding(5435, true)
+            .WithPortBinding(5436, true)
             .WithCommand(
                 "-c",
                 "wal_level=replica",

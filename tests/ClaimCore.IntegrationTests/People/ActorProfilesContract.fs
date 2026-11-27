@@ -199,6 +199,7 @@ let internal lifecycle fixture =
         let! reapplied =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = true
                     Work =
                         (fun tx ->
                             task {
@@ -366,6 +367,7 @@ let internal atomicWrites fixture =
         let fail (submission: OperationSubmission) phase =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = true
                     CancellationToken = token
                     Work =
                         fun tx ->

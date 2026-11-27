@@ -3,9 +3,10 @@ import { createIndexedJournal } from "../../../src/recovery/indexedJournal";
 import { journalBeforeSend } from "../../../src/protocol/recoveryJournal";
 import { recoveryRecord } from "../../support/recovery.fixtures";
 /** Controllable native event boundary; real browser storage is qualified in e2e. */
-const events = (stored?: unknown) => {
+const events = (stored?: unknown, confirmed?: unknown) => {
   const request = { onsuccess: null, onerror: null } as unknown as IDBRequest;
   const lookup = { result: stored, onsuccess: null } as unknown as IDBRequest;
+  const handoff = { result: confirmed, onsuccess: null } as unknown as IDBRequest;
   const add = vi.fn(() => request);
   const remove = vi.fn(() => request);
   const abort = vi.fn();
@@ -22,7 +23,7 @@ const events = (stored?: unknown) => {
     transaction: nativeTransaction,
   } as unknown as IDBObjectStore;
   const tx = Object.assign(nativeTransaction, {
-    objectStore: () => store,
+    objectStore: (name: string) => (name === "attempts" ? store : { get: () => handoff }),
   }) as unknown as IDBTransaction;
   const close = vi.fn();
   const database = {
@@ -39,7 +40,7 @@ const events = (stored?: unknown) => {
     onupgradeneeded: null,
   } as unknown as IDBOpenDBRequest;
   const factory = { open: () => opening } as unknown as IDBFactory;
-  return { request, lookup, add, remove, abort, tx, close, database, opening, factory };
+  return { request, lookup, handoff, add, remove, abort, tx, close, database, opening, factory };
 };
 it("an individual write success cannot permit dispatch before transaction completion", async () => {
   const native = events();
@@ -52,6 +53,7 @@ it("an individual write success cannot permit dispatch before transaction comple
   );
   native.opening.onsuccess?.(new Event("success"));
   await Promise.resolve();
+  native.handoff.onsuccess?.(new Event("success"));
   native.lookup.onsuccess?.(new Event("success"));
   native.request.onsuccess?.(new Event("success"));
   await Promise.resolve();
@@ -73,6 +75,7 @@ it("an exact existing record is reported only when its transaction completes", a
   );
   native.opening.onsuccess?.(new Event("success"));
   await Promise.resolve();
+  native.handoff.onsuccess?.(new Event("success"));
   native.lookup.onsuccess?.(new Event("success"));
   await Promise.resolve();
   expect(native.add).not.toHaveBeenCalled();
@@ -86,6 +89,7 @@ it("conditional removal refuses a different identity at the same exact key", asy
   const removed = createIndexedJournal(native.factory).remove(record);
   native.opening.onsuccess?.(new Event("success"));
   await Promise.resolve();
+  native.handoff.onsuccess?.(new Event("success"));
   native.lookup.onsuccess?.(new Event("success"));
   expect(native.abort).toHaveBeenCalledTimes(1);
   expect(native.remove).not.toHaveBeenCalled();
@@ -103,6 +107,7 @@ it("a write success followed by transaction abort is NOT_SENT", async () => {
   );
   native.opening.onsuccess?.(new Event("success"));
   await Promise.resolve();
+  native.handoff.onsuccess?.(new Event("success"));
   native.lookup.onsuccess?.(new Event("success"));
   native.request.onsuccess?.(new Event("success"));
   native.tx.onabort?.(new Event("abort"));
@@ -124,4 +129,24 @@ it("blocked opens refuse preparation and close a late connection", async () => {
   native.opening.onsuccess?.(new Event("success"));
   expect(native.close).toHaveBeenCalledTimes(1);
   expect(send).not.toHaveBeenCalled();
+});
+
+it("preserves a conflicting handoff and refuses before dispatch", async () => {
+  const record = recoveryRecord();
+  const native = events(undefined, { record: recoveryRecord(), until: Date.now() + 1000 });
+  const send = vi.fn(() => Promise.resolve("sent"));
+  const prepared = journalBeforeSend(
+    createIndexedJournal(native.factory),
+    record,
+    () => true,
+    send,
+  );
+  native.opening.onsuccess?.(new Event("success"));
+  await Promise.resolve();
+  native.handoff.onsuccess?.(new Event("success"));
+  expect(native.abort).toHaveBeenCalledOnce();
+  native.tx.onabort?.(new Event("abort"));
+  expect(await prepared).toEqual({ kind: "notSent", reason: "storage" });
+  expect(send).not.toHaveBeenCalled();
+  expect(native.add).not.toHaveBeenCalled();
 });

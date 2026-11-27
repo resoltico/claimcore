@@ -80,6 +80,7 @@ type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =
 
         member _.Write
             ({
+                 WriteOperation.RequiresEncryption = needsEncryption
                  WriteOperation.Work = work
                  CancellationToken = ct
              })
@@ -88,6 +89,7 @@ type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =
                 let! result =
                     inner.Write(
                         {
+                            WriteOperation.RequiresEncryption = needsEncryption
                             WriteOperation.Work = work
                             CancellationToken = ct
                         }

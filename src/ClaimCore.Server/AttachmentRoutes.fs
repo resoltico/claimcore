@@ -229,7 +229,7 @@ module internal AttachmentRoutes =
 
                         try
                             let! outcome =
-                                withActor identity (fun core ->
+                                withActor identity deadline.Token (fun core ->
                                     task {
                                         if not (Service.matchesInstallation core installation) then
                                             return Error HostFailureReason.InstallationMismatch

@@ -188,7 +188,7 @@ let private exercise (database: PostgresFixture.Database) =
                         """
                         INSERT INTO claimcore.ledger_compartments
                           (operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload)
-                        VALUES(1,0,'FAMILY',$1,decode(repeat('11',32),'hex'),decode(repeat('12',60),'hex'),
+                        VALUES(1,0,'FAMILY',$1,decode(repeat('11',32),'hex'),decode(repeat('12',76),'hex'),
                             decode(repeat('13',32),'hex'),decode(repeat('a5',30),'hex'))
                         """
                         [| box firstCase |]

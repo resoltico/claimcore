@@ -20,8 +20,7 @@ module internal AccessRequests =
             Limit: int
         }
 
-    let expiredPredicate alias =
-        $"{alias}last_seen<$1::timestamptz-INTERVAL '30 days'"
+    let expiredPredicate alias = $"{alias}last_seen<$1::timestamptz"
 
     let parameters principal =
         let kind, issuer, subject = PrincipalKey.parts principal
@@ -93,7 +92,25 @@ module internal AccessRequests =
         let sql =
             $"SELECT jsonb_build_array(principal_key,{timestamp})::text FROM claimcore.access_request WHERE NOT ({expires}) ORDER BY principal_key"
 
-        DatabaseSession.witness connection sql [| box observed |] token
+        DatabaseSession.witness connection sql [| box (AccessRequest.cutoff observed) |] token
+
+    let traversalBasis connection observed token =
+        task {
+            let expires = expiredPredicate ""
+            // One indexed lookup finds the earliest still visible expiry in the current snapshot.
+            let sql =
+                $"SELECT g.generation,(SELECT last_seen FROM claimcore.access_request WHERE NOT ({expires}) ORDER BY last_seen LIMIT 1) FROM claimcore.access_request_generation g"
+
+            let! rows =
+                DatabaseSession.rows connection sql [| box (AccessRequest.cutoff observed) |] token
+
+            let row = List.exactlyOne rows
+
+            return
+                DatabaseSession.value<int64> 0 row,
+                (DatabaseSession.optional<DateTime> 1 row
+                 |> Option.map (DateTimeOffset >> AccessRequest.expiresAt))
+        }
 
     let page connection (query: PageQuery) token =
         task {
@@ -109,7 +126,7 @@ module internal AccessRequests =
                      + expiredPredicate ""
                      + ") AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND principal_key>$3)) ORDER BY last_seen DESC,principal_key LIMIT $4")
                     [|
-                        box query.ObservedAt
+                        box (AccessRequest.cutoff query.ObservedAt)
                         DatabaseSession.parameter seen
                         DatabaseSession.parameter key
                         box (query.Limit + 1)

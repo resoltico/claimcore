@@ -14,7 +14,10 @@ open ClaimCore.Server
 /// A case-work host receives actor-bound operations and a bounded shutdown operation.
 type internal IRuntime =
     inherit IDisposable
-    abstract WithActor: PrincipalKey * (ServiceContext -> Task<'Value>) -> Task<'Value option>
+
+    abstract WithActor:
+        PrincipalKey * CancellationToken * (ServiceContext -> Task<'Value>) -> Task<'Value option>
+
     abstract Housekeep: CancellationToken -> Task<ClaimCore.Application.HousekeepingReport>
     abstract Sessions: ClaimCore.Application.ISessionStore
 
@@ -27,6 +30,7 @@ type internal IRuntime =
 
     abstract BusinessTimeZone: string
     abstract Ready: CancellationToken -> Task<bool>
+    abstract RecoveryReady: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
 
 module internal ActorAccess =
@@ -82,17 +86,30 @@ type private RuntimeResource(storage: ClaimCore.Application.IRuntime, calendar: 
         }
 
     interface IRuntime with
-        member _.WithActor(principal, action) =
-            ActorAccess.run
-                gate
-                (fun actor ->
-                    ClaimCore.Application.Runtime.service
-                        storage
-                        BuildIdentity.current.Version
-                        calendar
-                        actor)
-                principal
-                action
+        member _.WithActor(principal, cancellation, action) =
+            let forActor actor =
+                ClaimCore.Application.Runtime.service
+                    storage
+                    BuildIdentity.current.Version
+                    calendar
+                    actor
+
+            task {
+                let! admitted =
+                    ActorAccess.run gate forActor principal (fun core ->
+                        task {
+                            let! active =
+                                ClaimCore.Application.Runtime.recoveryReady storage cancellation
+
+                            if not active then
+                                return None
+                            else
+                                let! reply = action core
+                                return Some reply
+                        })
+
+                return Option.flatten admitted
+            }
 
         member _.Housekeep token =
             task {
@@ -125,17 +142,22 @@ type private RuntimeResource(storage: ClaimCore.Application.IRuntime, calendar: 
                     return! storage.Ready token
             }
 
+        member _.RecoveryReady token =
+            task {
+                match gate.Acquire() with
+                | None -> return false
+                | Some lease ->
+                    use _lease = lease
+                    return! ClaimCore.Application.Runtime.recoveryReady storage token
+            }
+
         member _.Shutdown bound = gate.Shutdown bound
         member _.Dispose() = gate.Stop() |> ignore
 
 module internal Runtime =
-    let openConnection connectionString masterKey cancellationToken =
+    let private openStorage operation =
         task {
-            let! opened =
-                ClaimCore.Application.Runtime.openConnection
-                    connectionString
-                    masterKey
-                    cancellationToken
+            let! opened = operation
 
             match opened with
             | Error error -> return Error error
@@ -159,3 +181,11 @@ module internal Runtime =
 
                     return Error RuntimeOpenFault.InstallationInvalid
         }
+
+    let openConnection connection masterKey token =
+        ClaimCore.Application.Runtime.openConnection connection masterKey token
+        |> openStorage
+
+    let openWitnessedConnection connection witness masterKey token =
+        ClaimCore.Application.Runtime.openWitnessedConnection connection witness masterKey token
+        |> openStorage

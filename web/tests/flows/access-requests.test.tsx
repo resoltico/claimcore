@@ -1,4 +1,9 @@
-import type { Principal, Affordance, RegionRow } from "@contracts/client";
+import {
+  isEndpointResponse,
+  type Principal,
+  type Affordance,
+  type RegionRow,
+} from "@contracts/client";
 import { operationAffordance } from "../support/affordances.fixtures";
 import { humanReadReply } from "../support/human-read-reply.fixtures";
 import { act, within } from "@testing-library/react";
@@ -136,6 +141,15 @@ const setup = (available = true, busy = false) => {
   const view = render(<AccessRequests {...props} />);
   return { ...view, props, onAdmit, onDisclosureRefused };
 };
+it("admits the maximum outer Access Requests continuation and refuses one over", () => {
+  const admits = (length: number) => {
+    const reply = succeeded([], "A".repeat(length));
+    return reply.kind === "outcome" && isEndpointResponse("people.requests", reply.value);
+  };
+  expect(admits(32_768)).toBe(true);
+  expect(admits(32_769)).toBe(false);
+});
+
 it("never reads requests without the supplied disclosure gate", async () => {
   const read = mockEndpoint("people.requests");
   setup(false);

@@ -107,7 +107,7 @@ module internal Transactions =
         | error -> providerFailure commitStarted error
 
     /// The commit marker is set only after all projection work and the final pre-commit cancellation check.
-    let private transact source settings (token: CancellationToken) action =
+    let private transact source settings (token: CancellationToken) action afterCommit =
         task {
             let mutable commitStarted = false
 
@@ -128,14 +128,23 @@ module internal Transactions =
                                     commitStarted <- true
                                     do! transaction.CommitAsync(token)
 
-                                return Ok result
+                                return! afterCommit connection result
                             })
             with error ->
                 return Error(failure commitStarted error)
         }
 
     /// Application permits commit only for Proceed, including confirmation without an append.
-    let write source settings token action = transact source settings token action
+    let write source settings token action =
+        transact source settings token action (fun _ result ->
+            System.Threading.Tasks.Task.FromResult(Ok result))
+
+    let writeAndObserveCommit source settings token action observe =
+        transact source settings token action (fun connection result ->
+            task {
+                let! evidence = observe connection token
+                return Ok(result, evidence)
+            })
 
     let read source token action =
         task {

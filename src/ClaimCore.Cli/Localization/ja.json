@@ -24,8 +24,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "変更が未確認です。{retryCommand}で同じ要求を再送信するか、{statusCommand}で確認してください。変更の有効期間が終了すると回答が確定します。",
-    "source": "0c2a0dcdff67"
+    "text": "変更が未確認です。{statusCommand}で確認するか、同じ履歴が保たれている間は{retryCommand}で同一の要求を再送信してください。復元後に変更を繰り返す前に、以前の結果が復元済みの履歴に含まれることを運用担当者に確認してください。",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "認証に失敗しました。",
@@ -148,8 +149,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "送信結果が未確認の場合、終了コード4で再送信用の正確な要求を出力します。\n再送信しても二重に記録されることはありません。\n`claimcore recovery list`と`claimcore recovery check`で確認してください。回答は{window}以内に確定します。",
-    "source": "d798be5ae516"
+    "text": "送信結果が未確認の場合、終了コード4で送信した要求をそのまま出力します。\n`claimcore recovery list`と`claimcore recovery check`で元の操作を照会してください。変更の準備から{window}が経過すると、照会に成功した場合は現在の履歴に記録がないことを確定できます。\n同じ履歴が保たれている間は、同一の要求を再送信しても変更が二重に記録されることはありません。復元後に変更を繰り返す前に、以前の結果が復元済みの履歴に含まれることを運用担当者に確認してください。",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "オフラインでリクエストを準備し、スキーマを確認してから、受け付けられるフレームを送信してください。",

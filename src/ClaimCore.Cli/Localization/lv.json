@@ -36,8 +36,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "Izmaiņa nav apstiprināta. Atkārtojiet tieši to pašu pieprasījumu ar {retryCommand} vai pārbaudiet ar {statusCommand}. Atbilde kļūst galīga, kad beidzas izmaiņai atvēlētais laiks.",
-    "source": "0c2a0dcdff67"
+    "text": "Izmaiņa nav apstiprināta. Pārbaudiet to ar {statusCommand} vai, kamēr saglabāta tā pati vēsture, nosūtiet tieši to pašu pieprasījumu ar {retryCommand}. Pēc atjaunošanas pirms izmaiņas atkārtošanas lūdziet operatoram apstiprināt, ka atjaunotā vēsture aptver iepriekšējo iznākumu.",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "Autentifikācija neizdevās.",
@@ -160,8 +161,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "Ja piegāde nav apstiprināta, izejas kods 4 izdrukā precīzu atkārtojamo pieprasījumu.\nAtkārtota nosūtīšana nevar to reģistrēt divreiz.\nAr `claimcore recovery list` un `claimcore recovery check` pārbaudiet rezultātu; atbilde kļūst galīga {window} laikā.",
-    "source": "d798be5ae516"
+    "text": "Ja piegāde nav apstiprināta, izejas kods 4 izdrukā precīzu pieprasījumu.\nPārbaudiet sākotnējo darbību ar `claimcore recovery list` un `claimcore recovery check`. Kad kopš izmaiņas sagatavošanas ir pagājis {window}, sekmīga pārbaude var galīgi apstiprināt, ka tās nav pašreizējā vēsturē.\nKamēr saglabāta tā pati vēsture, atkārtoti nosūtot tieši to pašu pieprasījumu, izmaiņu nevar reģistrēt divreiz. Pēc atjaunošanas pirms izmaiņas atkārtošanas lūdziet operatoram apstiprināt, ka atjaunotā vēsture aptver iepriekšējo iznākumu.",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "Sagatavojiet pieprasījumus bezsaistē, pārbaudiet shēmas un nosūtiet pieņemamu ietvaru.",

@@ -47,7 +47,7 @@ let private configuredRuntime
 
 let private call (runtime: ClaimCore.Server.Composition.IRuntime) principal action =
     task {
-        let! result = runtime.WithActor(principal, action)
+        let! result = runtime.WithActor(principal, CancellationToken.None, action)
         return result |> Option.defaultWith (fun () -> failtest "Expected admitted operation")
     }
 
@@ -258,6 +258,7 @@ let tests =
                         let! after =
                             runtime.WithActor(
                                 database.Fixture.Owner,
+                                token,
                                 fun actor -> (Service.context actor () token)
                             )
 

@@ -177,7 +177,7 @@ describe("metadata-driven operation acceptance", () => {
   );
 });
 const sessionLifecycle = async () => {
-  markSignedOut(window.sessionStorage);
+  markSignedOut();
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(sessionReply(false, "anonymous"));

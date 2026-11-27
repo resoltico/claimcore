@@ -534,14 +534,17 @@ let private retainedReplies (database: PostgresFixture.Database) =
 
         let failing = failingAudit ignore owner
 
-        for operation in [ original; stale ] do
+        for operation, alreadyAccepted in [ original, true; stale, false ] do
             let! preview = Service.previewSubmission failing operation token
             expectStoreFailure preview.Outcome
             let! execution = Service.executeSubmission failing operation token
 
-            match execution.Outcome with
-            | ExecuteResult.Failed CoreFault.StoreUnavailable -> ()
-            | _ -> failtest "Execution must withhold an unaudited replay or conflict page."
+            match execution.Outcome, alreadyAccepted with
+            | ExecuteResult.OutcomeUnknown, true
+            | ExecuteResult.Failed CoreFault.StoreUnavailable, false -> ()
+            | _ ->
+                failtest
+                    "Withhold the unaudited reply and preserve uncertainty about an accepted operation."
     }
 
 [<Tests>]

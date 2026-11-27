@@ -45,6 +45,7 @@ let private help () =
         "  ClaimCore.Server version --json  Show compiled release identity as JSON"
         "  ClaimCore.Server probe live      Probe this configured listener without opening a runtime"
         "  ClaimCore.Server probe ready     Probe database reachability and current schema"
+        "  ClaimCore.Server probe recovery  Probe independent recovery admission"
         "Required settings (credentials are private file paths):"
         yield!
             WebSettings.required
@@ -135,7 +136,12 @@ let private openRuntime (configuration: WebConfiguration) (ct: CancellationToken
             |> Option.defaultWith (fun () ->
                 WebStartupDiagnostics.refuse WebStartupProblem.DataKeyFileInvalid)
 
-        let! opened = Runtime.openConnection configuration.ConnectionString masterKey ct
+        let! opened =
+            Runtime.openWitnessedConnection
+                configuration.ConnectionString
+                configuration.WitnessConnectionString
+                masterKey
+                ct
 
         match opened with
         | Ok value -> return value
@@ -226,6 +232,14 @@ let private configureRoutes
     application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.health readiness.Check))
     |> ignore
 
+    let recovery =
+        Readiness(runtime.RecoveryReady, application.Lifetime.ApplicationStopping)
+
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(HostRoutes.recoveryHealth recovery.Check)
+    )
+    |> ignore
+
     application.Use(Func<HttpContext, RequestDelegate, Task>(HostRoutes.identityHealth))
     |> ignore
 
@@ -244,7 +258,7 @@ let private configureRoutes
         configuration
         None
         ClaimCore.Server.ApiRoutes.route
-        (fun principal action -> runtime.WithActor(principal, action))
+        (fun principal cancellation action -> runtime.WithActor(principal, cancellation, action))
         application
 
 
@@ -357,6 +371,7 @@ let private dispatch arguments =
         0
     | [ "probe"; "live" ] -> WebProbe.run "/health/live" |> _.GetAwaiter().GetResult()
     | [ "probe"; "ready" ] -> WebProbe.run "/health/ready" |> _.GetAwaiter().GetResult()
+    | [ "probe"; "recovery" ] -> WebProbe.run "/health/recovery" |> _.GetAwaiter().GetResult()
     | [ "help" ]
     | [ "--help" ] ->
         help ()

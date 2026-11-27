@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-export const recoveryDatabaseName = "claimcore.operation-recovery";
+export const recoveryDatabaseName = "claimcore.operation-recovery.4";
 
 /** Inspect committed native state independently of the application adapter. */
 export const recoveryRecords = (

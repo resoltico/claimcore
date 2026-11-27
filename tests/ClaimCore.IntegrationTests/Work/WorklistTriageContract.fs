@@ -439,6 +439,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         let! altered =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = false
                     Work =
                         fun tx ->
                             task {

@@ -8,6 +8,7 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
+open System
 
 module internal CaseSummaryQuery =
     let private admitted =
@@ -183,7 +184,14 @@ FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} ORDER BY c.c
             (Array.append (CaseSelectionSql.parameters selection) parameters)
             token
 
-    let read connection selection groupBy (after: CaseReportPosition option) limit token =
+    let private readRows
+        connection
+        selection
+        groupBy
+        (after: CaseReportPosition option)
+        limit
+        token
+        =
         task {
             let expression, groupParameters = grouping groupBy
 
@@ -269,8 +277,7 @@ ORDER BY group_key COLLATE "C" NULLS FIRST,currency COLLATE "C" NULLS FIRST
             if reports.Length > limit + 1 then
                 invalid "Report rows exceeded the PostgreSQL page bound."
 
-            let visible = reports |> List.truncate limit
-            let keys = visible |> List.map (DatabaseSession.value<string> 6)
+            let keys = reports |> List.map (DatabaseSession.value<string> 6)
             let! names = actorNames connection groupBy keys token
 
             let position row =
@@ -318,11 +325,76 @@ ORDER BY group_key COLLATE "C" NULLS FIRST,currency COLLATE "C" NULLS FIRST
 
             let counts = facets |> List.map group |> CaseWorklistCounts.fromGroups |> admitted
 
-            let next =
-                if reports.Length > limit then
-                    visible |> List.tryLast |> Option.map position
-                else
-                    None
+            return counts, List.map (fun row -> position row, data row) reports
+        }
 
-            return counts, List.map data visible, next
+    let private maximumCachedRows = 128
+    let private maximumCachedReports = 16
+    let private cacheLifetime = TimeSpan.FromMinutes 1.
+    let private cacheLock = obj ()
+
+    let mutable private reports =
+        Map.empty<
+            string * string,
+            DateTimeOffset * (CaseWorklistCounts * (CaseReportPosition * CaseMoneyRow) list)
+         >
+
+    let private page after limit (counts, rows) =
+        let remaining =
+            match after with
+            | None -> rows
+            | Some position ->
+                rows
+                |> List.filter (fun ((row: CaseReportPosition), _) ->
+                    let group = String.CompareOrdinal(row.GroupOrder, position.GroupOrder)
+
+                    group > 0
+                    || (group = 0
+                        && String.CompareOrdinal(row.CurrencyOrder, position.CurrencyOrder) > 0))
+
+        let visible = List.truncate limit remaining
+
+        let next =
+            if remaining.Length > limit then
+                List.tryLast visible |> Option.map fst
+            else
+                None
+
+        counts, List.map snd visible, next
+
+    let private prune observed =
+        reports <-
+            reports
+            |> Map.filter (fun _ (stored, _) ->
+                stored <= observed && observed - stored < cacheLifetime)
+
+    let read connection selection groupBy after limit cacheKey observed token =
+        task {
+            let cached =
+                lock cacheLock (fun () ->
+                    prune observed
+                    cacheKey |> Option.bind (fun key -> Map.tryFind key reports |> Option.map snd))
+
+            match cached with
+            | Some values -> return page after limit values
+            | None ->
+                let fill = cacheKey.IsSome && after.IsNone
+                let fetch = if fill then maximumCachedRows else limit
+                let! data = readRows connection selection groupBy after fetch token
+                let _, rows = data
+
+                match cacheKey with
+                | Some key when fill && rows.Length <= maximumCachedRows ->
+                    lock cacheLock (fun () ->
+                        prune observed
+
+                        if reports.Count >= maximumCachedReports then
+                            let oldest = reports |> Map.toSeq |> Seq.minBy (snd >> fst) |> fst
+                            reports <- Map.remove oldest reports
+
+                        reports <- Map.add key (observed, data) reports)
+                | _ -> ()
+
+                // On a database miss the provider has already applied the continuation position.
+                return page None limit data
         }

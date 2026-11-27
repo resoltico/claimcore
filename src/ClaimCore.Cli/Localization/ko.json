@@ -24,8 +24,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "변경이 확인되지 않았습니다. {retryCommand}로 정확히 같은 요청을 다시 보내거나 {statusCommand}로 확인하세요. 변경의 허용 시간이 끝나면 답변이 확정됩니다.",
-    "source": "0c2a0dcdff67"
+    "text": "변경이 확인되지 않았습니다. {statusCommand}로 확인하거나, 기존 기록이 그대로 유지되는 동안에는 {retryCommand}로 정확히 같은 요청을 다시 보내세요. 복원 후 변경을 다시 시도하기 전에 운영자에게 복원된 기록이 이전 결과를 포함하는지 확인해 달라고 요청하세요.",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "인증에 실패했습니다.",
@@ -148,8 +149,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "전달이 확인되지 않으면 종료 코드 4가 다시 보낼 정확한 요청을 출력합니다.\n다시 보내도 두 번 기록되지는 않습니다.\n`claimcore recovery list`와 `claimcore recovery check`로 확인하세요. 답변은 {window} 이내에 확정됩니다.",
-    "source": "d798be5ae516"
+    "text": "전달이 확인되지 않으면 종료 코드 4가 요청을 그대로 출력합니다.\n`claimcore recovery list`와 `claimcore recovery check`로 원래 작업을 확인하세요. 변경을 준비한 뒤 {window}이 지나면, 확인에 성공했을 때 현재 기록에 해당 변경이 없다는 사실을 확정할 수 있습니다.\n기존 기록이 그대로 유지되는 동안에는 정확히 같은 요청을 다시 보내도 변경이 두 번 기록되지 않습니다. 복원 후 변경을 다시 시도하기 전에 운영자에게 복원된 기록이 이전 결과를 포함하는지 확인해 달라고 요청하세요.",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "오프라인에서 요청을 준비하고 스키마를 확인한 후 허용되는 프레임을 전송하세요.",

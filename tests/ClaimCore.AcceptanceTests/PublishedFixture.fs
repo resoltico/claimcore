@@ -23,6 +23,7 @@ let private database (image: string) initdbArguments runId =
         .WithLabel("claimcore.test", "acceptance")
         .WithLabel("claimcore.test-run", runId)
         .WithTmpfsMount("/var/lib/postgresql")
+        .WithCommand("-c", "fsync=on")
         .WithWaitStrategy(ClaimCore.TestSupport.PostgresReadiness.strategy ())
         .Build()
 
@@ -116,7 +117,62 @@ let private webEnvironment
 
     values
 
-let private startPrerequisites (postgres: PostgreSqlContainer) (identity: IdentityServer.Identity) =
+let private initializeWitness
+    root
+    directory
+    (container: PostgreSqlContainer)
+    (environment: Dictionary<string, string>)
+    =
+    task {
+        use source = NpgsqlDataSource.Create(container.GetConnectionString())
+        use! connection = source.OpenConnectionAsync()
+        let ownerPassword = Guid.NewGuid().ToString("N")
+        let runtimePassword = Guid.NewGuid().ToString("N")
+
+        use setup =
+            new NpgsqlCommand(
+                $"""CREATE ROLE claimcore_witness_owner LOGIN PASSWORD '{ownerPassword}';
+                CREATE ROLE claimcore_witness_runtime LOGIN NOINHERIT PASSWORD '{runtimePassword}';
+                GRANT CONNECT ON DATABASE postgres TO claimcore_witness_runtime;
+                ALTER DATABASE postgres OWNER TO claimcore_witness_owner;
+                REVOKE ALL ON DATABASE postgres FROM PUBLIC;
+                GRANT EXECUTE ON FUNCTION pg_catalog.pg_control_system() TO claimcore_witness_owner, claimcore_witness_runtime;
+                SET ROLE claimcore_witness_owner;""",
+                connection
+            )
+
+        let! _ = setup.ExecuteNonQueryAsync()
+
+        use schema =
+            new NpgsqlCommand(File.ReadAllText(Path.Combine(root, "db", "witness.sql")), connection)
+
+        let! _ = schema.ExecuteNonQueryAsync()
+
+        let owner =
+            NpgsqlConnectionStringBuilder(
+                container.GetConnectionString(),
+                Username = "claimcore_witness_owner",
+                Password = ownerPassword
+            )
+
+        let runtime =
+            NpgsqlConnectionStringBuilder(
+                container.GetConnectionString(),
+                Username = "claimcore_witness_runtime",
+                Password = runtimePassword
+            )
+
+        environment["CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE"] <-
+            FixtureFiles.text directory "witness-owner.connection" owner.ConnectionString
+
+        return FixtureFiles.text directory "witness-runtime.connection" runtime.ConnectionString
+    }
+
+let private startPrerequisites
+    (postgres: PostgreSqlContainer)
+    (witness: PostgreSqlContainer)
+    (identity: IdentityServer.Identity)
+    =
     task {
         use startup = new CancellationTokenSource(TimeSpan.FromMinutes 6.)
         use identityHttp = controlClient identity.Root ignore
@@ -132,9 +188,10 @@ let private startPrerequisites (postgres: PostgreSqlContainer) (identity: Identi
             }
 
         let databaseReady = ready (fun token -> postgres.StartAsync token)
+        let witnessReady = ready (fun token -> witness.StartAsync token)
         let identityReady = ready (fun token -> identity.Start(identityHttp, token) :> Task)
         // Await both tasks even on refusal before fixture teardown disposes their containers.
-        do! Task.WhenAll([| databaseReady :> Task; identityReady :> Task |])
+        do! Task.WhenAll([| databaseReady :> Task; witnessReady :> Task; identityReady :> Task |])
     }
 
 let private initialize
@@ -204,6 +261,10 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
     let directory = ownedDirectory.Path
     let root = ClaimCore.TestSupport.RepositoryRoot.find ()
     let postgres = database postgresImage initdbArguments (Guid.NewGuid().ToString("N"))
+
+    let witness =
+        database postgresImage initdbArguments ("witness-" + Guid.NewGuid().ToString("N"))
+
     let origin = "https://localhost:" + string (FixtureFiles.port ())
     let backend = "https://localhost:" + string (FixtureFiles.port ())
 
@@ -465,6 +526,31 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
                     "Owned full backup restores into an empty database"
         }
 
+    member _.FenceRestore(installation: Guid, transition: Guid) =
+        use connection =
+            new NpgsqlConnection(
+                File.ReadAllText adminEnvironment["CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE"]
+            )
+
+        connection.Open()
+
+        use command =
+            new NpgsqlCommand(
+                """SELECT claimcore_witness.fence($1,generation,$2)
+               FROM claimcore_witness.installations WHERE installation=$1""",
+                connection
+            )
+
+        command.Parameters.Add(NpgsqlParameter(Value = installation)) |> ignore
+        command.Parameters.Add(NpgsqlParameter(Value = transition)) |> ignore
+
+        Expect.equal
+            (command.ExecuteScalar())
+            (box true)
+            "The independently stored generation is fenced"
+
+        adminEnvironment["CLAIMCORE_RESTORE_TRANSITION"] <- transition.ToString("D")
+
     member _.Complete() = completed <- true
 
     member _.RetainServiceFailureEvidence destination =
@@ -475,8 +561,10 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
             cli <- PublishedProcesses.publish root directory "ClaimCore.Cli"
             webBinary <- PublishedProcesses.publish root directory "ClaimCore.Server"
             admin <- webBinary
-            do! startPrerequisites postgres identity
+            do! startPrerequisites postgres witness identity
             adminEnvironment["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
+
+            let! witnessSettings = initializeWitness root directory witness adminEnvironment
 
             let! runtime =
                 initialize
@@ -505,6 +593,7 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
 
             webSettings <- webEnvironment directory origin identity proxiedRuntime pfx
             webSettings["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
+            webSettings["CLAIMCORE_WITNESS_CONNECTION_FILE"] <- witnessSettings
             webSettings["CLAIMCORE_WEB_LISTEN_PORT"] <- string (Uri(backend).Port)
             let values = webSettings
             let host = new PublishedProcesses.Web(webBinary, values, directory)
@@ -566,6 +655,7 @@ type Fixture(?referencePolicy: CaseReferencePolicy) =
                                 (fun () ->
                                     commitProxy
                                     |> Option.iter (fun value -> (value :> IDisposable).Dispose()))
+                                (fun () -> witness.DisposeAsync().AsTask().GetAwaiter().GetResult())
                                 (fun () ->
                                     postgres.DisposeAsync().AsTask().GetAwaiter().GetResult())
                                 http.Dispose

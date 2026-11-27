@@ -12,6 +12,7 @@ services:
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key, -c, hba_file=/etc/claimcore-postgres-hba.conf]
     volumes:
       - postgres-data:/var/lib/postgresql
+      - ../../db/restore-provider.sql:/etc/claimcore-restore-provider.sql:ro
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR:?}/postgres
         target: /etc/claimcore-postgres
@@ -60,6 +61,7 @@ services:
     user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
     environment:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/owner.connection
+      CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/witness.connection
       CLAIMCORE_DATA_KEY_FILE: /run/claimcore/data.key
     volumes:
       - type: bind
@@ -74,7 +76,7 @@ services:
         read_only: true
         bind:
           create_host_path: false
-    networks: [database]
+    networks: [default, database]
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
@@ -92,6 +94,7 @@ services:
     user: "${CLAIMCORE_UID:?}:${CLAIMCORE_GID:?}"
     environment:
       CLAIMCORE_CONNECTION_FILE: /etc/claimcore/runtime/runtime.connection
+      CLAIMCORE_WITNESS_CONNECTION_FILE: /etc/claimcore/runtime/witness.connection
       CLAIMCORE_DATA_KEY_FILE: /run/claimcore/data.key
       CLAIMCORE_WEB_CERTIFICATE_PATH: /etc/claimcore/runtime/server.pfx
       CLAIMCORE_WEB_KEY_RING_DIRECTORY: /var/lib/claimcore/key-ring

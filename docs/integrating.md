@@ -223,9 +223,10 @@ observation, not a reservation: execution checks access, versions, dates and eli
 the state used for the write.
 
 Use one operation ID for one intended change. When a request might have been sent, preserve its exact
-bytes and identity. Resending those same bytes can confirm or replay the accepted operation; changing
-its intent while keeping the identity is an idempotency conflict. A new intent requires a new identity.
-The CLI allocates an omitted identity where supported.
+bytes and identity. In the live history, resending those same bytes can confirm or replay the accepted
+operation. Changing its intent while keeping the identity is an idempotency conflict. A new intent
+requires a new identity. The CLI allocates an omitted identity where supported. Follow the
+[operation lookup procedure](#operation-lookup) before retrying after a restore.
 
 Optional updates distinguish omission from an explicit clear. Use the task's declared controls and
 help rather than treating blank text, null and absence as interchangeable. Collection issues identify
@@ -333,12 +334,21 @@ Recovery records belong to a specific service, installation and account. The CLI
 and stores the task token with operation/attempt identity and ownership scope. Journal admission
 requires the supported format; incompatible records are refused without conversion.
 
+Use a local filesystem that honours file and directory flushes for the CLI journal. The CLI flushes
+the record before publishing it and syncs the containing directory before dispatch. On macOS, the
+pinned runtime requests a full device flush for the file where supported and falls back to
+`fsync` otherwise. Browser publication requests strict IndexedDB transaction durability before
+dispatch. These guarantees rely on the platform, browser, filesystem and storage honouring the
+requests. Abrupt-process checks do not establish behaviour after hardware power loss.
+
 The Web build uses its own browser recovery database. It preserves saved identities across
 reloads of this build and leaves any earlier browser recovery database untouched. Keep the
 operation IDs of unconfirmed changes before replacing a build so you can check them directly
 against the installation that received them.
 
-If delivery is uncertain:
+### Operation lookup
+
+If delivery is uncertain in the live installation:
 
 1. Keep the original operation ID and frozen request bytes.
 2. Query `operation.get` or use the client's Unconfirmed changes view.
@@ -346,9 +356,24 @@ If delivery is uncertain:
 4. Resend only the exact original request when the status permits it.
 5. Start a changed intent only after resolving the original outcome.
 
-An accepted operation remains accepted even if its receipt is later partly or wholly withheld by
-current access or erasure. A final `NOT_ACCEPTED` is conclusive; an earlier `PENDING` or transport
-failure is not. Do not create a replacement operation merely because a reply was lost.
+In the live history, an accepted operation remains accepted even when current access or erasure
+withholds part or all of its receipt. A final `NOT_ACCEPTED` conclusively settles absence for the
+original ID. Treat `PENDING` and transport failures as unresolved. A lost reply alone is no basis
+for a replacement operation.
+
+After a restore, the same guarantees apply to earlier outcomes covered by the verified ledger prefix
+and expiry cutoff or by verified WAL replay. The operator must establish coverage of the particular
+earlier observation. A lookup describes the restored history. Its `NOT_ACCEPTED` response alone
+cannot settle whether the operation was accepted before the restore.
+
+If the operator cannot establish that coverage, keep the original operation ID, any frozen request,
+and any earlier receipt or response. Mark the earlier outcome unresolved and pause automatic retry,
+replay and replacement. Ask the operator to reconcile the retained evidence with the restored
+business history. Resume only after the earlier outcome has been resolved or an authorized person
+has decided how to proceed after reviewing the unresolved effect. The installation ID and the
+operation's elapsed lifetime do not establish coverage. See [Backups and restore](operating.md#backups-and-restore).
+
+### Browser recovery coordination
 
 In Web, a visible tab renews a 2.5-second automatic-recovery lease for its account and
 installation. Hiding, suspending, or closing the tab lets another visible tab take over.
@@ -360,7 +385,14 @@ change automatically. If browser storage blocks coordination, the workspace show
 problem and pauses automatic lookups for that account and installation. It checks whether
 coordination storage is writable before resuming. An explicit check can issue a fresh
 authorized read of the selected operation if its permit cannot be maintained. The attempt
-stays in the journal until an authorized terminal result is available.
+stays in the journal until an authorized terminal result is available. Keep evidence of an
+unresolved pre-restore outcome separately, since a terminal result from the restored history
+can retire the journal entry.
+
+A damaged record cannot block publication of an unrelated attempt. A conflicting attempt key
+or an unavailable journal prevents that attempt from being sent. Use the authorized Operation ID
+lookup when a saved attempt is unreadable. CLI JSON recovery listings include a `damaged` count
+alongside healthy records. The CLI text listing reports when some entries could not be read.
 
 See `claimcore help recovery`, `claimcore help delivery` and [Operating](operating.md) for local journal,
 checkpoint and restored-installation procedures. Restore admission changes session validity; clients
@@ -397,7 +429,7 @@ All pages in a bounded download are prepared in one read-only snapshot. Before r
 ClaimCore takes a fresh authorized snapshot and checks the protected subjects and values
 against the buffered output. A changed or erased disclosure fails the download. The fresh
 observation is the disclosure cut. Revocation after that cut applies to subsequent requests.
-ClaimCore commits the disclosure audit event before sending successful bytes.
+ClaimCore commits the disclosure audit event and obtains independent recovery acknowledgement before sending successful bytes.
 CSV scalar formatting is canonical and fallback account captions use the source English catalog.
 CLI streaming keeps bytes already emitted and exits nonzero with the failure and last cursor when
 a traversal becomes incomplete. It does not restart automatically. Browser downloads validate media, identity encoding, complete declared byte

@@ -66,15 +66,56 @@ module internal QueryResults =
 
 /// A continuation authenticates the requester, selection, date and authorized traversal witness.
 module internal ScopedTraversal =
+    type Basis =
+        {
+            Generation: string
+            ValidUntil: DateTimeOffset
+        }
+
+    let private ledgerBasis (tx: ReadTx) () =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    "SELECT h.sequence,m.publication_generation FROM claimcore.ledger_head h CROSS JOIN claimcore.register_maintenance m"
+                    [||]
+                    tx.CancellationToken
+
+            let row = List.exactlyOne rows
+
+            return
+                {
+                    Generation =
+                        FormattableString.Invariant(
+                            $"{DatabaseSession.value<int64> 0 row}.{DatabaseSession.value<int64> 1 row}"
+                        )
+                    ValidUntil = DateTimeOffset.MaxValue
+                }
+        }
+
+    let private ticks (value: string) =
+        match
+            Int64.TryParse(
+                value,
+                Globalization.NumberStyles.None,
+                Globalization.CultureInfo.InvariantCulture
+            )
+        with
+        | true, value when value >= 0L && value <= DateTimeOffset.MaxValue.UtcTicks -> Some value
+        | _ -> None
+
     let pageWithBasis
         (tx: ReadTx)
         purpose
+        maximumCharacters
         requester
         (businessDate: System.DateOnly option)
         decode
         encode
+        (readBasis: unit -> System.Threading.Tasks.Task<Basis>)
         (readWitness: unit -> System.Threading.Tasks.Task<string>)
         readPage
+        proveFirst
         next
         after
         =
@@ -94,52 +135,128 @@ module internal ScopedTraversal =
                     readWitness
 
             let admit (token: string) =
-                if token.Length > Paging.MaximumCaseCursorCharacters then
+                if token.Length > maximumCharacters then
                     Error Refusal.InvalidCursor
                 else
                     match
                         tx.Cipher.OpenCursor(purpose, requester, token)
                         |> Option.map (fun bytes -> Text.Encoding.ASCII.GetString(bytes).Split(':'))
                     with
-                    | Some [| recordedDate; witness; encoded |] when recordedDate = date ->
-                        decode encoded |> Result.map (fun position -> witness, position)
-                    | Some [| _; _; _ |] -> Error Refusal.TraversalChanged
+                    | Some [| recordedDate; generation; observed; validUntil; witness; encoded |] when
+                        recordedDate = date
+                        ->
+                        match ticks observed, ticks validUntil with
+                        | Some start, Some expires when start <= expires ->
+                            decode encoded
+                            |> Result.map (fun position ->
+                                (generation, start, expires, witness), position)
+                        | _ -> Error Refusal.InvalidCursor
+                    | Some [| _; _; _; _; _; _ |] -> Error Refusal.TraversalChanged
                     | _ -> Error Refusal.InvalidCursor
 
             match QueryResults.cursor admit after with
             | Error refusal -> return Error refusal
             | Ok continuation ->
-                let! witness =
-                    match continuation with
-                    | Some _ -> task { let! current = readWitness () in return Some current }
-                    | None -> System.Threading.Tasks.Task.FromResult None
+                let! basis =
+                    if tx.ExportSnapshot then
+                        System.Threading.Tasks.Task.FromResult
+                            {
+                                Generation = "export"
+                                ValidUntil = DateTimeOffset.MaxValue
+                            }
+                    else
+                        readBasis ()
 
-                if Option.map fst continuation <> witness then
+                let! witness =
+                    task {
+                        match continuation with
+                        | None when proveFirst ->
+                            let! current = readWitness ()
+                            return Some current
+                        | None -> return None
+                        | Some((generation, observed, validUntil, witness), _) ->
+                            let now = tx.ObservedAt.UtcTicks
+
+                            if
+                                generation = basis.Generation && observed <= now && now < validUntil
+                            then
+                                return Some witness
+                            else
+                                let! current = readWitness ()
+                                return Some current
+                    }
+
+                if
+                    continuation
+                    |> Option.exists (fun ((_, _, _, digest), _) -> Some digest <> witness)
+                then
                     return Error Refusal.TraversalChanged
                 else
-                    let! page = readPage (Option.map snd continuation)
+                    let! page = readPage witness (Option.map snd continuation)
 
-                    let! continuation =
-                        task {
-                            match next page with
-                            | None -> return None
-                            | Some position ->
-                                let! current =
-                                    match witness with
-                                    | Some value -> System.Threading.Tasks.Task.FromResult value
-                                    | None -> readWitness ()
+                    match next page with
+                    | None -> return Ok(page, None)
+                    | Some position ->
+                        let! current =
+                            match witness with
+                            | Some value -> System.Threading.Tasks.Task.FromResult value
+                            | None -> readWitness ()
 
-                                let plain =
-                                    Text.Encoding.ASCII.GetBytes(
-                                        String.concat ":" [ date; current; encode position ]
-                                    )
+                        let invariant (value: int64) =
+                            value.ToString(Globalization.CultureInfo.InvariantCulture)
 
-                                return Some(tx.Cipher.SealCursor(purpose, requester, plain))
-                        }
+                        let plain =
+                            [
+                                date
+                                basis.Generation
+                                invariant tx.ObservedAt.UtcTicks
+                                invariant basis.ValidUntil.UtcTicks
+                                current
+                                encode position
+                            ]
+                            |> String.concat ":"
+                            |> Text.Encoding.ASCII.GetBytes
 
-                    return Ok(page, continuation)
+                        let token = tx.Cipher.SealCursor(purpose, requester, plain)
+
+                        if token.Length > maximumCharacters then
+                            return
+                                raise (
+                                    RecordCorruptException
+                                        "A generated continuation exceeds its transport limit."
+                                )
+                        else
+                            return Ok(page, Some token)
         }
 
-
     let page tx purpose requester date decode encode readWitness readPage next after =
-        pageWithBasis tx purpose requester (Some date) decode encode readWitness readPage next after
+        pageWithBasis
+            tx
+            purpose
+            Paging.MaximumCaseCursorCharacters
+            requester
+            (Some date)
+            decode
+            encode
+            (ledgerBasis tx)
+            readWitness
+            (fun _ -> readPage)
+            false
+            next
+            after
+
+    let report tx purpose requester date decode encode readWitness readPage next after =
+        pageWithBasis
+            tx
+            purpose
+            Paging.MaximumCaseCursorCharacters
+            requester
+            (Some date)
+            decode
+            encode
+            (ledgerBasis tx)
+            readWitness
+            readPage
+            true
+            next
+            after

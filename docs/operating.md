@@ -74,11 +74,26 @@ Prepare these paths under the absolute `CLAIMCORE_CONFIG_DIR`.
 | `web/client.secret` | The confidential browser client's OIDC client secret. |
 | `web/runtime.connection`, `web/ca.pem` | Runtime connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/runtime/ca.pem`. |
 | `administration/owner.connection`, `administration/ca.pem` | Owner connection string and the PostgreSQL trust root. Set `Root Certificate=/etc/claimcore/administration/ca.pem`. |
+| `web/witness.connection`, `administration/witness.connection` | Separate runtime and owner connections to the independent recovery witness. Use verified TLS and each role’s own credential. |
 | `key-ring/` | Persistent Web key ring directory with mode 0700. |
 
 Use `Host=postgres;Database=claimcore;SSL Mode=VerifyFull` in both connections, with the username and
 password for that connection. Make the web and administration files readable by the configured UID
 and GID, and give the key ring directory to that UID. See [Private configuration](#private-configuration).
+
+Provision a dedicated PostgreSQL witness for each installation before initialization. Give its database owner the
+`claimcore_witness_owner` login and create an unprivileged `claimcore_witness_runtime` login.
+Use the owner to apply [witness.sql](../db/witness.sql). Restrict database connections to the
+two roles, use the witness server’s own trusted TLS configuration, and preserve its storage
+and recovery independently from the register. The two databases must run on independent
+PostgreSQL instances. The runtime only calls the three granted witness functions.
+For external primary provisioning, grant the primary owner and runtime roles execute permission on
+`pg_catalog.pg_control_system()`. Grant the same function to both witness credentials in the
+witness database. ClaimCore compares the connected PostgreSQL system identifiers. Install
+[restore-provider.sql](../db/restore-provider.sql) as the register cluster administrator so the
+register owner can verify the current timeline history. Neither application role needs replication
+or general file-reading permission. The templates provision the required register permissions. The evaluation template provisions a second disposable PostgreSQL
+instance with a distinct volume and credentials. It shares the evaluation host's failure domain.
 
 Start PostgreSQL, initialize through the administration profile, and then start the web host.
 Substitute your business zone, issuer, owner subject and owner name. Run these from the extracted
@@ -124,13 +139,20 @@ workload and host capacity.
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 11 and
+[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 12 and
 [CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
 or owner command checks the database against the supported
 [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and baseline identity
 before accessing installation data. Initialize a fresh database for a new register. Backup
 restore requires the supported format and baseline. Preserve any nonmatching database and recovery
 records separately. This build refuses them without conversion.
+
+Before cutover, resolve pending operations in each old browser profile and CLI state directory
+against the matching installation and build. Keep the old database, matching keys, build and
+unresolved operation IDs when settlement is unavailable. Keep browser profiles intact until their
+old attempts have been settled. The new browser opens a separate recovery database with an expiry index and surfaces
+earlier stores without opening or changing them. An authorized Operation ID lookup works even
+when a journal entry is unreadable. There is no cross-installation settlement.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
@@ -195,7 +217,8 @@ uncertain result. Remote database connections require verified TLS.
 | `verify [--checkpoint FILE]` | Check retained history, projections and optionally a trusted checkpoint. |
 | `rebuild --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Check projections under a maintenance fence and rebuild when they diverge. |
 | `repair-attachment --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID --case-id ID --blob-id ID --payload-file FILE` | Restore the exact retained bytes for an authenticated accepting blob during maintenance. |
-| `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | With all traffic isolated and maintenance active, validate the trusted prefix, raise expiry and invalidate sessions atomically. |
+| `admit-restored-installation --checkpoint FILE --pause-generation GENERATION --pause-id PAUSE_ID` | Prepare and admit a separately fenced restore generation. See [Backups and restore](#backups-and-restore). |
+| `rotate-encryption-generation --pause-generation GENERATION --pause-id PAUSE_ID` | Activate new cursor and durable encryption keys under the current maintenance handle. Restart all runtime processes before resuming service. |
 
 ## Recover owner access
 
@@ -389,7 +412,7 @@ workspace ownership; it does not erase durable recovery identities belonging to 
 
 Access requests identify the sign-in by issuer and subject. Names and email addresses are hints from
 the provider. Review the email verification status and confirm the exact subject before admission.
-Requests grant no rights, expire after 30 days and are capped at 1,000. Admission removes a matching
+Requests grant no rights, expire after 30 elapsed UTC days and are capped at 1,000. Admission removes a matching
 request. Dismissal grants nothing, and a later sign-in can create another request. Names become
 profiles only after an owner enters and confirms them.
 
@@ -450,7 +473,7 @@ Operation IDs have a ten-minute first-execution lifetime with two minutes of fut
 Accepted lookup and replay come first. `operation.get` confirms expiry under the execution head lock,
 commits a monotonic `expiredBefore` cutoff, then returns final absence without a business append.
 Cancellation or uncertain acknowledgement does not establish final absence; a later lookup can resolve it.
-See [delivery recovery](integrating.md#recover-an-uncertain-change).
+See [Operation lookup](integrating.md#operation-lookup) for client handling in the live history and after a restore.
 
 An unseen ID strictly older than the committed cutoff cannot execute in the intact installation, even
 after a backward wall-clock step. Equality is not expired. The cutoff preserves full timestamp precision.
@@ -501,39 +524,142 @@ frontier. Capture evidence while traffic is isolated or account for activity aft
 Observations newer than every independently retained trusted checkpoint cannot be recovered from
 that evidence.
 
-Restore the base backup and replay archived WAL into an isolated cluster on the supported
-PostgreSQL major with `pg_trgm` 1.6. The backup and WAL must match that PostgreSQL major and the
-supported ClaimCore installation format. Keep application servers and all browser, CLI, bearer
-and automation traffic isolated throughout restore admission and verification.
+1. Fence the installation in the independent witness before replay. Use the witness owner
+   connection and retain a single fresh transition UUID and the currently active generation.
+   Check the returned row and read it back after an uncertain acknowledgement. An exact retry of
+   the pending fence can reuse its ID and original generation. A conflicting pending fence or a
+   retired transition ID is refused without changing the active installation.
 
-With traffic still isolated, use the independently retained checkpoint to admit and verify the restored
-installation:
+   ```sql
+   BEGIN;
+   SET LOCAL synchronous_commit = local;
+   SELECT claimcore_witness.fence(:'installation'::uuid, :'generation'::uuid, :'transition'::uuid);
+   COMMIT;
+   SELECT generation, system_id, timeline, disclosure_lsn, transition, latest_dispatch, suppress_through,
+          admitted_sequence, encode(admitted_hash, 'hex') AS admitted_hash, expiry_floor_ticks
+   FROM claimcore_witness.installations WHERE installation = :'installation'::uuid;
+   ```
 
-```sh
-claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
-claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
-claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
-# If authoritative history is sound and only projections diverge:
-claimcore-server rebuild --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
-claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
-claimcore-server status
-```
+2. Remove all old hosts from ingress, stop and drain them, and isolate outbound SMTP. Check that
+   no worker holds an in-flight send before allowing either generation network access. Restore
+   and replay into an isolated cluster on the supported PostgreSQL major with `pg_trgm` 1.6.
+   For point-in-time recovery, preserve the archived WAL segments and timeline history files.
+   Recover at least through the witnessed flush position on its branch. A higher position on
+   a timeline that forked before that position cannot cover the old history.
+3. Keep the target isolated and acquire its maintenance handle. The witness owner connection
+   is read from `CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE`. Supply the original transition in
+   `CLAIMCORE_RESTORE_TRANSITION`. Supply the actual archived history file for the promoted
+   target in `CLAIMCORE_RESTORE_HISTORY_FILE`, using PostgreSQL's original filename in a private
+   location. ClaimCore compares it against the live promoted target through the owner-only
+   provider function. Preserve both copies and the recovery log as evidence.
 
-Restore admission checks the installation, accepted prefix and full retained ledger before raising
-the expiry frontier to the greater current or trusted cutoff and invalidating restored sessions.
-Both writes commit together. Use `verify` separately to check projections. If replay finds a
-missing or mismatched prefix or invalid accepted history, keep traffic isolated and preserve the
-database, recovery records and trusted checkpoints. Rebuild repairs projections only when replay
-validates the retained ledger. Recover missing acceptances from trusted backup/WAL evidence. Never
-lower the frontier to recover availability. Inspect status after an uncertain acknowledgement or
-output failure, and keep the exact checkpoint.
+   ```sh
+   claimcore-server maintenance acquire EXPECTED_GENERATION PAUSE_ID
+   claimcore-server admit-restored-installation --checkpoint /PRIVATE/checkpoint.json --pause-generation PAUSE_GENERATION --pause-id PAUSE_ID
+   claimcore-server verify --checkpoint /PRIVATE/checkpoint.json
+   claimcore-server status
+   ```
 
-Confirm restored cookies no longer authenticate before reopening traffic. Session invalidation alone
-does not protect bearer/CLI clients; the trusted prefix and durable expiry frontier are required too.
-Rebuild preserves erased identities and removal markers while keeping private contents erased. Preserve
-prior divergence for investigation, and review later erasures and affected copies: a pre-erasure backup
-can restore private content. Inspect restored status and turn maintenance off only after successful
-verification, then reopen traffic.
+4. If retained history or the trusted prefix differs, preserve both the target and the verification
+   findings, and recover the missing data. Rebuild mismatched projections from verified history
+   with the same maintenance handle. When disclosure coverage cannot be recovered, only the
+   witness owner may record a gap for the original transition. Use `WAL_UNAVAILABLE` or
+   `DISCONTINUOUS_HISTORY`. Review the required position and retain the recorded decision.
+   Record any required gap before admission seals the decision. An unavailable witness leaves the
+   transition fenced.
+
+   ```sql
+   BEGIN;
+   SET LOCAL synchronous_commit = local;
+   SELECT claimcore_witness.record_gap(:'installation'::uuid, :'transition'::uuid, :'reason');
+   COMMIT;
+   SELECT * FROM claimcore_witness.gaps WHERE installation = :'installation'::uuid;
+   SELECT transition, prior_generation, fence_origin, gap_reason, sealed_at
+   FROM claimcore_witness.transitions WHERE installation = :'installation'::uuid;
+   ```
+
+5. Restore admission verifies the retained ledger, projections, supplied trusted prefix and
+   independently admitted prefix. The target must contain the witnessed ledger hash at its
+   recorded sequence. The target's staged expiry cutoff must meet or exceed the witnessed cutoff.
+   A disclosure gap waives only disclosure WAL coverage. In a new ordinary restore the owner can
+   supply a newer trusted checkpoint that retains the witnessed prefix and cutoff. Admission
+   reserves a local target identity, then durably seals the verified WAL coverage or recorded
+   gap with that identity and the approved checkpoint and archive commitment at the witness.
+   A new gap or changed reason is refused once sealed. Retry a lost reservation or seal
+   acknowledgement on the original target with the same approval. The target then stages the trusted
+   expiry cutoff, invalidates restored sessions, and activates fresh encryption keys before
+   external activation. Local preparation stores the exact
+   approved checkpoint, archive evidence, witness fence and admission result together.
+   Retry uncertain preparation or activation with the same transition, target, checkpoint
+   and archive evidence. A changed approval is refused and the original preparation is
+   preserved. The witness binds a digest to the exact prepared target. Confirm the target
+   and witness record the same active generation, the trusted checkpoint verifies and
+   restored cookies no longer authenticate.
+   Review later erasures and affected copies before opening traffic.
+
+   If a sealed attempt's target is permanently lost before activation, keep ingress and SMTP
+   isolated. Preserve any surviving target and preparation evidence. As the witness owner,
+   compare the pending transition with the lost attempt and supply a fresh transition ID.
+
+   ```sql
+   BEGIN;
+   SET LOCAL synchronous_commit = local;
+   SELECT claimcore_witness.supersede_lost_target(
+       :'installation'::uuid, :'lost_transition'::uuid, :'replacement_transition'::uuid);
+   COMMIT;
+   SELECT generation, transition, disclosure_lsn, latest_dispatch, suppress_through
+   FROM claimcore_witness.installations WHERE installation = :'installation'::uuid;
+   SELECT transition, supersedes, fence_origin, superseded_at, sealed_at, sealed_target
+   FROM claimcore_witness.transitions WHERE installation = :'installation'::uuid;
+   ```
+
+   Check that the command returns true and the replacement is pending. If its acknowledgement
+   is lost, repeat the same IDs while that replacement is pending. If the lost target had
+   already activated, the command refuses. Confirm the active generation and begin the
+   ordinary restore procedure with a fresh transition from that generation.
+
+   Use the replacement ID as `CLAIMCORE_RESTORE_TRANSITION` and repeat target preparation
+   from step 2, with the trusted checkpoint and the replacement target's own history file.
+   The witness preserves the original WAL requirement, any recorded gap, the dispatch floor,
+   and the superseded transition, approval commitment and any preparation binding. Every
+   successor must use the exact originally approved checkpoint, including its operation expiry
+   cutoff, with the successor's own verified history. Keep the full trusted checkpoint, archive
+   evidence and any surviving local preparation separately. Restore the successor from recovery
+   material that predates target reservation. The successor must independently cover that WAL
+   or proceed under the original recorded gap. The coverage decision stays sealed against
+   new gap decisions. The superseded target cannot activate. Keep it isolated if recovered.
+
+6. Resume maintenance using the same handle, then reopen traffic. The owner command checks the
+   current business date with the witness before clearing the pause. If the date changes before the
+   command acquires the ledger head, the pause remains active and you can retry with the same handle.
+   The worker suppresses dispatch through the later of the reopen business date and the latest
+   date the witness previously admitted. Recovery can skip a digest. Mail relay acceptance can remain unknown.
+   Restore SMTP egress only after the old hosts have been drained and isolated.
+
+The witness prevents silent loss of acknowledged disclosure evidence under this procedure.
+It cannot recreate missing WAL. A recorded gap remains visible in the witness's `gaps` view after
+later restorations. The `activations` table records the accepted branch and suppression date.
+Enrollment and each activation retain the admitted ledger sequence, hash and expiry cutoff.
+Activation records refer to the preparations that hold those values, and each fence retains them
+for every successor. This checkpoint evidence covers the state admitted at enrollment or restore.
+For later business operations and expiry confirmations, retain current trusted checkpoints
+independently and preserve their WAL. An ordinary runtime change alone does not advance the
+witness's admitted checkpoint.
+The procedure relies on independent, authenticated witness storage, trusted operators and
+preserved recovery evidence. Restoring the witness along with the register defeats that
+independence. Protect witness backups separately and reconcile their coverage before resuming.
+
+`/health/ready` reports the local register, `/health/recovery` reports the independently admitted
+generation, and `/health/identity` reports discovery. An unavailable witness blocks actor
+operations and digest sends. Protected responses require a committed disclosure and an independent
+acknowledgement. The main connection is released before waiting for that acknowledgement.
+
+Budget reservations for random-IV durable encryption commit before taking the ledger head lock.
+Reservations are never refunded. Rotate the encryption generation when the budget is exhausted.
+Older generations decrypt retained data and same-format backups. Store backups and their necessary
+wrapping keys together under your recovery policy. Rewrapping the installation root and rotating
+the active encryption generation are separate owner operations. Rotating the active generation
+requires clients to start cursor traversals again.
 
 ## Monitoring
 
@@ -660,8 +786,10 @@ both work pools, session storage, readiness and housekeeping. Other processes an
 separate capacity planning. POOL_CAPACITY_INSUFFICIENT identifies inadequate configuration without
 exposing connection values.
 
-Cancellation does not free a permit while provider cleanup still runs. An overload response does not
-settle an earlier uncertain change. Check that change separately.
+Cancellation does not free a permit while provider cleanup still runs. Operation lookup releases
+read capacity after the snapshot and provider cleanup. Definitive confirmation uses the head-write
+queue while ingress stays bounded. An overload response leaves an earlier uncertain operation
+unsettled. Check that change separately.
 
 ### Attachment transfer budgets
 

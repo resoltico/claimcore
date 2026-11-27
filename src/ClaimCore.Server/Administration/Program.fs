@@ -36,6 +36,7 @@ let main arguments =
                     | Initialize _
                     | RecoverOwner _
                     | RotateMasterKey _
+                    | RotateEncryptionGeneration _
                     | Rebuild _
                     | RepairAttachment _
                     | AdmitRestoredInstallation _

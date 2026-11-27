@@ -12,6 +12,7 @@ module internal SessionTerminationQueries =
             let! result =
                 services.Store.Write
                     {
+                        WriteOperation.RequiresEncryption = false
                         CancellationToken = token
                         Work =
                             fun tx ->

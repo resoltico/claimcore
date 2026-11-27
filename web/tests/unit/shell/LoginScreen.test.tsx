@@ -6,7 +6,7 @@ import { expect, it } from "vitest";
 import { render } from "../../support/presentation-test-support";
 import { LoginScreen } from "../../../src/shell/LoginScreen";
 it("keeps preferences in the sign-in footer dialog and returns focus on close", async () => {
-  markSignedOut(window.sessionStorage);
+  markSignedOut();
   const user = userEvent.setup();
   render(<LoginScreen message={null} />);
   expect(screen.queryByRole("radio")).toBeNull();

@@ -57,6 +57,7 @@ let private configured action =
         File.SetUnixFileMode(keyFile, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         Environment.SetEnvironmentVariable("CLAIMCORE_DATA_KEY_FILE", keyFile)
         Environment.SetEnvironmentVariable("CLAIMCORE_CONNECTION_FILE", connection)
+        Environment.SetEnvironmentVariable("CLAIMCORE_WITNESS_CONNECTION_FILE", connection)
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_CERTIFICATE_PATH", certificate)
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_ORIGIN", "https://probe.localhost:5443")
         Environment.SetEnvironmentVariable("CLAIMCORE_WEB_KEY_RING_DIRECTORY", directory)
@@ -72,6 +73,7 @@ let private catalogue () =
         set
             [
                 "CLAIMCORE_CONNECTION_FILE"
+                "CLAIMCORE_WITNESS_CONNECTION_FILE"
                 "CLAIMCORE_DATA_KEY_FILE"
                 "CLAIMCORE_WEB_ORIGIN"
                 "CLAIMCORE_WEB_LISTEN_ADDRESS"

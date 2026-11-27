@@ -338,6 +338,7 @@ let private policyAdmission (database: PostgresFixture.Database) =
         let! write =
             (Runtime.store runtime).Write
                 {
+                    WriteOperation.RequiresEncryption = false
                     CancellationToken = token
                     Work =
                         fun _ ->

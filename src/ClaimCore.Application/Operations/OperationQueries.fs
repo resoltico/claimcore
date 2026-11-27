@@ -92,6 +92,7 @@ module internal OperationQueries =
             let! result =
                 services.Store.Write
                     {
+                        WriteOperation.RequiresEncryption = false
                         Work =
                             fun tx ->
                                 task {
@@ -155,6 +156,10 @@ module internal OperationQueries =
                 | Error failure -> QueryResults.failure failure, None
         }
 
+    type private LookupPhase<'disclosure> =
+        | Resolve of Outcome<OperationLookupResult> * 'disclosure option
+        | ConfirmAbsence of OperationId * 'disclosure option
+
     let get (services: ServiceContext) (request: OperationLookup) token =
         task {
             match OperationId.create request.OperationId with
@@ -181,48 +186,55 @@ module internal OperationQueries =
                             CancellationToken = token
                         }
 
-                let! captured =
-                    task {
-                        match result with
-                        | Error failure -> return QueryResults.failure failure, None
-                        | Ok(_, _, (Outcome.Rejected refusal, disclosure)) ->
-                            return Outcome.Rejected refusal, disclosure
-                        | Ok(_, _, (Outcome.Failed fault, disclosure)) ->
-                            return Outcome.Failed fault, disclosure
-                        | Ok(_, _, (Outcome.Succeeded(Some accepted), disclosure)) ->
-                            return Outcome.Succeeded accepted, disclosure
-                        | Ok(_, frontier, (Outcome.Succeeded None, disclosure)) when
-                            OperationLifetime.expiredBefore frontier operation
-                            ->
-                            return Outcome.Succeeded OperationLookupResult.NotAccepted, disclosure
-                        | Ok(observedAt, _, (Outcome.Succeeded None, disclosure)) ->
-                            if
-                                observedAt - OperationId.issuedAt operation >
-                                    OperationLifetime.window
-                            then
-                                // Confirmation publishes the monotonic cutoff before returning final absence.
-                                let! outcome, recorded = confirm services operation token
-                                return outcome, Option.orElse disclosure recorded
-                            else
-                                try
-                                    return
-                                        Outcome.Succeeded(
-                                            OperationLookupResult.Pending(
-                                                OperationLifetime.finalAt operation
-                                            )
-                                        ),
-                                        disclosure
-                                with :? ArgumentOutOfRangeException ->
-                                    // The supplied timestamp is beyond a representable deadline; it cannot enter today's window.
-                                    return
-                                        Outcome.Rejected(
-                                            Refusal.OperationIdOutOfWindow(
-                                                OperationId.issuedAt operation,
-                                                observedAt
-                                            )
-                                        ),
-                                        disclosure
-                    }
+                let phase =
+                    match result with
+                    | Error failure -> Resolve(QueryResults.failure failure, None)
+                    | Ok(_, _, (Outcome.Rejected refusal, disclosure)) ->
+                        Resolve(Outcome.Rejected refusal, disclosure)
+                    | Ok(_, _, (Outcome.Failed fault, disclosure)) ->
+                        Resolve(Outcome.Failed fault, disclosure)
+                    | Ok(_, _, (Outcome.Succeeded(Some accepted), disclosure)) ->
+                        Resolve(Outcome.Succeeded accepted, disclosure)
+                    | Ok(_, frontier, (Outcome.Succeeded None, disclosure)) when
+                        OperationLifetime.expiredBefore frontier operation
+                        ->
+                        Resolve(Outcome.Succeeded OperationLookupResult.NotAccepted, disclosure)
+                    | Ok(observedAt, _, (Outcome.Succeeded None, disclosure)) ->
+                        if
+                            observedAt - OperationId.issuedAt operation > OperationLifetime.window
+                        then
+                            ConfirmAbsence(operation, disclosure)
+                        else
+                            try
+                                Resolve(
+                                    Outcome.Succeeded(
+                                        OperationLookupResult.Pending(
+                                            OperationLifetime.finalAt operation
+                                        )
+                                    ),
+                                    disclosure
+                                )
+                            with :? ArgumentOutOfRangeException ->
+                                Resolve(
+                                    Outcome.Rejected(
+                                        Refusal.OperationIdOutOfWindow(
+                                            OperationId.issuedAt operation,
+                                            observedAt
+                                        )
+                                    ),
+                                    disclosure
+                                )
 
-                return! DisclosureReads.release services token captured
+                match phase with
+                | Resolve(outcome, disclosure) ->
+                    return! DisclosureReads.release services token (outcome, disclosure)
+                | ConfirmAbsence(operation, priorDisclosure) ->
+                    // The read scope is complete before confirmation acquires head-write capacity.
+                    let! outcome, disclosure = confirm services operation token
+
+                    return!
+                        DisclosureReads.release
+                            services
+                            token
+                            (outcome, Option.orElse priorDisclosure disclosure)
         }
