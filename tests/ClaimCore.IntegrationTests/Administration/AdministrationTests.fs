@@ -63,6 +63,7 @@ let private discovery binary connection keyFile =
                     "initialize"
                     "recover-owner"
                     "rotate-master-key"
+                    "rotate-encryption-generation"
                     "verify"
                     "rebuild"
                     "repair-attachment"
@@ -174,7 +175,16 @@ let private initialize binary connection keyFile =
         return ()
     }
 
-let private checkpoints binary connection keyFile =
+let private checkpoints binary connection keyFile configureRestore =
+    let invoke binary connection keyFile arguments expected =
+        AdministrationProcess.invokeWith
+            configureRestore
+            binary
+            connection
+            keyFile
+            arguments
+            expected
+
     task {
         let! head = invoke binary connection keyFile [ "head" ] 0
 
@@ -561,7 +571,7 @@ let private publishedCommands () =
                 try
                     // Check actual --no-build Release inputs before constructing a database fixture.
                     let! binary = publish published |> Async.AwaitTask
-                    let database = PostgresFixture.empty ()
+                    let database = PostgresFixture.emptyDurable ()
 
                     let! exercised =
                         async {
@@ -594,7 +604,38 @@ let private publishedCommands () =
                                 do! initialize binary connectionFile keyFile |> Async.AwaitTask
 
 
-                                do! checkpoints binary connectionFile keyFile |> Async.AwaitTask
+                                let witnessContainer = PostgresFixture.createWitness ()
+
+                                try
+                                    let! _, witnessConnection =
+                                        PostgresFixture.setupWitness
+                                            witnessContainer
+                                            CancellationToken.None
+                                        |> Async.AwaitTask
+
+                                    use witness = NpgsqlDataSource.Create witnessConnection
+
+                                    let witnessFile =
+                                        privateText directory "witness.connection" witnessConnection
+
+                                    let! transition =
+                                        AdministrationProcess.beginRestore source witness
+                                        |> Async.AwaitTask
+
+                                    let configure =
+                                        AdministrationProcess.configureRestore
+                                            witnessFile
+                                            transition
+
+                                    do!
+                                        checkpoints binary connectionFile keyFile configure
+                                        |> Async.AwaitTask
+                                finally
+                                    witnessContainer
+                                        .DisposeAsync()
+                                        .AsTask()
+                                        .GetAwaiter()
+                                        .GetResult()
 
                                 do!
                                     divergence binary connectionFile keyFile connection

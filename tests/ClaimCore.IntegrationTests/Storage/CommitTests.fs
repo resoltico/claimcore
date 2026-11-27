@@ -230,7 +230,8 @@ let private lostPeople drop landed (database: PostgresFixture.Database) =
                 nonNull settings.Host,
                 settings.Port,
                 drop,
-                terminate = terminate database
+                terminate = terminate database,
+                commitNumber = 2
             )
 
         settings.Password <- "synthetic-only"
@@ -377,7 +378,7 @@ let tests =
                                     settings.Port,
                                     drop,
                                     terminate = terminate database,
-                                    commitNumber = 1
+                                    commitNumber = 2
                                 )
 
                             settings.Password <- "synthetic-only"

@@ -331,7 +331,18 @@ let private assertErased (database: PostgresFixture.Database) =
     }
 
 let private dump database path =
-    DatabaseScenarios.exec database [| "pg_dump"; "-U"; "postgres"; "-d"; "postgres"; "-f"; path |]
+    DatabaseScenarios.exec
+        database
+        [|
+            "pg_dump"
+            "-U"
+            "postgres"
+            "-d"
+            "postgres"
+            "--exclude-schema=claimcore_restore_provider"
+            "-f"
+            path
+        |]
 
 let private restore database path =
     task {

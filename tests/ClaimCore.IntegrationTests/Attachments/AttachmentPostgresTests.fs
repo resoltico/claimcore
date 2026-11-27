@@ -1330,7 +1330,7 @@ let private encryptedRows (database: PostgresFixture.Database) =
         let otherCaseId = CaseId.value second.CaseId
         let otherBlobId = AttachmentId.value second.AttachmentId
 
-        Expect.equal blob.Length (bytes.Length + 28) "Blob framing includes one IV and one tag"
+        Expect.equal blob.Length (bytes.Length + 44) "Blob framing includes one IV and one tag"
         Expect.isFalse (has bytes blob) "The blob row keeps file content private"
         Expect.isFalse (keyed = digest) "The duplicate index has no ordinary SHA-256"
         Expect.isFalse (has fileName compartment) "The compartment keeps the filename private"
@@ -1340,7 +1340,7 @@ let private encryptedRows (database: PostgresFixture.Database) =
 
         Expect.equal
             compartment.Length
-            (clear.Length + 28)
+            (clear.Length + 44)
             "Compartment framing includes an IV and tag"
 
         Expect.isTrue

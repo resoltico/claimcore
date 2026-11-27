@@ -173,7 +173,23 @@ let private qualifiedAtBoundary (database: PostgresFixture.Database) =
                 token
 
         Expect.isFalse resumed.State.Active "The same fixture can introduce the negative control"
-        return trusted
+
+        let! _, cipher =
+            InstallationCheck.openRuntime database.RuntimeSource database.MasterKey token
+
+        return trusted, cipher
+    }
+
+let private restoredFixture (database: PostgresFixture.Database) cipher =
+    { database.Fixture with
+        Store =
+            LedgerStore(
+                database.RuntimeSource,
+                database.Installation,
+                cipher,
+                Transactions.timeouts
+            )
+            :> IStore
     }
 
 let private rejectedByAll
@@ -229,7 +245,10 @@ let private slots (database: PostgresFixture.Database) =
                 token
 
         accepted withdrawn |> ignore
-        let! trusted = qualifiedAtBoundary database
+        let! trusted, restoredCipher = qualifiedAtBoundary database
+        use cipher = restoredCipher
+        let fixture = restoredFixture database cipher
+        let actor = core fixture actor.Principal
         let! excess = acceptAttachment fixture actor 601 None [| 100uy |]
 
         do! rejectedByAll database trusted VerificationFinding.AttachmentReferences (Some excess) 2L
@@ -257,7 +276,10 @@ let private bytes (database: PostgresFixture.Database) =
                 token
 
         accepted withdrawn |> ignore
-        let! trusted = qualifiedAtBoundary database
+        let! trusted, restoredCipher = qualifiedAtBoundary database
+        use cipher = restoredCipher
+        let fixture = restoredFixture database cipher
+        let actor = core fixture actor.Principal
         let! excess = acceptAttachment fixture actor 613 None [| 1uy |]
 
         do! rejectedByAll database trusted VerificationFinding.AttachmentReferences (Some excess) 2L
@@ -266,8 +288,10 @@ let private bytes (database: PostgresFixture.Database) =
 let private inconsistentPreview (database: PostgresFixture.Database) =
     task {
         let! actor = Attachments.setup database
-        let! trusted = qualifiedAtBoundary database
-        let fixture = database.Fixture
+        let! trusted, restoredCipher = qualifiedAtBoundary database
+        use cipher = restoredCipher
+        let fixture = restoredFixture database cipher
+        let actor = core fixture actor.Principal
 
         let! added =
             acceptAttachment fixture actor 620 (Some AttachmentPreview.Png) [| 1uy |]
@@ -302,7 +326,8 @@ let private malformedErasedDigest (database: PostgresFixture.Database) =
         let added = accepted added
         let! erased = Service.executeSubmission actor (Attachments.erase fixture 701) token
         accepted erased |> ignore
-        let! trusted = qualifiedAtBoundary database
+        let! trusted, restoredCipher = qualifiedAtBoundary database
+        use _cipher = restoredCipher
 
         // A trusted corruption fixture disables the structural pairing constraint, then
         // separately demonstrates the immutable-row guard and the native verifier.

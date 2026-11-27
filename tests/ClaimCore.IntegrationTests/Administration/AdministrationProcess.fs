@@ -1,6 +1,10 @@
 module internal ClaimCore.IntegrationTests.AdministrationProcess
 
 open ClaimCore.CommandLine
+open ClaimCore.Application.Storage
+open ClaimCore.TestSupport
+open System.Threading
+open Npgsql
 
 open System
 open System.IO
@@ -160,10 +164,11 @@ let configure (config: ProcessStartInfo) connectionFile dataKeyFile =
     config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connectionFile
     config.Environment["CLAIMCORE_DATA_KEY_FILE"] <- dataKeyFile
 
-let invoke binary connectionFile dataKeyFile arguments expected =
+let invokeWith configureExtra binary connectionFile dataKeyFile arguments expected =
     task {
         let config = start (binary :: arguments)
         configure config connectionFile dataKeyFile
+        configureExtra config
         let! code, output, errors = execute config
 
         Expect.equal
@@ -189,8 +194,71 @@ let invoke binary connectionFile dataKeyFile arguments expected =
         return document.RootElement.Clone()
     }
 
+let invoke binary connectionFile dataKeyFile arguments expected =
+    invokeWith ignore binary connectionFile dataKeyFile arguments expected
+
 let privateText directory name (value: string) =
     let path = Path.Combine(directory, name)
     File.WriteAllText(path, value)
     File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
     path
+
+
+let beginRestore (source: NpgsqlDataSource) (witness: NpgsqlDataSource) =
+    task {
+        let token = CancellationToken.None
+        let transition = Guid.NewGuid()
+
+        let! installation, primary =
+            DatabaseSession.read source token (fun connection ->
+                task {
+                    let! installation = Baseline.require connection token
+                    let! primary = WitnessPrimary.read connection token
+                    return installation.InstallationId, primary
+                })
+
+        let! rows =
+            DatabaseSession.read witness token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT EXISTS(SELECT FROM claimcore_witness.installations WHERE installation=$1)"
+                    [| box installation |]
+                    token)
+
+        let enrolled = DatabaseSession.value<bool> 0 rows.Head
+
+        if not enrolled then
+            let! _ = WitnessEnrollment.enroll source witness installation token
+            ()
+
+        use! connection = witness.OpenConnectionAsync token
+
+        let! fenced =
+            DatabaseSession.rows
+                connection
+                "SELECT claimcore_witness.fence($1,$2,$3)"
+                [| box installation; box primary.Generation; box transition |]
+                token
+
+        Expect.isTrue
+            (DatabaseSession.value<bool> 0 fenced.Head)
+            "The owner fenced the current generation"
+
+        if enrolled then
+            let! gap =
+                DatabaseSession.rows
+                    connection
+                    "SELECT claimcore_witness.record_gap($1,$2,'DISCONTINUOUS_HISTORY')"
+                    [| box installation; box transition |]
+                    token
+
+            Expect.isTrue
+                (DatabaseSession.value<bool> 0 gap.Head)
+                "The isolated fixture has no archive proof for its second activation"
+
+        return transition
+    }
+
+let configureRestore witnessFile (transition: Guid) (config: ProcessStartInfo) =
+    config.Environment["CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE"] <- witnessFile
+    config.Environment["CLAIMCORE_RESTORE_TRANSITION"] <- transition.ToString("D")

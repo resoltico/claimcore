@@ -12,7 +12,12 @@ services:
     command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-postgres/server.pem, -c, ssl_key_file=/etc/claimcore-postgres/server.key, -c, hba_file=/etc/claimcore-postgres-hba.conf]
     volumes:
       - postgres-data:/var/lib/postgresql
-      - ../../db/restore-provider.sql:/etc/claimcore-restore-provider.sql:ro
+      - type: bind
+        source: ../../db/restore-provider.sql
+        target: /etc/claimcore-restore-provider.sql
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR:?}/postgres
         target: /etc/claimcore-postgres

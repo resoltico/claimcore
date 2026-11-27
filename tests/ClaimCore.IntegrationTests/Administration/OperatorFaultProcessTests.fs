@@ -48,10 +48,28 @@ let private publishedFaults () =
             let connection =
                 privateText "connection" (PostgresFixture.ownerConnectionString database)
 
+            let restoreTransition = Guid.NewGuid()
+
+            let distinctEndpoint =
+                NpgsqlConnectionStringBuilder(
+                    PostgresFixture.ownerConnectionString database,
+                    Port = 1
+                )
+
+            let witnessFile =
+                privateText "unused-witness.connection" distinctEndpoint.ConnectionString
+
             let fault connectionFile arguments expected exit =
+                let configure =
+                    if List.tryHead arguments = Some "admit-restored-installation" then
+                        AdministrationProcess.configureRestore witnessFile restoreTransition
+                    else
+                        ignore
+
                 async {
                     let! reply =
-                        AdministrationProcess.invoke
+                        AdministrationProcess.invokeWith
+                            configure
                             binary
                             connectionFile
                             database.DataKeyFile

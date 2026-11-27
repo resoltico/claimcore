@@ -155,7 +155,7 @@ let internal exec (database: PostgresFixture.Database) arguments =
         Expect.equal
             result.ExitCode
             (Nullable 0L)
-            "Synthetic database backup/restore command succeeds"
+            ("Synthetic database backup/restore command succeeds: " + result.Stderr)
     }
 
 let internal initialOwner (database: PostgresFixture.Database) : InitialOwner =
@@ -255,7 +255,7 @@ let internal initializationRollback (database: PostgresFixture.Database) =
         let! _ =
             DatabaseSession.execute
                 bootstrap
-                "REVOKE CONNECT ON DATABASE postgres FROM claimcore_runtime; DROP ROLE claimcore_runtime"
+                "DROP OWNED BY claimcore_runtime; DROP ROLE claimcore_runtime"
                 [||]
                 token
 

@@ -62,6 +62,71 @@ type internal Database =
         Installation: Installation
     }
 
+let internal reserveCipherFor (database: Database) operations token =
+    task {
+        let allowance = InstallationCipher.operationAllowance * int64 operations
+
+        match!
+            EncryptionBudget.reserve
+                database.RuntimeSource
+                database.Cipher.Generation
+                allowance
+                token
+        with
+        | Ok true -> return database.Cipher.ForEncryption allowance
+        | result -> return failwithf "Fixture encryption reservation was refused: %A" result
+    }
+
+let internal reserveCipher database token = reserveCipherFor database 1 token
+
+let internal createWitness () =
+    let image, arguments = PostgresBaseline.configuration ()
+
+    Testcontainers.PostgreSql
+        .PostgreSqlBuilder(image)
+        .WithEnvironment("POSTGRES_INITDB_ARGS", arguments)
+        .WithTmpfsMount("/var/lib/postgresql")
+        .WithCommand("-c", "fsync=on")
+        .WithLabel("claimcore.test", "independent-disclosure-witness")
+        .Build()
+
+let internal setupWitness (container: PostgreSqlContainer) token =
+    task {
+        do! container.StartAsync token
+        let ownerPassword = Guid.NewGuid().ToString("N")
+        let runtimePassword = Guid.NewGuid().ToString("N")
+        let original = container.GetConnectionString()
+        use source = NpgsqlDataSource.Create original
+        use! connection = source.OpenConnectionAsync token
+
+        let! _ =
+            DatabaseSession.execute
+                connection
+                $"""CREATE ROLE claimcore_witness_owner LOGIN PASSWORD '{ownerPassword}';
+                    CREATE ROLE claimcore_witness_runtime LOGIN NOINHERIT PASSWORD '{runtimePassword}';
+                    GRANT EXECUTE ON FUNCTION pg_catalog.pg_control_system()
+                        TO claimcore_witness_owner, claimcore_witness_runtime;
+                    ALTER DATABASE postgres OWNER TO claimcore_witness_owner;
+                    REVOKE ALL ON DATABASE postgres FROM PUBLIC;
+                    GRANT CONNECT ON DATABASE postgres TO claimcore_witness_runtime;
+                    SET ROLE claimcore_witness_owner;"""
+                [||]
+                token
+
+        let schema =
+            IO.File.ReadAllText(IO.Path.Combine(RepositoryRoot.find (), "db", "witness.sql"))
+
+        let! _ = DatabaseSession.execute connection schema [||] token
+
+        let connectionString role password =
+            NpgsqlConnectionStringBuilder(original, Username = role, Password = password)
+                .ConnectionString
+
+        return
+            connectionString "claimcore_witness_runtime" runtimePassword,
+            connectionString "claimcore_witness_owner" ownerPassword
+    }
+
 let private withKeyBytes action =
     let bytes = RandomNumberGenerator.GetBytes MasterKey.Size
 
@@ -165,6 +230,11 @@ let private fixtureContainer (configure: PostgreSqlBuilder -> PostgreSqlBuilder)
     builder().WithTmpfsMount(dataRoot) |> configure |> _.Build()
 
 let internal empty () = fixtureContainer (fun value -> value)
+
+let private durable (builder: PostgreSqlBuilder) =
+    builder.WithCommand("-c", "fsync=on", "-c", "synchronous_commit=on")
+
+let internal emptyDurable () = fixtureContainer durable
 
 let private createSeed () =
     task {
@@ -423,6 +493,9 @@ let internal createForPool principal capacity =
     createInZone true defaults principal "Etc/UTC" (Some capacity) None
 
 let internal create () = createFor owner
+
+let internal createDurable () =
+    createInZone false durable owner "Etc/UTC" None None
 
 let internal createWithReferencePolicy policy =
     createInZone true defaults owner "Etc/UTC" None (Some policy)

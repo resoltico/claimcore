@@ -26,7 +26,7 @@ let internal genesis fixture =
         let! result =
             fixture.Store.Write(
                 {
-                    WriteOperation.RequiresEncryption = false
+                    WriteOperation.RequiresEncryption = true
                     WriteOperation.Work =
                         (fun tx ->
                             task {

@@ -29,7 +29,8 @@ let private kind (value: JsonElement) =
 
 let private commandPath () =
     async {
-        let! database = PostgresFixture.create () |> Async.AwaitTask
+        let! database = PostgresFixture.createDurable () |> Async.AwaitTask
+        let witnessContainer = PostgresFixture.createWitness ()
         let directory = PrivateTestPaths.newPrivateDirectory "claimcore-checkpoint-command-"
         let mutable completed = false
 
@@ -59,8 +60,22 @@ let private commandPath () =
                     (Path.Combine(directory, "published"))
                 |> Async.AwaitTask
 
+            let! _, witnessConnection =
+                PostgresFixture.setupWitness witnessContainer CancellationToken.None
+                |> Async.AwaitTask
+
+            use witness = Npgsql.NpgsqlDataSource.Create witnessConnection
+
+            let witnessFile =
+                AdministrationProcess.privateText directory "witness.connection" witnessConnection
+
+            let! firstTransition =
+                AdministrationProcess.beginRestore database.OwnerSource witness
+                |> Async.AwaitTask
+
             let invoke arguments exit =
-                AdministrationProcess.invoke
+                AdministrationProcess.invokeWith
+                    (AdministrationProcess.configureRestore witnessFile firstTransition)
                     binary
                     connection
                     database.DataKeyFile
@@ -263,6 +278,10 @@ let private commandPath () =
                     directory
                     "later.json"
                     (Encoding.UTF8.GetString(CheckpointRecord.encode later))
+
+            let! nextTransition =
+                AdministrationProcess.beginRestore database.OwnerSource witness
+                |> Async.AwaitTask
             // The head barrier prevents successful completion before the parent closes stdout.
             use blocker = database.OwnerSource.OpenConnection()
             use gate = blocker.BeginTransaction()
@@ -297,6 +316,7 @@ let private commandPath () =
                     ]
 
             AdministrationProcess.configure config connection database.DataKeyFile
+            AdministrationProcess.configureRestore witnessFile nextTransition config
 
             use child =
                 Process.Start(config)
@@ -362,6 +382,7 @@ let private commandPath () =
 
             completed <- true
         finally
+            witnessContainer.DisposeAsync().AsTask().GetAwaiter().GetResult()
             database.Fixture.Dispose()
 
             if completed then

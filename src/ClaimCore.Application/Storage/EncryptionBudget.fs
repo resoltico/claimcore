@@ -37,7 +37,11 @@ module internal EncryptionBudget =
         task {
             let! active, _ =
                 DatabaseSession.read source token (fun connection ->
-                    Baseline.keyGenerations connection token)
+                    task {
+                        do! OwnerAdmission.require connection token
+                        let! _ = Baseline.require connection token
+                        return! Baseline.keyGenerations connection token
+                    })
 
             match! reserve source active count token with
             | Ok true -> return active

@@ -318,54 +318,6 @@ let private history (database: PostgresFixture.Database) port (primary: WitnessP
         return Some(filename, result.Stdout)
     }
 
-let private createWitness () =
-    let image, arguments = PostgresBaseline.configuration ()
-
-    Testcontainers.PostgreSql
-        .PostgreSqlBuilder(image)
-        .WithEnvironment("POSTGRES_INITDB_ARGS", arguments)
-        .WithTmpfsMount("/var/lib/postgresql")
-        .WithCommand("-c", "fsync=on")
-        .WithLabel("claimcore.test", "independent-disclosure-witness")
-        .Build()
-
-let private setupWitness (container: Testcontainers.PostgreSql.PostgreSqlContainer) =
-    task {
-        do! container.StartAsync token
-        let ownerPassword = Guid.NewGuid().ToString("N")
-        let runtimePassword = Guid.NewGuid().ToString("N")
-        let original = container.GetConnectionString()
-        use source = NpgsqlDataSource.Create original
-        use! connection = source.OpenConnectionAsync token
-
-        let! _ =
-            DatabaseSession.execute
-                connection
-                $"""CREATE ROLE claimcore_witness_owner LOGIN PASSWORD '{ownerPassword}';
-                    CREATE ROLE claimcore_witness_runtime LOGIN NOINHERIT PASSWORD '{runtimePassword}';
-                    GRANT EXECUTE ON FUNCTION pg_catalog.pg_control_system()
-                        TO claimcore_witness_owner, claimcore_witness_runtime;
-                    ALTER DATABASE postgres OWNER TO claimcore_witness_owner;
-                    REVOKE ALL ON DATABASE postgres FROM PUBLIC;
-                    GRANT CONNECT ON DATABASE postgres TO claimcore_witness_runtime;
-                    SET ROLE claimcore_witness_owner;"""
-                [||]
-                token
-
-        let schema =
-            IO.File.ReadAllText(IO.Path.Combine(RepositoryRoot.find (), "db", "witness.sql"))
-
-        let! _ = DatabaseSession.execute connection schema [||] token
-
-        let connectionString role password =
-            NpgsqlConnectionStringBuilder(original, Username = role, Password = password)
-                .ConnectionString
-
-        return
-            connectionString "claimcore_witness_runtime" runtimePassword,
-            connectionString "claimcore_witness_owner" ownerPassword
-    }
-
 let private loseCommit label (connectionString: string) number operation =
     task {
         let settings = NpgsqlConnectionStringBuilder connectionString
@@ -1047,7 +999,9 @@ let private qualifyWitnessedRestore
     (witnessDatabase: Testcontainers.PostgreSql.PostgreSqlContainer)
     =
     task {
-        let! runtimeConnection, witnessConnection = setupWitness witnessDatabase
+        let! runtimeConnection, witnessConnection =
+            PostgresFixture.setupWitness witnessDatabase token
+
         use witnessOwner = NpgsqlDataSource.Create witnessConnection
         let installation = database.Installation
         let! actor = Attachments.setup database
@@ -2412,10 +2366,10 @@ let witnessSupersessionRaces =
     testCaseAsync
         "witness owner supersession and activation serialize in both orders"
         (async {
-            let witness = createWitness ()
+            let witness = PostgresFixture.createWitness ()
 
             try
-                let! _, owner = setupWitness witness |> Async.AwaitTask
+                let! _, owner = PostgresFixture.setupWitness witness token |> Async.AwaitTask
                 use source = NpgsqlDataSource.Create owner
                 do! supersessionRace source true |> Async.AwaitTask
                 do! supersessionRace source false |> Async.AwaitTask
@@ -2428,10 +2382,10 @@ let witnessDecisionRaces =
     testCaseAsync
         "witness decision seal and owner gap serialize in both orders"
         (async {
-            let witness = createWitness ()
+            let witness = PostgresFixture.createWitness ()
 
             try
-                let! _, owner = setupWitness witness |> Async.AwaitTask
+                let! _, owner = PostgresFixture.setupWitness witness token |> Async.AwaitTask
                 use source = NpgsqlDataSource.Create owner
                 do! decisionRace source true |> Async.AwaitTask
                 do! decisionRace source false |> Async.AwaitTask
@@ -2445,7 +2399,7 @@ let witnessTests =
         "independent witness fences an earlier physical branch and preserves exact restore approvals and gaps through process death"
         (async {
             let! database = PostgresFixture.createArchived () |> Async.AwaitTask
-            let witness = createWitness ()
+            let witness = PostgresFixture.createWitness ()
 
             try
                 do! qualifyWitnessedRestore database witness |> Async.AwaitTask
