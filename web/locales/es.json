@@ -775,5 +775,50 @@
     "text": "Restablecer las preferencias guardadas",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "Reanudar cierre sin confirmar",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "Iniciar otro cierre de sesiones",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "Consulta el resultado guardado de la solicitud anterior. Las sesiones posteriores seguirán abiertas.",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "Una solicitud nueva puede cerrar sesiones más recientes. Los identificadores anteriores se conservan mientras se puedan recuperar sus resultados.",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "La solicitud anterior está fuera del plazo de recuperación actual. Su identificador guardado se conserva.",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "La solicitud anterior ha caducado. Su resultado sigue sin confirmarse.",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "Hay una solicitud guardada de otra cuenta, instalación o destino. Vuelve a esa selección para reanudarla.",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "Olvidar solicitud caducada",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "No se pudieron leer algunas solicitudes guardadas de cierre de sesiones.",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

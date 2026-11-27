@@ -75,7 +75,7 @@ const sessionView = (state: SessionState) => (
     value={{
       state,
       logout: () => Promise.resolve(),
-      endedBrowserSessions: vi.fn(),
+      refreshAfterTermination: vi.fn(),
       refresh: () => Promise.resolve(),
     }}
   >

@@ -47,6 +47,7 @@ module internal ReplyText =
                 let render =
                     function
                     | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded(_, document))
+                    | RepresentationReply.Human(HumanSessionTerminationResult.RetirementConfirmed document)
                     | RepresentationReply.Human(HumanSessionTerminationResult.OutcomeUnknown document) ->
                         ViewText.renderDocument details rendering document
                     | RepresentationReply.Human(HumanSessionTerminationResult.Rejected rejection) ->

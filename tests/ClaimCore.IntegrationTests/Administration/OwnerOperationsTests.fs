@@ -266,7 +266,8 @@ let private actionState (database: PostgresFixture.Database) =
         let! session =
             sessions.Create(
                 SessionResults.principal,
-                [| 1uy |],
+                None,
+                (fun _ -> [| 1uy |]),
                 None,
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
@@ -358,7 +359,8 @@ let private pruning (database: PostgresFixture.Database) =
         let! live =
             sessions.Create(
                 SessionResults.principal,
-                [| 1uy |],
+                None,
+                (fun _ -> [| 1uy |]),
                 None,
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
@@ -368,7 +370,7 @@ let private pruning (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,7) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key,recovery_generation) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),2,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64),(SELECT generation FROM claimcore.recovery_generation) FROM generate_series(1,7) n"
                 [||]
 
         let! before = inspectSchemaStatus database
@@ -531,7 +533,8 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
         let! live =
             sessions.Create(
                 SessionResults.principal,
-                [| 1uy |],
+                None,
+                (fun _ -> [| 1uy |]),
                 None,
                 TimeSpan.FromMinutes 30.,
                 TimeSpan.FromHours 8.,
@@ -541,7 +544,7 @@ let private pruneConcurrency (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64) FROM generate_series(1,8) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key,recovery_generation) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),2,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64),(SELECT generation FROM claimcore.recovery_generation) FROM generate_series(1,8) n"
                 [||]
 
         let first =

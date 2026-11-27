@@ -79,7 +79,8 @@ CREATE TABLE claimcore.recovery_generation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
     generation uuid NOT NULL UNIQUE CHECK (generation <> '00000000-0000-0000-0000-000000000000'),
     primary_id uuid NOT NULL UNIQUE CHECK (primary_id <> '00000000-0000-0000-0000-000000000000'),
-    reopen_pending boolean NOT NULL DEFAULT false
+    reopen_pending boolean NOT NULL DEFAULT false,
+    credential_floor timestamptz CHECK (credential_floor IS NULL OR isfinite(credential_floor))
 );
 INSERT INTO claimcore.recovery_generation(generation,primary_id) VALUES (gen_random_uuid(),gen_random_uuid());
 
@@ -102,6 +103,7 @@ CREATE TABLE claimcore.restore_preparations (
     approved_checkpoint bytea NOT NULL CHECK (octet_length(approved_checkpoint) BETWEEN 1 AND 4096),
     admitted_checkpoint bytea NOT NULL CHECK (octet_length(admitted_checkpoint) BETWEEN 1 AND 4096),
     invalidated_sessions bigint NOT NULL CHECK (invalidated_sessions>=0),
+    credential_floor timestamptz NOT NULL CHECK (isfinite(credential_floor)),
     publication_generation bigint NOT NULL CHECK (publication_generation>0),
     FOREIGN KEY (generation,primary_id) REFERENCES claimcore.restore_targets(generation,primary_id)
 );
@@ -762,12 +764,22 @@ CREATE TABLE claimcore.actors (
     issuer text NOT NULL CHECK (octet_length(issuer) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(issuer)),
     subject text NOT NULL CHECK (octet_length(subject) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(subject)),
     enabled boolean NOT NULL,
+    credential_generation bigint NOT NULL CHECK (credential_generation BETWEEN 1 AND 9007199254740991),
+    credential_cutoff timestamptz NOT NULL CHECK (isfinite(credential_cutoff)),
     display_name text CHECK (display_name IS NULL OR (octet_length(display_name) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(display_name))),
     contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
     display_name_search text CHECK (display_name_search IS NULL OR (octet_length(display_name_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(display_name_search))),
     contact_search text CHECK (contact_search IS NULL OR (octet_length(contact_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(contact_search))),
     digest_email text CHECK (digest_email IS NULL OR (octet_length(digest_email) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(digest_email))),
     CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR (contact IS NULL AND digest_email IS NULL)) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL)))
+);
+
+-- A post-commit publication bounds provider freshness, even when a person write
+-- waited for locks or its acknowledgement was lost. This evidence survives projection rebuilds.
+CREATE TABLE claimcore.credential_publications (
+    actor_id uuid PRIMARY KEY REFERENCES claimcore.ledger(operation_id),
+    generation bigint NOT NULL REFERENCES claimcore.ledger(sequence),
+    confirmed_at timestamptz NOT NULL CHECK (isfinite(confirmed_at))
 );
 
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
@@ -1034,11 +1046,47 @@ CREATE INDEX grants_case ON claimcore.grants (case_id) WHERE case_id IS NOT NULL
 -- grants on the one case a request targets, never the actor's whole grant set.
 CREATE INDEX grants_actor_case ON claimcore.grants (actor_id, case_id);
 
+CREATE TABLE claimcore.browser_flow_order (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    position bigint NOT NULL CHECK (position >= 0),
+    termination_floor timestamptz CHECK (termination_floor IS NULL OR isfinite(termination_floor))
+);
+INSERT INTO claimcore.browser_flow_order(position) VALUES (0);
+
+CREATE TABLE claimcore.browser_flows (
+    flow_id uuid PRIMARY KEY,
+    position bigint NOT NULL UNIQUE CHECK (position > 0),
+    expires_at timestamptz NOT NULL CHECK (isfinite(expires_at))
+);
+CREATE INDEX browser_flows_expiry ON claimcore.browser_flows(expires_at);
+
+CREATE TABLE claimcore.browser_session_cuts (
+    principal_key text COLLATE "C" PRIMARY KEY CHECK (principal_key ~ '^[0-9a-f]{64}$'),
+    position bigint NOT NULL CHECK (position > 0),
+    expires_at timestamptz NOT NULL CHECK (isfinite(expires_at))
+);
+CREATE INDEX browser_session_cuts_expiry ON claimcore.browser_session_cuts(expires_at);
+
+CREATE TABLE claimcore.session_termination_results (
+    request_id uuid PRIMARY KEY,
+    requested_at timestamptz NOT NULL CHECK (isfinite(requested_at)),
+    requester text COLLATE "C" NOT NULL,
+    intent text COLLATE "C" NOT NULL,
+    selected text COLLATE "C" NOT NULL,
+    removed bigint NOT NULL CHECK (removed >= 0),
+    self boolean NOT NULL
+);
+CREATE INDEX session_termination_expiry ON claimcore.session_termination_results(requested_at);
+
 CREATE TABLE claimcore.sessions (
     session_key text PRIMARY KEY CHECK (session_key COLLATE "C" ~ '^[0-9a-f]{64}$'),
     principal_key text COLLATE "C" NOT NULL CHECK (principal_key ~ '^[0-9a-f]{64}$'),
     protected_ticket bytea NOT NULL CHECK (octet_length(protected_ticket) BETWEEN 1 AND 1048576),
-    payload_version integer NOT NULL CHECK (payload_version = 1),
+    payload_version integer NOT NULL CHECK (payload_version = 2),
+    recovery_generation uuid NOT NULL,
+    credential_actor uuid,
+    credential_generation bigint CHECK (credential_generation BETWEEN 1 AND 9007199254740991),
+    CHECK ((credential_actor IS NULL)=(credential_generation IS NULL)),
     created_at timestamptz NOT NULL CHECK (isfinite(created_at)),
     absolute_expiry timestamptz NOT NULL CHECK (isfinite(absolute_expiry)),
     last_activity timestamptz NOT NULL CHECK (isfinite(last_activity)),
@@ -1202,6 +1250,11 @@ GRANT INSERT(actor_id,kind,case_id,attachment_id,outcome,export_query,export_sel
 GRANT EXECUTE ON FUNCTION claimcore.read_disclosure_trail(uuid,uuid,text,timestamptz,timestamptz,timestamptz,bigint,integer) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.prune_disclosure_trail(timestamptz,integer) TO claimcore_runtime;
 
+GRANT SELECT, INSERT, UPDATE(generation,confirmed_at) ON claimcore.credential_publications TO claimcore_runtime;
+GRANT SELECT, UPDATE(position,termination_floor) ON claimcore.browser_flow_order TO claimcore_runtime;
+GRANT SELECT, INSERT, DELETE ON claimcore.browser_flows TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.browser_session_cuts TO claimcore_runtime;
+GRANT SELECT, INSERT, DELETE ON claimcore.session_termination_results TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.sessions TO claimcore_runtime;
 -- Session identity and original deadlines are immutable for runtime writers.
 GRANT UPDATE(protected_ticket,last_activity) ON claimcore.sessions TO claimcore_runtime;

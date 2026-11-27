@@ -27,6 +27,30 @@ module RequestCodecs =
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value
 
+    let operationId =
+        uuid
+        |> restrict
+            (Schema.String(
+                Some
+                    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                Some "uuid",
+                Some 36,
+                Some 36,
+                None
+            ))
+            (fun path value ->
+                uuid.Read path value
+                |> Result.bind (fun id ->
+                    if OperationId.create id |> Option.isSome then
+                        Ok()
+                    else
+                        Error
+                            {
+                                Path = path
+                                Reason = "Expected an RFC UUIDv7."
+                            }))
+        |> map (OperationId.create >> Option.get) OperationId.value
+
     let caseSelector =
         Codec.tagged
             RequestSchemas.CaseSelector
@@ -160,13 +184,43 @@ module RequestCodecs =
             text
         |> finishRead RequestSchemas.AccessRequestDismissRequest
 
+    let private terminationIdentity get fields =
+        fields
+        |> field (TaskInputId.token (TaskInputId.Target InputTarget.OperationId)) get operationId
+
+    let terminateOwnSessionsRequest =
+        (record (fun operation settle retirement ->
+            {
+                OwnSessionTerminationRequest.OperationId = operation
+                SettleOnly = settle
+                ConfirmRetirement = retirement
+            })
+        : Fields<OwnSessionTerminationRequest, _>)
+        |> terminationIdentity _.OperationId
+        |> optionalField (TaskInputId.token TaskInputId.SettleOnly) _.SettleOnly boolean
+        |> optionalField
+            (TaskInputId.token TaskInputId.ConfirmRetirement)
+            _.ConfirmRetirement
+            boolean
+        |> build
+        |> named "OwnSessionTerminationRequest"
+
     let terminatePersonSessionsRequest =
-        (record (fun actor ->
+        (record (fun actor operation settle retirement ->
             {
                 PersonSessionTerminationRequest.ActorId = actor
+                OperationId = operation
+                SettleOnly = settle
+                ConfirmRetirement = retirement
             })
         : Fields<PersonSessionTerminationRequest, _>)
         |> field (TaskInputId.token TaskInputId.ActorId) _.ActorId uuid
+        |> terminationIdentity _.OperationId
+        |> optionalField (TaskInputId.token TaskInputId.SettleOnly) _.SettleOnly boolean
+        |> optionalField
+            (TaskInputId.token TaskInputId.ConfirmRetirement)
+            _.ConfirmRetirement
+            boolean
         |> build
         |> named "PersonSessionTerminationRequest"
 

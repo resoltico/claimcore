@@ -139,7 +139,7 @@ let internal lifecycle fixture =
         let target = principal "admitted-person"
 
         let! pending =
-            Service.context
+            Service.requestAccess
                 (core fixture target
                  |> Service.withClaims (
                      RequesterClaims.admit
@@ -152,9 +152,7 @@ let internal lifecycle fixture =
                 token
 
         match pending with
-        | Outcome.Succeeded {
-                                Requester = RequesterState.NotRegistered _
-                            } -> ()
+        | Outcome.Succeeded() -> ()
         | other -> failtestf "Expected access request: %A" other
 
         let grants =
@@ -602,7 +600,10 @@ let internal atomicWrites fixture =
         let! owner = bootstrap fixture
         let target = principal "rollback-admission"
         let hints = RequesterClaims.admit (Some "Original waiting hint") None None false
-        let! _ = Service.context (core fixture target |> Service.withClaims hints) () token
+
+        let! _ =
+            Service.requestAccess (core fixture target |> Service.withClaims hints) () token
+
         let! pending = Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
 
         let original =

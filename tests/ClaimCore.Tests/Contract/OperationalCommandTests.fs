@@ -131,13 +131,26 @@ let tests =
                         EndpointEffect.OperationalWrite
                         "No command enters ledger replay"
 
-                    Expect.isFalse
+                    Expect.equal
                         (Api.requiresInstallation route)
-                        "Session/dismissal commands have no mandatory ledger installation binding")
+                        (route.Token <> "people.requests.dismiss"
+                         && route.Token <> "people.requests.submit")
+                        "Only the session commands have mandatory installation binding")
             testCase
                 "session command argv routes through declared grammar without an operation identity"
                 (fun () ->
-                    let own = [ "session"; "terminate-own"; "--dry-run" ]
+                    let request = "00000000-0000-7000-8000-000000000001"
+                    let installation = "10000000-0000-4000-8000-000000000002"
+
+                    let own =
+                        [
+                            "session"
+                            "terminate-own"
+                            request
+                            "--installation-id"
+                            installation
+                            "--dry-run"
+                        ]
 
                     match CliInvocations.admit own with
                     | Ok(CliInvocation.Verb words) ->
@@ -169,6 +182,56 @@ let tests =
                         (Frames.operationId prepared.Invocation)
                         "No fake operation identity"
 
+                    Expect.equal
+                        (Frames.admit prepared.Bytes |> Result.map Frames.installationId)
+                        (Ok(Some(Guid.Parse installation)))
+                        "Prepared frames round-trip the original binding"
+
+                    Expect.isError
+                        (Grammar.prepare
+                            (fun () -> request)
+                            [ "session"; "terminate-own"; request ])
+                        "A previously supplied request ID cannot acquire a new installation"
+
+                    let recovery =
+                        Frames.terminationRecovery prepared.Invocation
+                        |> Frames.encodeInvocation
+                        |> Frames.admit
+                        |> Result.toOption
+                        |> Option.get
+
+                    let original =
+                        Frames.value Api.terminateOwnSessions prepared.Invocation |> Option.get
+
+                    Expect.equal
+                        (Frames.value Api.terminateOwnSessions recovery)
+                        (Some { original with SettleOnly = Some true })
+                        "Recovery keeps the original UUID and never starts a new cut"
+
+                    Expect.equal
+                        (Frames.installationId recovery)
+                        (Some(Guid.Parse installation))
+                        "Recovery keeps the original installation"
+
+                    Expect.isError
+                        (Frames.bindInstallation
+                            (Guid.Parse "10000000-0000-4000-8000-000000000003")
+                            recovery)
+                        "Recovery cannot be rebound"
+
+                    let fresh =
+                        Grammar.prepare (fun () -> request) [ "session"; "terminate-own" ]
+                        |> Result.toOption
+                        |> Option.get
+
+                    Expect.isNone
+                        (Frames.installationId fresh.Invocation)
+                        "Online preparation discovers fresh scope"
+
+                    Expect.isError
+                        (Frames.admit fresh.Bytes)
+                        "The raw delivery boundary refuses a missing installation"
+
                     let person =
                         Grammar.prepare
                             (fun () ->
@@ -177,6 +240,9 @@ let tests =
                                 "people"
                                 "terminate-sessions"
                                 "10000000-0000-4000-8000-000000000001"
+                                request
+                                "--installation-id"
+                                installation
                                 "--dry-run"
                             ]
                         |> Result.toOption

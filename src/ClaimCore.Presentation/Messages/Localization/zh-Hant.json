@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "已申請存取權限",
-    "source": "119387f35ffc"
+    "text": "申請存取權限",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "所有者需要先批准加入此帳戶，才能存取 ClaimCore。",
-    "source": "9f93027815d5"
+    "text": "送出申請，讓擁有者可以核准此登入身分。",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "存取和匯出日誌",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "要求未獲確認。它可能已結束 ClaimCore 瀏覽器工作階段。重複要求也可能結束較新的工作階段。",
-    "source": "1ef989edf86f"
+    "text": "這項請求可能已結束瀏覽器工作階段。使用相同的請求 ID 重試可取得結果。新的請求 ID 可能會結束之後建立的工作階段。",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "匯出超過下載大小限制。請縮小選取範圍或使用 CLI 逐頁讀取。",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "轉送伺服器是否接受未知",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "需要由另一位已登入的擁有者變更此擁有者的登入身分。",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "申請存取權限",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "送出或更新你的存取申請。",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "登入身分已更換",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "請登出後使用目前的登入身分，或向擁有者尋求協助。",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "重新登入",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "請登出後重新登入，以繼續使用此帳戶。",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "已申請存取權限",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "所有者需要先批准加入此帳戶，才能存取 ClaimCore。",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "僅查詢已儲存結果",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "傳回此請求 ID 對應的已儲存結果。瀏覽器工作階段維持原狀。",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "確認清理過期結果",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "推進已提交的清理截止時間，瀏覽器工作階段維持不變。",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "已確認清理過期的工作階段結束結果。",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

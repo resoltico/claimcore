@@ -18,12 +18,7 @@ module internal OperationQueries =
             let! entry =
                 OperationStorage.find tx.Connection tx.Cipher operation tx.CancellationToken
 
-            let! person = PersonAcquisition.principal tx services.Principal
-
-            let caller =
-                person
-                |> Option.map ClaimCore.Domain.Aggregates.Person.access
-                |> AccessView.ofActor
+            let! caller = ExecutionEnvironment.requester tx services.Principal
 
             let target =
                 entry

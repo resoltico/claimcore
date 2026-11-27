@@ -72,7 +72,10 @@
       "direction": "request",
       "valid": false,
       "value": {
-        "caseId": {"kind": "ID", "caseId": "20000000-0000-7000-8000-000000000001"},
+        "caseId": {
+          "kind": "ID",
+          "caseId": "20000000-0000-7000-8000-000000000001"
+        },
         "limit": 1
       }
     },
@@ -662,6 +665,20 @@
       "endpoint": "session.terminateOwn",
       "direction": "request",
       "valid": true,
+      "value": { "input:operationId": "00000000-0000-7000-8000-000000000001" }
+    },
+    {
+      "id": "session.terminateOwn-old-contract",
+      "endpoint": "session.terminateOwn",
+      "direction": "request",
+      "valid": false,
+      "value": {}
+    },
+    {
+      "id": "people.requests.submit",
+      "endpoint": "people.requests.submit",
+      "direction": "request",
+      "valid": true,
       "value": {}
     },
     {
@@ -670,6 +687,7 @@
       "direction": "request",
       "valid": true,
       "value": {
+        "input:operationId": "00000000-0000-7000-8000-000000000002",
         "input:actorId": "10000000-0000-4000-8000-000000000001"
       }
     },

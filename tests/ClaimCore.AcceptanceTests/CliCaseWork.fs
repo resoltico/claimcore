@@ -14,6 +14,7 @@ let lifecycleEmptyView =
         task {
             use fixture = new PublishedFixture.Fixture()
             do! fixture.Start()
+            do! ClaimCore.TestSupport.IdentityRealm.waitForFreshProviderProof ()
             let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
             let render arguments =

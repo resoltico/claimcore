@@ -227,6 +227,11 @@ let private context () =
             RegisterMaintenance.initial
             view
             []
+            (PrincipalAssociation.Current view.Actor.Value)
+            false
+            true
+            0L
+            None
     with
     | Outcome.Succeeded {
                             Requester = RequesterState.NoRoles value
@@ -252,6 +257,11 @@ let private context () =
             RegisterMaintenance.initial
             AccessView.empty
             []
+            (PrincipalAssociation.NeverBound)
+            false
+            true
+            0L
+            None
     with
     | Outcome.Succeeded {
                             Requester = RequesterState.NotRegistered value
@@ -277,6 +287,11 @@ let private context () =
             RegisterMaintenance.initial
             disabled
             []
+            (PrincipalAssociation.Current disabled.Actor.Value)
+            false
+            true
+            0L
+            None
     with
     | Outcome.Succeeded {
                             Requester = RequesterState.Disabled self

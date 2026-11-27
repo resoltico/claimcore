@@ -1,7 +1,7 @@
 import { Section } from "../../ui/Section";
 import { PresentedValue } from "../../components/PresentedValue";
 import { renderCatalogKey } from "../../presentation/messages";
-import { assembleCommand } from "../../api/commandControl";
+import { assembleDismissal } from "../../api/commandControl";
 import {
   taskDefinitions,
   type Affordance,
@@ -176,7 +176,7 @@ const AvailableRequests = ({
     if (busy || selected === null || controller.current !== null) {
       return;
     }
-    const command = assembleCommand(selected.control);
+    const command = assembleDismissal(selected.control);
     if (command === null) {
       setNotice({ kind: "local", reason: "incomplete" });
       return;

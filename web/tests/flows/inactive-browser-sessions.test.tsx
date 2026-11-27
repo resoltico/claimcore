@@ -8,6 +8,12 @@ import { activeRequester } from "../support/human-requester.fixtures";
 import { service } from "../../src/api/service";
 import { App } from "../../src/shell/App";
 
+const scope = {
+  installationId: activeRequester.subject.installationId,
+  requesterKey: activeRequester.subject.actorId,
+  observedAt: activeRequester.subject.terminationScope!.observedAt,
+  retirementCutoff: null as string | null,
+};
 const own: Affordance = {
   task: "session.terminateOwn",
   labelId: "endpoint.session.terminateOwn.label",
@@ -50,6 +56,8 @@ const setup = (state: "NOT_REGISTERED" | "NO_ROLES", actions: ReadonlyArray<Affo
       subject: {
         kind: "REQUESTER",
         state,
+        authorityVersion: null,
+        terminationScope: scope,
         actorId: state === "NO_ROLES" ? activeRequester.subject.actorId : null,
         installationId: state === "NO_ROLES" ? activeRequester.subject.installationId : null,
       },
@@ -112,8 +120,24 @@ it.each(["NOT_REGISTERED", "NO_ROLES"] as const)(
       expect(transport).toHaveBeenCalledOnce();
     });
     expect(transport.mock.calls[0]?.[0]).toBe("/api/session.terminateOwn");
-    expect(transport.mock.calls[0]?.[1]?.body).toBe("{}");
+    const body = transport.mock.calls[0]?.[1]?.body;
+    expect(body).toMatch(/"input:operationId":"[0-9a-f-]{14}7[0-9a-f-]{21}"/u);
     expect(screen.queryByRole("link", { name: "Sign in again" })).toBeNull();
+    vi.mocked(service.session).mockResolvedValue({
+      kind: "outcome",
+      status: 200,
+      value: {
+        outcome: {
+          kind: "SUCCEEDED",
+          view: { regions: [] },
+          data: {
+            authenticated: false,
+            antiforgeryToken: null,
+            contractIdentity: consumerContractIdentity,
+          },
+        },
+      },
+    });
     gate.resolve(succeeded());
     expect(await screen.findByRole("link", { name: "Sign in again" })).toHaveAttribute(
       "href",

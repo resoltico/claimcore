@@ -37,8 +37,26 @@ let private cookie (response: HttpResponseMessage) =
     |> String.concat "; "
 
 let private create (store: ISessionStore) principal =
-    store.Create(principal, [| 1uy |], None, TimeSpan.FromMinutes 30., TimeSpan.FromHours 8., token)
+    store.Create(
+        principal,
+        None,
+        (fun _ -> [| 1uy |]),
+        None,
+        TimeSpan.FromMinutes 30.,
+        TimeSpan.FromHours 8.,
+        token
+    )
     |> SessionResults.value
+
+let private requestId () =
+    OperationIds.fresh () |> OperationId.create |> Option.get
+
+let private ownRequest () =
+    {
+        OwnSessionTerminationRequest.OperationId = requestId ()
+        SettleOnly = None
+        ConfirmRetirement = None
+    }
 
 let private completed expectedCount self =
     function
@@ -139,7 +157,9 @@ let private scopeAndPermission (database: PostgresFixture.Database) =
             (Some "42501")
             "Runtime writers cannot retarget a stored ticket's principal index"
         // A registered actor without roles still owns self termination.
-        let! own = Service.terminateOwnSessions (core database.Fixture human) () token
+        let! own =
+            Service.terminateOwnSessions (core database.Fixture human) (ownRequest ()) token
+
         completed 1L true own
         let! removed = store.Retrieve(humanTicket, token) |> SessionResults.payload
         Expect.isNone removed "Self deletion removes this principal"
@@ -180,15 +200,44 @@ let private scopeAndPermission (database: PostgresFixture.Database) =
         acceptedPeople revoked
 
         let! denied =
-            Service.terminatePersonSessions deputyService { ActorId = ActorId.value humanId } token
+            Service.terminatePersonSessions
+                deputyService
+                {
+                    ActorId = ActorId.value humanId
+                    OperationId = requestId ()
+                    SettleOnly = None
+                    ConfirmRetirement = None
+                }
+                token
 
         Expect.equal
             denied
             (SessionTerminationResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Revoked display-time permission cannot authorize deletion"
 
+        let! deniedRetirement =
+            Service.terminatePersonSessions
+                deputyService
+                {
+                    ActorId = ActorId.value humanId
+                    OperationId = requestId ()
+                    SettleOnly = None
+                    ConfirmRetirement = Some true
+                }
+                token
+
+        Expect.equal deniedRetirement denied "Retirement rechecks the same current owner authority"
+
         let! confirmed =
-            Service.terminatePersonSessions owner { ActorId = ActorId.value humanId } token
+            Service.terminatePersonSessions
+                owner
+                {
+                    ActorId = ActorId.value humanId
+                    OperationId = requestId ()
+                    SettleOnly = None
+                    ConfirmRetirement = None
+                }
+                token
 
         completed 1L false confirmed
 
@@ -224,7 +273,15 @@ let private scopeAndPermission (database: PostgresFixture.Database) =
         let ownerId = ownerPerson |> Result.toOption |> Option.flatten |> Option.get |> _.Id
 
         let! selfFromPerson =
-            Service.terminatePersonSessions owner { ActorId = ActorId.value ownerId } token
+            Service.terminatePersonSessions
+                owner
+                {
+                    ActorId = ActorId.value ownerId
+                    OperationId = requestId ()
+                    SettleOnly = None
+                    ConfirmRetirement = None
+                }
+                token
 
         completed 1L true selfFromPerson
         let! ownerRemoved = store.Retrieve(ownerTicket, token) |> SessionResults.payload
@@ -236,60 +293,202 @@ let private scopeAndPermission (database: PostgresFixture.Database) =
 
 let private creationCut (database: PostgresFixture.Database) =
     task {
-        let directory = SessionHosts.directory ()
         let actor = principal "synthetic-human"
         let services = core database.Fixture actor
 
-        try
-            use! first = SessionHosts.host directory database (fun _ -> ())
-            use firstClient = first.GetTestClient()
-            use! second = SessionHosts.host directory database (fun _ -> ())
-            use secondClient = second.GetTestClient()
-            use! original = firstClient.GetAsync "https://localhost/issue"
-            original.EnsureSuccessStatusCode() |> ignore
-            use! holder = database.OwnerSource.OpenConnectionAsync()
-            use! locked = holder.BeginTransactionAsync()
-            let! _ = PrincipalLock.acquire holder actor token
-            let creation = firstClient.GetAsync "https://localhost/issue"
-            do! waitForLocks database 1
-            let revocation = Service.terminateOwnSessions services () token
-            do! waitForLocks database 2
-            do! locked.CommitAsync()
-            use! created = creation
-            let! revoked = revocation
-            completed 2L true revoked
+        let first =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
-            let! oldState =
-                SessionHosts.request secondClient (cookie original) HttpMethod.Get "/state"
+        let second =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
 
-            let! createdState =
-                SessionHosts.request secondClient (cookie created) HttpMethod.Get "/state"
+        let! oldFlow = first.StartFlow token
+        let! before = create first actor
+
+        use! holder = database.OwnerSource.OpenConnectionAsync()
+        use! locked = holder.BeginTransactionAsync()
+
+        let! _ =
+            DatabaseSession.rows
+                holder
+                "SELECT session_key FROM claimcore.sessions WHERE session_key=$1 FOR UPDATE"
+                [| box before |]
+                token
+
+        let revocation = Service.terminateOwnSessions services (ownRequest ()) token
+        do! waitForLocks database 1
+        let racingFlow = second.StartFlow token
+        do! waitForLocks database 2
+        do! locked.CommitAsync()
+
+        let! revoked = revocation
+        completed 1L true revoked
+        let! afterCutFlow = racingFlow
+        let! oldTicket = second.Retrieve(before, token) |> SessionResults.payload
+        Expect.isNone oldTicket "The cut is already effective on the other host"
+
+        let now = DateTimeOffset.UtcNow
+
+        let proof =
+            {
+                IssuedAt = now
+                AuthenticatedAt = now
+            }
+
+        let complete (store: ISessionStore) id =
+            store.Create(
+                actor,
+                Some(id, proof),
+                (fun _ -> [| 1uy |]),
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
+
+        let refused id =
+            task {
+                try
+                    let! _ = complete first id
+                    failtest "A retired or reused sign-in flow cannot issue a ticket"
+                with :? System.Security.Authentication.AuthenticationException ->
+                    ()
+            }
+
+        do! refused oldFlow
+        let! newer = complete second afterCutFlow
+        let! current = first.Retrieve(newer.Value, token) |> SessionResults.payload
+        Expect.isSome current "A flow queued on the other side of the committed cut is admitted"
+        do! refused afterCutFlow
+
+        // The opposite order: the callback already owns browser order and is
+        // waiting for its principal when termination attempts to take the cut.
+        let! earlierFlow = first.StartFlow token
+        use! principalHeld = holder.BeginTransactionAsync()
+        let! _ = PrincipalLock.acquire holder actor token
+        let callback = complete first earlierFlow
+        do! waitForLocks database 1
+        let laterCut = Service.terminateOwnSessions services (ownRequest ()) token
+        do! waitForLocks database 2
+        do! principalHeld.CommitAsync()
+        let! issued = callback
+        let! cut = laterCut
+        completed 2L true cut
+        let! ended = second.Retrieve(issued.Value, token) |> SessionResults.payload
+        Expect.isNone ended "A callback committed before the cut is counted and retired"
+    }
+
+let private heldLedgerHead (database: PostgresFixture.Database) =
+    task {
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
+        let actor = principal "unrelated-head"
+        use! connection = database.OwnerSource.OpenConnectionAsync(token)
+        use! held = connection.BeginTransactionAsync(token)
+        let! _ = Transactions.head connection token
+
+        let! flow = (store.StartFlow token).WaitAsync(TimeSpan.FromSeconds 3.)
+        let now = DateTimeOffset.UtcNow
+
+        let create =
+            store.Create(
+                actor,
+                Some(
+                    flow,
+                    {
+                        IssuedAt = now
+                        AuthenticatedAt = now
+                    }
+                ),
+                (fun _ -> [| 1uy |]),
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
+
+        let! ticket = create.WaitAsync(TimeSpan.FromSeconds 3.)
+        let! found = store.Retrieve(ticket.Value, token) |> SessionResults.payload
+        Expect.isSome found "Both real storage phases finish while the unrelated head is held"
+        do! held.RollbackAsync token
+    }
+
+let private staleStatusOnly (database: PostgresFixture.Database) =
+    task {
+        let! owner = bootstrap database.Fixture
+
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
+        let human = principal "identity-audit-status-only"
+        let! statusTicket = create store human
+        let! _ = register database.Fixture owner 89 human
+        let! flow = store.StartFlow token
+        do! Task.Delay(TimeSpan.FromSeconds 3., token)
+        let now = DateTimeOffset.UtcNow
+        let mutable evidence = None
+
+        let! fresh =
+            store.Create(
+                human,
+                Some(
+                    flow,
+                    {
+                        IssuedAt = now
+                        AuthenticatedAt = now
+                    }
+                ),
+                (fun credential ->
+                    match credential with
+                    | BrowserCredential.Protected _ ->
+                        evidence <- Some credential
+                        [| 1uy |]
+                    | _ -> failtest "The positive control requires an actual protected ticket"),
+                None,
+                TimeSpan.FromMinutes 30.,
+                TimeSpan.FromHours 8.,
+                token
+            )
+            |> SessionResults.value
+
+        let actor = core database.Fixture human
+        let old = now.AddMinutes(-1.)
+        let command = ownRequest ()
+
+        for credential in
+            [
+                VerifiedCredential.Browser BrowserCredential.StatusOnly
+                VerifiedCredential.HumanBearer
+                    {
+                        IssuedAt = old
+                        AuthenticatedAt = old
+                    }
+            ] do
+            let caller = Service.withCredential credential actor
+            let! result = Service.terminateOwnSessions caller command token
 
             Expect.equal
-                (oldState, createdState)
-                (HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized)
-                "All sessions existing before the commit cut end across hosts"
+                result
+                (SessionTerminationResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+                "A bound account needs current proof and cannot fall back to its principal"
 
-            use! nextLock = holder.BeginTransactionAsync()
-            let! _ = PrincipalLock.acquire holder actor token
-            let revocation = Service.terminateOwnSessions services () token
-            do! waitForLocks database 1
-            let callbackStartedBeforeCommit = secondClient.GetAsync "https://localhost/issue"
-            do! waitForLocks database 2
-            do! nextLock.CommitAsync()
-            let! revoked = revocation
-            completed 0L true revoked
-            use! later = callbackStartedBeforeCommit
+        let! retained = store.Retrieve(fresh, token) |> SessionResults.payload
+        let! retainedStatus = store.Retrieve(statusTicket, token) |> SessionResults.payload
+        Expect.isSome retained "The fresh protected ticket survives"
+        Expect.isSome retainedStatus "Refused termination has no effect on any ticket"
 
-            let! laterState =
-                SessionHosts.request firstClient (cookie later) HttpMethod.Get "/state"
+        let qualified =
+            actor
+            |> Service.withCredential (VerifiedCredential.Browser(Option.get evidence))
 
-            Expect.equal
-                laterState
-                HttpStatusCode.NoContent
-                "A callback that creates its session after revocation commit may survive"
-        finally
-            Directory.Delete(directory, true)
+        let! accepted = Service.terminateOwnSessions qualified command token
+        completed 2L true accepted
+        let! ended = store.Retrieve(fresh, token) |> SessionResults.payload
+
+        Expect.isNone
+            ended
+            "A roleless account with current protected proof can end its account sessions"
     }
 
 let private retrieveRenewAndAdmittedWork (database: PostgresFixture.Database) =
@@ -335,7 +534,7 @@ let private retrieveRenewAndAdmittedWork (database: PostgresFixture.Database) =
                 SessionHosts.request firstClient (cookie issued) HttpMethod.Get "/admitted"
 
             do! admitted.Task.WaitAsync(TimeSpan.FromSeconds 5.)
-            let! result = Service.terminateOwnSessions services () token
+            let! result = Service.terminateOwnSessions services (ownRequest ()) token
             completed 1L true result
             finish.TrySetResult() |> ignore
             let! completedWork = admittedWork
@@ -385,7 +584,7 @@ let private retrieveRenewAndAdmittedWork (database: PostgresFixture.Database) =
 
             let retrieval = secondStore.RetrieveAsync key
             do! waitForLocks database 1
-            let revocation = Service.terminateOwnSessions services () token
+            let revocation = Service.terminateOwnSessions services (ownRequest ()) token
             do! waitForLocks database 2
             do! retrieveLock.CommitAsync()
             let! retrieved = retrieval
@@ -416,7 +615,7 @@ let private retrieveRenewAndAdmittedWork (database: PostgresFixture.Database) =
 
             let renewal = secondStore.RenewAsync(key, nonNull ticket)
             do! waitForLocks database 1
-            let revocation = Service.terminateOwnSessions services () token
+            let revocation = Service.terminateOwnSessions services (ownRequest ()) token
             do! waitForLocks database 2
             do! held.CommitAsync()
             do! renewal
@@ -524,7 +723,7 @@ let private rollbackAndUnknown (database: PostgresFixture.Database) =
                 "CREATE FUNCTION claimcore.reject_session_delete() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic late deletion failure'; END $$; CREATE TRIGGER reject_session_delete AFTER DELETE ON claimcore.sessions FOR EACH STATEMENT EXECUTE FUNCTION claimcore.reject_session_delete()"
                 [||]
 
-        let! failed = Service.terminateOwnSessions services () token
+        let! failed = Service.terminateOwnSessions services (ownRequest ()) token
 
         Expect.equal
             failed
@@ -566,7 +765,8 @@ let private rollbackAndUnknown (database: PostgresFixture.Database) =
                 database.Fixture.Calendar
                 actor
 
-        let! unknown = Service.terminateOwnSessions uncertainService () token
+        let request = ownRequest ()
+        let! unknown = Service.terminateOwnSessions uncertainService request token
 
         Expect.equal
             unknown
@@ -576,11 +776,190 @@ let private rollbackAndUnknown (database: PostgresFixture.Database) =
         let! old = store.Retrieve(key, token) |> SessionResults.payload
         Expect.isNone old "The synthetic after-commit cut actually landed"
         let! newer = create store actor
+
+        let! missing =
+            Service.terminateOwnSessions
+                services
+                { ownRequest () with
+                    SettleOnly = Some true
+                }
+                token
+
+        Expect.equal
+            missing
+            SessionTerminationResult.OutcomeUnknown
+            "Settlement without a saved result does not start a cut"
+
+        let! untouched = store.Retrieve(newer, token) |> SessionResults.payload
+        Expect.isSome untouched "Settlement without a saved result preserves newer tickets"
+
+        let! retried =
+            Service.terminateOwnSessions services { request with SettleOnly = Some true } token
+
+        completed 1L true retried
+
+        let! conflict =
+            Service.terminateOwnSessions
+                (core database.Fixture (principal "other-principal"))
+                request
+                token
+
+        Expect.equal
+            conflict
+            (SessionTerminationResult.Rejected Refusal.IdempotencyConflict)
+            "The original request cannot change intent"
+
+        let expired =
+            {
+                SettleOnly = None
+                ConfirmRetirement = None
+                OwnSessionTerminationRequest.OperationId =
+                    Guid.CreateVersion7(DateTimeOffset.UtcNow - TimeSpan.FromHours 1.)
+                    |> OperationId.create
+                    |> Option.get
+            }
+
+        let! obsolete = Service.terminateOwnSessions services expired token
+
+        match obsolete with
+        | SessionTerminationResult.Rejected(Refusal.OperationClockUnavailable _ | Refusal.OperationIdOutOfWindow _) ->
+            ()
+        | other -> failtestf "Expired request cannot start another cut: %A" other
+
         let! retained = store.Retrieve(newer, token) |> SessionResults.payload
 
         Expect.isSome
             retained
             "Uncertainty does not automatically repeat deletion against newer sessions"
+    }
+
+let private retirementCutoff (database: PostgresFixture.Database) =
+    task {
+        let actor = principal "retirement-cutoff"
+        let services = core database.Fixture actor
+
+        let store =
+            SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore
+
+        let retirement () =
+            task {
+                match! Service.context services () token with
+                | Outcome.Succeeded { TerminationScope = Some scope } -> return scope
+                | other -> return failtestf "Expected read-only requester scope: %A" other
+            }
+
+        let! initial = retirement ()
+        Expect.isNone initial.RetirementCutoff "Reading context establishes no frontier"
+
+        let issued =
+            DateTimeOffset.FromUnixTimeMilliseconds(initial.ObservedAt.ToUnixTimeMilliseconds())
+
+        let at time =
+            { ownRequest () with
+                OperationId = Guid.CreateVersion7 time |> OperationId.create |> Option.get
+            }
+
+        let older = at (issued.AddMilliseconds -1.)
+        let equal = at issued
+
+        let settle request =
+            Service.terminateOwnSessions services { request with SettleOnly = Some true } token
+
+        let! olderCut = Service.terminateOwnSessions services older token
+        let! equalCut = Service.terminateOwnSessions services equal token
+        completed 0L true olderCut
+        completed 0L true equalCut
+        let! laterTicket = create store actor
+        let! before = retirement ()
+
+        // Supply synthetic provider time to the real SQL retirement transaction.
+        // Subsequent service requests keep using the actual, earlier PostgreSQL clock.
+        let forward = issued.AddMinutes 10.
+
+        let applyForward commit =
+            Transactions.write database.RuntimeSource Transactions.timeouts token (fun connection ->
+                task {
+                    let! _ = Transactions.head connection token
+                    let! _ = SessionRows.lockOrder connection token
+                    do! SessionRows.pruneResults connection forward token
+                    return (), commit
+                })
+
+        let! transient = applyForward false
+        Expect.equal transient (Ok()) "The synthetic forward transaction rolls back"
+        let! afterRollback = retirement ()
+
+        Expect.equal
+            afterRollback.RetirementCutoff
+            before.RetirementCutoff
+            "A rolled-back cutoff is invisible"
+
+        let! stillRecoverable = settle older
+        completed 0L true stillRecoverable
+
+        let! committed = applyForward true
+        Expect.equal committed (Ok()) "The same cutoff commits"
+        let! afterCommit = retirement ()
+
+        Expect.isLessThan
+            afterCommit.ObservedAt
+            forward
+            "The live provider clock remains behind the synthetic observation"
+
+        Expect.equal
+            afterCommit.RetirementCutoff
+            (Some issued)
+            "Read-only context exposes the committed cutoff"
+
+        let! retired = settle older
+
+        match retired with
+        | SessionTerminationResult.Rejected(Refusal.OperationClockUnavailable(cutoff, _)) ->
+            Expect.equal
+                cutoff
+                issued
+                "The committed cutoff still refuses after the clock rolls back"
+        | other -> failtestf "Expected durable expiry refusal: %A" other
+
+        let! boundary = settle equal
+        completed 0L true boundary
+
+        let! entries =
+            DatabaseSession.read database.RuntimeSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT request_id FROM claimcore.session_termination_results ORDER BY requested_at"
+                    [||]
+                    token)
+
+        Expect.equal
+            (entries |> List.map (DatabaseSession.value<Guid> 0))
+            [ OperationId.value equal.OperationId ]
+            "Pruning removes only results strictly before the frontier"
+
+        let! confirmation =
+            Service.terminateOwnSessions
+                services
+                { ownRequest () with
+                    ConfirmRetirement = Some true
+                    SettleOnly = Some true
+                }
+                token
+
+        Expect.equal
+            confirmation
+            SessionTerminationResult.RetirementConfirmed
+            "Explicit confirmation has its own successful outcome"
+
+        let! final = retirement ()
+
+        Expect.equal
+            final.RetirementCutoff
+            (Some issued)
+            "Confirmation at the rolled-back instant cannot lower the frontier"
+
+        let! retained = store.Retrieve(laterTicket, token) |> SessionResults.payload
+        Expect.isSome retained "Retirement preserves later browser tickets"
     }
 
 [<Tests>]
@@ -595,8 +974,17 @@ let tests =
                 "real hosts serialize creation and revocation at the commit cut"
                 (run creationCut)
             testCaseAsync
+                "browser starts and callbacks complete while an unrelated write holds the head"
+                (run heldLedgerHead)
+            testCaseAsync
+                "status-only and stale bearer proof preserve newly protected tickets"
+                (run staleStatusOnly)
+            testCaseAsync
                 "real hosts retain admitted work and never resurrect deleted renewals"
                 (run retrieveRenewAndAdmittedWork)
+            testCaseAsync
+                "committed retirement survives clock rollback and preserves cutoff equality"
+                (run retirementCutoff)
             testCaseAsync
                 "late failure rolls back and uncertain acknowledgement never repeats deletion"
                 (run rollbackAndUnknown)

@@ -54,7 +54,9 @@ export const isDisclosureRefused = (
   result: ApiResult<EndpointOutcome | AttachmentTransferFailureReply>,
 ): boolean => {
   if (result.kind === "hostFailure") {
-    return result.failure.code === "SESSION_REJECTED";
+    return (
+      result.failure.code === "SESSION_REJECTED" || result.failure.code === "ANTIFORGERY_REJECTED"
+    );
   }
   if (result.kind !== "outcome") {
     return false;

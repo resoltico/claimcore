@@ -6,8 +6,14 @@ import { expect, test, type Page } from "./fixtures";
 
 import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
 import { noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
-import { browserRequest, login, sessionToken } from "./session-helpers";
-import { type ResponseFor, endpoints } from "@contracts/client";
+import {
+  browserRequest,
+  expectHostFailure,
+  installationId,
+  login,
+  sessionToken,
+} from "./session-helpers";
+import { type RequestByEndpoint, type ResponseFor } from "@contracts/client";
 
 const ownerRoles = ["CASE_HANDLER", "PAYMENT_RECORDER"] as const;
 const ownerGrants = async (page: Page, active: boolean) => {
@@ -126,7 +132,7 @@ test("unregistered human authenticates without gaining a wider grant", async ({
   try {
     const unknown = await context.newPage();
     await unknown.goto("/");
-    await login(unknown, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    await login(unknown, "Request access", "Sign in", "synthetic-outsider");
     expect((await sessionToken(unknown)).length).toBeGreaterThan(0);
     await noCaseWorkspace(unknown);
     await opaqueCaseRefusal(unknown, fixture.reference);
@@ -135,70 +141,216 @@ test("unregistered human authenticates without gaining a wider grant", async ({
   }
 });
 
-test("changing sign-in identity moves case access to a fresh session", async ({
+test("revocation, disablement and rebinding retire only the affected authority", async ({
   page,
   browser,
 }) => {
-  test.setTimeout(2 * freshLoginWorkflowTimeout);
+  test.setTimeout(5 * freshLoginWorkflowTimeout);
   const fixture = await prepareRoleFixture(page);
-  const inventory = await syntheticPrincipals();
-  const actor = await selectedActor(page, fixture.principal);
-  const { origin } = new URL(page.url());
-  const existing = await browser.newContext({ baseURL: origin, ignoreHTTPSErrors: true });
-  const replacement = await browser.newContext({ baseURL: origin, ignoreHTTPSErrors: true });
-  const bind = async (subject: string) =>
+  const accounts = await syntheticPrincipals();
+  const actorId = await selectedActor(page, fixture.principal);
+  const context = await browser.newContext({
+    baseURL: new URL(page.url()).origin,
+    ignoreHTTPSErrors: true,
+  });
+  const target = { kind: "REFERENCE", caseReference: fixture.reference } as const;
+  const register = await installationId(page, await sessionToken(page));
+  const post = async (client: Page, path: string, body: unknown, bind = false) => {
+    const antiforgery = await sessionToken(client);
+    return browserRequest(client, path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-ClaimCore-Antiforgery": antiforgery,
+        ...(bind ? { "ClaimCore-Installation": register } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+  };
+  const read = (client: Page) => post(client, "/api/case.get", { target });
+  const expectCase = async (client: Page) => {
+    const reply = await read(client);
+    expect(reply.status).toBe(200);
+    const { outcome } = reply.payload as ResponseFor<"case.get", "DATA">;
+    if (outcome.kind !== "SUCCEEDED") {
+      throw new Error("Synthetic case must remain readable.");
+    }
+    return outcome.data;
+  };
+  const setEnabled = async (enabled: boolean) =>
+    applyPeople(page, {
+      operationId: mintOperationId(),
+      task: enabled ? "people.enable" : "people.disable",
+      binding: await reviewedPeopleBinding(page, actorId),
+      inputs: {},
+    });
+  const rebind = async (subject: string) =>
     applyPeople(page, {
       operationId: mintOperationId(),
       task: "people.changeSignInIdentity",
-      binding: await reviewedPeopleBinding(page, actor),
+      binding: await reviewedPeopleBinding(page, actorId),
+      inputs: { "input:principal.issuer": accounts.issuer, "input:principal.subject": subject },
+    });
+  const grant = async (active: boolean, role: "CASE_READER" | "CASE_HANDLER") =>
+    applyPeople(page, {
+      operationId: mintOperationId(),
+      task: active ? "people.grant" : "people.revoke",
+      binding: await reviewedPeopleBinding(page, actorId),
       inputs: {
-        "input:principal.issuer": inventory.issuer,
-        "input:principal.subject": subject,
+        "input:role": role,
+        "input:scope": "CASE",
+        "field:caseReference": fixture.reference,
       },
     });
-  const verifyAccess = async (viewer: Page) => {
-    const endpoint = endpoints.find((entry) => entry.id === "case.get")!;
-    const response = await browserRequest(viewer, endpoint.path, {
-      method: endpoint.method,
-      headers: {
-        "Content-Type": "application/json",
-        "X-ClaimCore-Antiforgery": await sessionToken(viewer),
-      },
-      body: JSON.stringify({ target: { kind: "REFERENCE", caseReference: fixture.reference } }),
-    });
-    expect(response.status).toBe(200);
-    const { outcome } = response.payload as ResponseFor<"case.get", "DATA">;
-    expect(outcome.kind).toBe("SUCCEEDED");
+  let restoreGrants: () => Promise<void> = () => Promise.resolve();
+  let readerGranted = false;
+  let handlerRevoked = false;
+  let disabled = false;
+  let rebound = false;
+  const member = await context.newPage();
+  const signIn = async (heading: string) => {
+    if (heading === "Cases") {
+      // Clear the whole-second precision and maximum provider lead after a hard cut.
+      await member.waitForTimeout(3_100);
+    }
+    await context.clearCookies();
+    await member.goto("/");
+    await login(member, heading, "Sign in", "synthetic-steward");
   };
-  let moved = false;
+
   try {
-    const oldSession = await existing.newPage();
-    await oldSession.goto("/");
-    await login(oldSession, "Cases", "Sign in", "synthetic-steward");
-    await verifyAccess(oldSession);
+    await configureRole(page, fixture, "CASE_HANDLER", true, (restore) => {
+      restoreGrants = restore;
+    });
+    await signIn("Cases");
+    const original = await expectCase(member);
+    const submission: RequestByEndpoint["operation.execute"] = {
+      operationId: mintOperationId(),
+      task: "case.close",
+      binding: { kind: "CASE", target, expectedRevision: original.revision },
+      inputs: { "field:outcome": "OTHER" },
+    };
+    const review = await post(member, "/api/operation.preview", submission, true);
+    expect(review.payload).toMatchObject({ outcome: { kind: "REVIEWED" } });
 
-    await bind(inventory.replacementSubject);
-    moved = true;
-    await oldSession.reload();
+    await grant(true, "CASE_READER");
+    readerGranted = true;
+    await grant(false, "CASE_HANDLER");
+    handlerRevoked = true;
+    await expectCase(member);
+    const rejected = await post(member, "/api/operation.execute", submission, true);
+    expect(rejected.payload).toMatchObject({
+      outcome: { kind: "REJECTED", rejection: { code: "NOT_AUTHORIZED" } },
+    });
+    expect((await expectCase(page)).revision).toBe(original.revision);
+
+    const originalCookies = await context.cookies();
+    await setEnabled(false);
+    disabled = true;
+    await signIn("This account is disabled");
+    const statusCookies = await context.cookies();
+    await opaqueCaseRefusal(member, fixture.reference);
+    await setEnabled(true);
+    disabled = false;
+    const duringDisabled = await post(member, "/api/context", {});
+    expect(duringDisabled.payload).toMatchObject({
+      outcome: { data: { requester: { kind: "SIGN_IN_REQUIRED" } } },
+    });
+    await opaqueCaseRefusal(member, fixture.reference);
+    await context.addCookies(originalCookies);
+    expectHostFailure(await read(member), 401, "SESSION_REJECTED");
+    await signIn("Cases");
+    await expectCase(member);
+
+    const protectedCookies = await context.cookies();
+    await context.clearCookies();
+    await context.addCookies(statusCookies);
+    await member.reload();
+    await expect(member.getByRole("heading", { name: "Sign in again", exact: true })).toBeVisible();
     await expect(
-      oldSession.getByRole("heading", { name: "You don’t have access yet" }),
-    ).toBeVisible();
-    await opaqueCaseRefusal(oldSession, fixture.reference);
+      member.getByRole("button", { name: "End my ClaimCore browser sessions" }),
+    ).toHaveCount(0);
+    await expect(member.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+    const refusedTermination = await post(
+      member,
+      "/api/session.terminateOwn",
+      {
+        "input:operationId": mintOperationId(),
+      },
+      true,
+    );
+    expect(refusedTermination.status).toBe(200);
+    expect(refusedTermination.payload).toMatchObject({
+      outcome: { kind: "REJECTED", rejection: { code: "RESOURCE_UNAVAILABLE" } },
+    });
+    await context.clearCookies();
+    await context.addCookies(protectedCookies);
+    await expectCase(member);
 
-    const newSession = await replacement.newPage();
-    await newSession.goto("/");
-    await login(newSession, "Cases", "Sign in", "synthetic-replacement");
-    await verifyAccess(newSession);
+    await rebind(accounts.replacementSubject);
+    rebound = true;
+    await signIn("Sign-in identity replaced");
+    const former = await post(member, "/api/context", {});
+    expect((former.payload as ResponseFor<"context", "DATA">).outcome).toMatchObject({
+      kind: "SUCCEEDED",
+      data: { requester: { kind: "FORMER_IDENTITY" } },
+    });
+    expect(JSON.stringify(former.payload)).not.toContain(actorId);
+    const cannotRequest = await post(member, "/api/people.requests.submit", {});
+    expect(cannotRequest.payload).toMatchObject({
+      outcome: { kind: "REJECTED", rejection: { code: "ACTOR_ALREADY_REGISTERED" } },
+    });
+    const inbox = (await post(page, "/api/people.requests", { limit: 50 })).payload as ResponseFor<
+      "people.requests",
+      "DATA"
+    >;
+    if (inbox.outcome.kind !== "SUCCEEDED") {
+      throw new Error("Owner inbox did not open.");
+    }
     expect(
-      await selectedActor(page, { ...fixture.principal, subject: inventory.replacementSubject }),
-    ).toBe(actor);
+      inbox.outcome.data.items.some((item) => item.principal.subject === accounts.stewardSubject),
+    ).toBe(false);
+
+    const termination = {
+      "input:actorId": actorId,
+      "input:operationId": mintOperationId(),
+    };
+    const ended = await post(page, "/api/people.terminateSessions", termination, true);
+    const confirmed = (ended.payload as ResponseFor<"people.terminateSessions", "DATA">).outcome;
+    expect(confirmed).toMatchObject({ kind: "SUCCEEDED", data: { self: false } });
+    if (confirmed.kind !== "SUCCEEDED") {
+      throw new Error("Owner termination was not confirmed.");
+    }
+    expect(confirmed.data.count).toBeGreaterThan(0);
+    expectHostFailure(await read(member), 401, "SESSION_REJECTED");
+
+    await rebind(accounts.stewardSubject);
+    rebound = false;
+    await signIn("Cases");
+    await expectCase(member);
+    const replay = await post(page, "/api/people.terminateSessions", termination, true);
+    expect((replay.payload as ResponseFor<"people.terminateSessions", "DATA">).outcome).toEqual(
+      confirmed,
+    );
+    expect((await expectCase(member)).revision).toBe(original.revision);
+    expect(await selectedActor(page, fixture.principal)).toBe(actorId);
   } finally {
     try {
-      if (moved) {
-        await bind(inventory.stewardSubject);
+      if (rebound) {
+        await rebind(accounts.stewardSubject);
       }
+      if (disabled) {
+        await setEnabled(true);
+      }
+      if (readerGranted) {
+        await grant(false, "CASE_READER");
+      }
+      if (handlerRevoked) {
+        await grant(true, "CASE_HANDLER");
+      }
+      await restoreGrants();
     } finally {
-      await Promise.all([existing.close(), replacement.close()]);
+      await context.close();
     }
   }
 });

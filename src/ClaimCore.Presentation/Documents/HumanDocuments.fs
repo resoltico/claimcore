@@ -55,6 +55,8 @@ module ConfirmationTarget =
 type RequesterSubject =
     {
         State: RequesterKind
+        AuthorityVersion: int64 option
+        TerminationScope: SessionTerminationScope option
         InstallationId: System.Guid option
         ActorId: ActorId option
     }
@@ -238,6 +240,7 @@ module HumanReadReply =
 [<RequireQualifiedAccess>]
 type HumanSessionTerminationResult =
     | Succeeded of self: bool * HumanDocument
+    | RetirementConfirmed of HumanDocument
     | Rejected of HumanRejection
     | Failed of CoreFault
     | OutcomeUnknown of HumanDocument

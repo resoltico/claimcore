@@ -63,6 +63,22 @@ let private lifecycle (database: PostgresFixture.Database) =
         let! serviceInitial = Service.context (core database.Fixture service) () token
         unregistered RequesterClaims.empty serviceInitial
 
+        let! beforeRequest =
+            Service.accessRequests owner { AfterCursor = None; Limit = 10 } token
+
+        Expect.isEmpty (read beforeRequest).Items "Reading status does not submit a request"
+        let! humanRequest = Service.requestAccess caller () token
+        let! serviceRequest = Service.requestAccess (core database.Fixture service) () token
+        Expect.equal humanRequest (Outcome.Succeeded()) "A never-bound human can request access"
+        Expect.equal serviceRequest (Outcome.Succeeded()) "A never-bound service can request access"
+        let! pending = Service.context caller () token
+
+        match pending with
+        | Outcome.Succeeded {
+                                Requester = RequesterState.AccessPending _
+                            } -> ()
+        | other -> failtestf "Expected pending access request: %A" other
+
         let! before =
             rows
                 database
@@ -82,8 +98,8 @@ let private lifecycle (database: PostgresFixture.Database) =
             humanRequest.Claims.EmailVerified
             "Verified email is stored and returned to the owner"
 
-        let! refreshed = Service.context (core database.Fixture human) () token
-        unregistered RequesterClaims.empty refreshed
+        let! refreshed = Service.requestAccess (core database.Fixture human) () token
+        Expect.equal refreshed (Outcome.Succeeded()) "Explicit refresh updates the current request"
 
         let! after =
             rows
@@ -167,7 +183,10 @@ let private bounded (database: PostgresFixture.Database) =
                 |]
 
         let! _ =
-            Service.context (core database.Fixture (principal PrincipalKind.Human "fresh")) () token
+            Service.requestAccess
+                (core database.Fixture (principal PrincipalKind.Human "fresh"))
+                ()
+                token
 
         let! aged =
             rows
@@ -195,13 +214,16 @@ let private bounded (database: PostgresFixture.Database) =
         let callers =
             [ 1..12 ]
             |> List.map (fun n ->
-                Service.context
+                Service.requestAccess
                     (core database.Fixture (principal PrincipalKind.Human ($"concurrent-{n}")))
                     ()
                     token)
 
         let! results = Task.WhenAll callers
-        results |> Array.iter (unregistered RequesterClaims.empty)
+
+        results
+        |> Array.iter (fun result -> Expect.equal result (Outcome.Succeeded()) "Concurrent request")
+
         let! capped = rows database "SELECT count(*) FROM claimcore.access_request"
 
         Expect.equal
@@ -261,7 +283,7 @@ let private lockRace (database: PostgresFixture.Database) =
             })
 
         do! entered.Task.WaitAsync(TimeSpan.FromSeconds 10.)
-        let waiting = Service.context (core database.Fixture target) () token
+        let waiting = Service.requestAccess (core database.Fixture target) () token
 
         try
             let mutable blocked = false
@@ -273,7 +295,7 @@ let private lockRace (database: PostgresFixture.Database) =
                 let! locks =
                     DatabaseSession.rows
                         observer
-                        "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND wait_event='advisory'"
+                        "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'"
                         [||]
                         token
 
@@ -282,9 +304,7 @@ let private lockRace (database: PostgresFixture.Database) =
                 if not blocked then
                     do! Task.Delay 10
 
-            Expect.isTrue
-                blocked
-                "The real context query waits on the principal lock while registration is uncommitted"
+            Expect.isTrue blocked "The explicit request waits for the in-flight registration"
         finally
             release.TrySetResult() |> ignore
 
@@ -296,9 +316,10 @@ let private lockRace (database: PostgresFixture.Database) =
 
         let! context = waiting.WaitAsync(TimeSpan.FromSeconds 5.)
 
-        match context with
-        | Outcome.Succeeded { Requester = RequesterState.NoRoles _ } -> ()
-        | other -> failtestf "Post-lock people snapshot must see committed registration: %A" other
+        Expect.equal
+            context
+            (Outcome.Rejected(Refusal.People PeopleRefusal.ActorAlreadyRegistered))
+            "The post-lock request sees the committed registration"
 
         let! retained =
             rows
@@ -349,7 +370,7 @@ let private administration (database: PostgresFixture.Database) =
         acceptedPeople granted
 
         for target in [ human; service ] do
-            let! _ = Service.context (core fixture target) () token
+            let! _ = Service.requestAccess (core fixture target) () token
             ()
 
         do!
@@ -440,7 +461,7 @@ let private administration (database: PostgresFixture.Database) =
         Expect.equal replay (Outcome.Succeeded()) "Repeated dismissal is harmless"
         let! after = verified database
         Expect.equal after before "Request listing and dismissal never append a ledger entry"
-        let! _ = Service.context (core fixture human) () token
+        let! _ = Service.requestAccess (core fixture human) () token
 
         let! revisited =
             Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
@@ -459,7 +480,7 @@ let private mutableContinuation (database: PostgresFixture.Database) =
         let newest, middle, oldest = make "audit-a", make "audit-b", make "audit-c"
 
         for caller in [ newest; middle; oldest ] do
-            let! _ = Service.context (core fixture caller) () token
+            let! _ = Service.requestAccess (core fixture caller) () token
             ()
 
         do!
@@ -471,7 +492,7 @@ let private mutableContinuation (database: PostgresFixture.Database) =
         let! first = Service.accessRequests owner { AfterCursor = None; Limit = 1 } token
         let first = read first
         Expect.equal (first.Items |> List.map _.Principal) [ newest ] "Fixture starts at A"
-        let! _ = Service.context (core fixture middle) () token
+        let! _ = Service.requestAccess (core fixture middle) () token
 
         let! continued =
             Service.accessRequests
@@ -505,7 +526,7 @@ let private utcExpiry (database: PostgresFixture.Database) =
         let equality = DateTimeOffset(2026, 3, 8, 7, 30, 0, TimeSpan.Zero)
 
         for caller in [ oldest; newest ] do
-            let! _ = Service.context (core fixture caller) () token
+            let! _ = Service.requestAccess (core fixture caller) () token
             ()
 
         do!

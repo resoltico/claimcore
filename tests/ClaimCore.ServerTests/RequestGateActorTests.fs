@@ -25,6 +25,7 @@ let private configuration =
         ClientSecret = "synthetic-client-secret"
         ApiAudience = "claimcore-api"
         CliClientId = "claimcore-cli"
+        ServiceClientIds = Set.singleton "claimcore-service"
     }
 
 let private antiforgery =
@@ -53,7 +54,15 @@ let private authenticated claims =
     AuthenticateResult.Success(AuthenticationTicket(principal, "synthetic-authentication"))
 
 let private servicePrincipal client subject =
-    authenticated [ Claim("azp", client); Claim("sub", subject) ]
+    authenticated
+        [
+            Claim("azp", client)
+            Claim("sub", subject)
+            Claim("typ", "Bearer")
+            Claim("claimcore_principal", if client = "claimcore-cli" then "human" else "service")
+            Claim("iat", "1800000000", ClaimValueTypes.Integer64)
+            Claim("auth_time", "1800000000", ClaimValueTypes.Integer64)
+        ]
 
 let private withAuthentication result action =
     let calls = ref 0
@@ -117,7 +126,10 @@ let private bearerIdentity () =
                 PrincipalIdentity.service configuration.Issuer "claimcore-service"
             with
             | Ok actual, Ok expected ->
-                Expect.equal actual expected "A verified service bearer binds its client identity"
+                Expect.equal
+                    (AuthenticatedPrincipals.key actual)
+                    (AuthenticatedPrincipals.key expected)
+                    "A verified service bearer binds its client identity"
             | _ -> failtest "A verified service bearer must select its client identity"
 
             Expect.equal calls.Value 1 "One bearer authentication is requested")
@@ -128,7 +140,10 @@ let private bearerIdentity () =
 
         match actorPost request, PrincipalIdentity.human configuration.Issuer "person-1" with
         | Ok actual, Ok expected ->
-            Expect.equal actual expected "A verified interactive bearer binds its human subject"
+            Expect.equal
+                (AuthenticatedPrincipals.key actual)
+                (AuthenticatedPrincipals.key expected)
+                "A verified interactive bearer binds its human subject"
         | _ -> failtest "A verified interactive bearer must select its human subject"
 
         Expect.equal calls.Value 1 "One bearer authentication is requested")

@@ -74,6 +74,9 @@ module Tones =
                 | RequesterKind.Active -> Tone.Success
                 | RequesterKind.NoRoles -> Tone.Warning
                 | RequesterKind.Disabled -> Tone.Neutral
+                | RequesterKind.SignInRequired
+                | RequesterKind.FormerIdentity -> Tone.Warning
+                | RequesterKind.AccessPending
                 | RequesterKind.NotRegistered -> Tone.Info)
             codes ClosureOutcome.vocabulary (function
                 | ClosureOutcome.Settled -> Tone.Success

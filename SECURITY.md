@@ -11,8 +11,11 @@ details, affected components and reproductions out of that issue.
 
 ## Understand the trust boundary
 
-OIDC identifies human and service principals. Current scoped ClaimCore grants authorize work and
-control receipt disclosure. Browser POSTs require antiforgery. The browser and actor CLI have no
+An admitted OIDC client profile verifies human and service identity, token purpose and freshness.
+Protected actions recheck the current binding, credential generation and scoped grants in their action
+snapshot. Browser POSTs require antiforgery bound to the server-side ticket. A recovery witness and
+synchronized clocks establish the restore credential floor. See the
+[identity and clock requirements](docs/operating.md#access-review-and-sessions). The browser and actor CLI have no
 database credentials. Owner administration uses the `claimcore-server` executable with a separate
 database-owner credential. The serving process uses runtime credentials.
 

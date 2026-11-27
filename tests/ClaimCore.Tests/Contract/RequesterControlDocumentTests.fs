@@ -28,12 +28,14 @@ let private actor =
         View = [ View.People; View.Operations ]
         Offers = []
         HasScopedCases = false
+        AuthorityVersion = 1L
     }
 
 let private document actor =
     ContextScreen.document
         {
             Requester = RequesterState.Active actor
+            TerminationScope = None
         }
 
 [<Tests>]
@@ -131,6 +133,8 @@ let tests =
                     let identity =
                         {
                             RequesterSubject.State = RequesterKind.Active
+                            TerminationScope = None
+                            AuthorityVersion = Some 1L
                             InstallationId = None
                             ActorId = Some actor.ActorId
                         }

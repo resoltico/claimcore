@@ -124,24 +124,11 @@ export const useSession = () => {
     }
   };
 
-  const endedBrowserSessions = (expectedEpoch: number): void => {
-    if (epoch.current !== expectedEpoch) {
-      return;
+  const refreshAfterTermination = (expectedEpoch: number): void => {
+    if (epoch.current === expectedEpoch) {
+      markSignedOut();
+      void refresh();
     }
-    requestSerial.current += 1;
-    read.current?.abort();
-    setState(
-      stateFor(
-        {
-          authenticated: false,
-          antiforgeryToken: null,
-          contractIdentity: consumerContractIdentity,
-        },
-        null,
-        nextEpoch(epoch),
-      ),
-    );
-    markSignedOut();
   };
-  return { state, logout, refresh, endedBrowserSessions };
+  return { state, logout, refresh, refreshAfterTermination };
 };

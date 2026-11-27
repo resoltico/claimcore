@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "アクセス申請済み",
-    "source": "119387f35ffc"
+    "text": "アクセスを申請",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "ClaimCoreにアクセスするには、所有者がこのアカウントの追加を承認する必要があります。",
-    "source": "9f93027815d5"
+    "text": "オーナーがこのサインイン ID を承認できるよう、アクセスを申請してください。",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "アクセスとエクスポートの記録",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "要求は確認されていません。ClaimCoreブラウザーセッションが終了した可能性があります。繰り返すと、新しいセッションも終了する場合があります。",
-    "source": "1ef989edf86f"
+    "text": "この申請によりブラウザーセッションが終了した可能性があります。同じリクエスト ID で再送すると結果を取得できます。新しい ID で送信すると、新しいセッションも終了する場合があります。",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "エクスポートがダウンロードのサイズ制限を超えています。選択範囲を絞るか、CLIでページを順に取得してください。",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "リレーによる受理は不明",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "このオーナーのサインイン ID を変更するには、別のオーナーがサインインする必要があります。",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "アクセスを申請",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "アクセス申請を送信または更新します。",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "サインイン ID が変更されました",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "サインアウトして現在のサインイン ID を使用するか、オーナーにお問い合わせください。",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "再度サインイン",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "このアカウントを引き続き利用するには、サインアウトしてから再度サインインしてください。",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "アクセス申請済み",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "ClaimCoreにアクセスするには、所有者がこのアカウントの追加を承認する必要があります。",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "保存済みの結果だけを取得",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "このリクエスト ID の保存済みの結果を返します。ブラウザーセッションは変更しません。",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "期限切れの結果の削除を確認",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "確定済みの削除境界を進めます。ブラウザーセッションは変更されません。",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "期限切れのセッション終了結果の削除が確認されました。",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

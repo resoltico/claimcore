@@ -21,7 +21,8 @@ let private payload = [| 1uy; 2uy; 3uy |]
 let private create (store: ISessionStore) =
     (store.Create(
         SessionResults.principal,
-        payload,
+        None,
+        (fun _ -> payload),
         None,
         TimeSpan.FromMinutes 30.,
         TimeSpan.FromHours 8.,
@@ -234,18 +235,13 @@ let private independentRows (database: PostgresFixture.Database) =
         use! connection = database.OwnerSource.OpenConnectionAsync()
         use! transaction = connection.BeginTransactionAsync()
 
+        let! _ = Transactions.head connection token
+
         let! _ =
             DatabaseSession.rows
                 connection
                 "SELECT session_key FROM claimcore.sessions WHERE session_key=$1 FOR UPDATE"
                 [| box blockedKey |]
-                token
-
-        let! _ =
-            DatabaseSession.execute
-                connection
-                "SELECT pg_advisory_xact_lock(621783092451::bigint)"
-                [||]
                 token
 
         let creation = create store
@@ -257,19 +253,13 @@ let private independentRows (database: PostgresFixture.Database) =
             (obj.ReferenceEquals(completed, other))
             "Different session rows progress independently"
 
-        let! _ =
-            DatabaseSession.rows
-                connection
-                "SELECT * FROM claimcore.ledger_head FOR UPDATE"
-                [||]
-                token
+        let! _ = creation.WaitAsync(TimeSpan.FromSeconds 3.)
+        Expect.isFalse blocked.IsCompleted "The selected ticket remains locked"
 
-        Expect.isFalse creation.IsCompleted "Only creation waits for the capacity admission lock"
         let! another = (store.Retrieve(otherKey, token) |> SessionResults.payload)
         Expect.isSome another "Session lookup does not acquire the ledger head"
         do! transaction.RollbackAsync()
         let! _ = blocked
-        let! _ = creation
         return ()
     }
 
@@ -330,7 +320,7 @@ let private capacity (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),1,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800,repeat('b',64) FROM generate_series(1,10000) n"
+                "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key,recovery_generation) SELECT lpad(to_hex(n),64,'0'),decode('01','hex'),2,clock_timestamp(),clock_timestamp()+interval '8 hours',clock_timestamp(),1800,repeat('b',64),(SELECT generation FROM claimcore.recovery_generation) FROM generate_series(1,10000) n"
                 [||]
 
         let store =
@@ -342,7 +332,8 @@ let private capacity (database: PostgresFixture.Database) =
             let! _ =
                 store.Create(
                     SessionResults.principal,
-                    payload,
+                    None,
+                    (fun _ -> payload),
                     Some(DateTimeOffset.UtcNow.AddMinutes(-1.0)),
                     TimeSpan.FromMinutes 30.,
                     TimeSpan.FromHours 8.,

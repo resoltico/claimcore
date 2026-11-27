@@ -164,7 +164,7 @@ let private retarget () =
                             Principal =
                                 PrincipalKey.human "https://issuer.example/" "unknown"
                                 |> Result.defaultWith (fun _ -> failtest "principal")
-                            Claims = RequesterClaims.empty
+                            Credential = None
                             CancellationToken = token
                         }
 
@@ -179,7 +179,8 @@ let private retarget () =
                 let! session =
                     correct.Create(
                         SessionResults.principal,
-                        [| 1uy |],
+                        None,
+                        (fun _ -> [| 1uy |]),
                         None,
                         TimeSpan.FromMinutes 5.,
                         TimeSpan.FromHours 1.,
@@ -198,7 +199,8 @@ let private retarget () =
                             let! _ =
                                 runtime.Sessions.Create(
                                     SessionResults.principal,
-                                    [| 2uy |],
+                                    None,
+                                    (fun _ -> [| 2uy |]),
                                     None,
                                     TimeSpan.FromMinutes 5.,
                                     TimeSpan.FromHours 1.,
@@ -241,7 +243,7 @@ let private retarget () =
                 let! _ =
                     DatabaseSession.execute
                         seed
-                        "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key) VALUES(repeat('a',64),decode('01','hex'),1,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64))"
+                        "INSERT INTO claimcore.sessions(session_key,protected_ticket,payload_version,created_at,absolute_expiry,last_activity,idle_seconds,principal_key,recovery_generation) VALUES(repeat('a',64),decode('01','hex'),2,clock_timestamp()-interval '3 hours',clock_timestamp()-interval '1 hour',clock_timestamp()-interval '2 hours',1800,repeat('b',64),(SELECT generation FROM claimcore.recovery_generation))"
                         [||]
                         token
 

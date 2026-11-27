@@ -11,8 +11,11 @@ open ClaimCore.Application.Reads
 module internal ExecutionEnvironment =
     let requester (tx: ReadTx) principal =
         task {
-            let! person = PersonAcquisition.principal tx principal
-            return person |> Option.map Person.access |> AccessView.ofActor
+            match! Credentials.admits tx principal with
+            | false -> return AccessView.empty
+            | true ->
+                let! person = PersonAcquisition.principal tx principal
+                return person |> Option.map Person.access |> AccessView.ofActor
         }
 
     /// Existing identities require current authority, not fresh decision facts or child projections.

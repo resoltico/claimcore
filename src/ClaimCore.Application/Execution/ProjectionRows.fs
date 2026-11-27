@@ -75,6 +75,7 @@ type internal PersonProjection =
     {
         Actor: Actor
         Revision: Revision
+        CredentialBoundary: CredentialBoundary
         Grants: Map<ActorGrant, EffectPosition>
         ProfileErasure: EffectPosition option
         DisplayNameSearch: string option
@@ -269,6 +270,7 @@ module internal ProjectionRows =
             {
                 Actor = actor
                 Revision = revision
+                CredentialBoundary = state.CredentialBoundary
                 Grants = grants
                 ProfileErasure = erasure
                 DisplayNameSearch = name

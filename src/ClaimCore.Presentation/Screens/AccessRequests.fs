@@ -95,3 +95,22 @@ module AccessRequestsScreen =
         { HumanDocument.empty HumanDisclosure.Current with
             Screen = dismissed ()
         }
+
+    let submittedDocument () =
+        { HumanDocument.empty HumanDisclosure.Current with
+            Screen =
+                Screen.create
+                    [
+                        region
+                            RegionRole.Notice
+                            None
+                            (RegionContent.Notice
+                                [
+                                    {
+                                        MessageId = "label.accessRequested"
+                                        Reason = None
+                                        Tone = NoticeTone.Info
+                                    }
+                                ])
+                    ]
+        }

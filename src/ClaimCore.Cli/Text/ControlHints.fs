@@ -238,9 +238,15 @@ module internal ControlHints =
                     ],
                     [ "--dry-run" ]
 
-                | ActionControl.Command CommandRequest.TerminateOwnSessions -> [], [ "--dry-run" ]
+                | ActionControl.Command CommandRequest.RequestAccess -> [], [ "--dry-run" ]
+                | ActionControl.Command CommandRequest.TerminateOwnSessions ->
+                    [ target InputTarget.OperationId, "<UUIDv7>" ], [ "--dry-run" ]
                 | ActionControl.Command(CommandRequest.TerminatePersonSessions actor) ->
-                    [ TaskInputId.ActorId, ActorId.format actor ], [ "--dry-run" ]
+                    [
+                        TaskInputId.ActorId, ActorId.format actor
+                        target InputTarget.OperationId, "<UUIDv7>"
+                    ],
+                    [ "--dry-run" ]
 
             [ label + ": " + command task values suffix ]
 

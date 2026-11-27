@@ -19,6 +19,7 @@ type WebSetting =
     | OidcClientSecretFile
     | OidcApiAudience
     | OidcCliClientId
+    | OidcServiceClientIds
     | JsonLimit
     | CorePermits
     | CoreQueue
@@ -63,6 +64,7 @@ module WebSettings =
             WebSetting.OidcClientId, "CLAIMCORE_OIDC_CLIENT_ID"
             WebSetting.OidcClientSecretFile, "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
             WebSetting.OidcApiAudience, "CLAIMCORE_OIDC_API_AUDIENCE"
+            WebSetting.OidcServiceClientIds, "CLAIMCORE_OIDC_SERVICE_CLIENT_IDS"
             WebSetting.OidcCliClientId, "CLAIMCORE_OIDC_CLI_CLIENT_ID"
             WebSetting.JsonLimit, "CLAIMCORE_WEB_MAX_JSON_BYTES"
             WebSetting.CorePermits, "CLAIMCORE_WEB_CORE_PERMITS"
@@ -88,6 +90,7 @@ module WebSettings =
             WebSetting.OidcClientSecretFile
             WebSetting.OidcApiAudience
             WebSetting.OidcCliClientId
+            WebSetting.OidcServiceClientIds
         ]
 
     let optional =

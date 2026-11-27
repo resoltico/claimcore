@@ -44,6 +44,7 @@ module SessionTerminationCodecs =
                     | SessionTerminationResult.Failed value -> Some value
                     | _ -> None)
                     (record id |> field "fault" id DiagnosticCodecs.fault)
+                unitVariant "RETIREMENT_CONFIRMED" SessionTerminationResult.RetirementConfirmed
                 unitVariant "OUTCOME_UNKNOWN" SessionTerminationResult.OutcomeUnknown
             ]
         |> fun outcome ->
@@ -81,6 +82,13 @@ module SessionTerminationCodecs =
                     | _ -> None)
                     (record id |> field "fault" id DiagnosticCodecs.fault)
                 variant
+                    "RETIREMENT_CONFIRMED"
+                    HumanSessionTerminationResult.RetirementConfirmed
+                    (function
+                    | HumanSessionTerminationResult.RetirementConfirmed value -> Some value
+                    | _ -> None)
+                    (record id |> field "document" id HumanDocumentCodecs.document)
+                variant
                     "OUTCOME_UNKNOWN"
                     HumanSessionTerminationResult.OutcomeUnknown
                     (function
@@ -97,7 +105,8 @@ module SessionTerminationCodecs =
     let classify =
         function
         | RepresentationReply.Data value -> SessionTerminationResult.classify value
-        | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded _) ->
+        | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded _)
+        | RepresentationReply.Human(HumanSessionTerminationResult.RetirementConfirmed _) ->
             ReplyKind.Succeeded
         | RepresentationReply.Human(HumanSessionTerminationResult.Rejected _) -> ReplyKind.Rejected
         | RepresentationReply.Human(HumanSessionTerminationResult.Failed _) -> ReplyKind.Failed

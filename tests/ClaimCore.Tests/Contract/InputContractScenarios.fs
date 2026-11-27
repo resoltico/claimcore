@@ -274,6 +274,8 @@ let internal peopleFieldPresentation () =
             | TaskInputId.ReminderKindFilter
             | TaskInputId.DeadlineOutcomeFilter
             | TaskInputId.IncludeInactive
+            | TaskInputId.SettleOnly
+            | TaskInputId.ConfirmRetirement
             | TaskInputId.Scope
             | TaskInputId.ActorId
             | TaskInputId.CaseId

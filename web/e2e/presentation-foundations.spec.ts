@@ -17,6 +17,7 @@ import { humanReadReply } from "../tests/support/human-read-reply.fixtures";
 import { humanReviewEnvelope } from "../tests/support/human-review-response.fixtures";
 
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
+import { recoveryRecords } from "./recovery-storage";
 import { ui } from "./localization-support";
 import { writeFile } from "node:fs/promises";
 import { casePath } from "../src/routing/routes";
@@ -1303,6 +1304,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
       subject: {
         kind: "REQUESTER",
         state: kind,
+        authorityVersion: null,
         installationId: kind === "NO_ROLES" ? "90000000-0000-4000-8000-000000000001" : null,
         actorId: kind === "NOT_REGISTERED" ? null : "10000000-0000-4000-8000-000000000001",
       },
@@ -1347,7 +1349,7 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
     await clean();
   });
 }
-test("same-requester access loss retains unknown bytes and a visible departure guard under CSP", async ({
+test("same-requester access loss keeps only the operation identity for authorized recovery under CSP", async ({
   page,
 }) => {
   const clean = await observe(page, true);
@@ -1402,6 +1404,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
                 subject: {
                   kind: "REQUESTER",
                   state: "NO_ROLES",
+                  authorityVersion: null,
                   installationId: active.subject.installationId,
                   actorId: active.subject.actorId,
                 },
@@ -1477,11 +1480,15 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     });
   });
   const bytes: string[] = [];
+  const authorizedLookups: string[] = [];
   // Lookup shares this journey's synthetic requester/session instead of hitting the real host.
   await page.route("**/api/operation.get", (route) => {
     const operationGetRequest = route
       .request()
       .postDataJSON() as RequestByEndpoint["operation.get"];
+    if (hasAccess) {
+      authorizedLookups.push(operationGetRequest.operationId);
+    }
     return route.fulfill({
       json: hasAccess
         ? pendingLookup(operationGetRequest.operationId).value
@@ -1553,6 +1560,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     }),
   ).toBeVisible();
   expect(bytes).toHaveLength(1);
+  const original = JSON.parse(bytes[0]!) as RequestByEndpoint["operation.execute"];
   hasAccess = false;
   await page.evaluate(() => {
     window.dispatchEvent(new Event("focus"));
@@ -1570,40 +1578,25 @@ test("same-requester access loss retains unknown bytes and a visible departure g
       exact: true,
     }),
   ).toHaveCount(0);
-  await page
-    .getByRole("button", {
-      name: "Sign out",
-      exact: true,
-    })
-    .click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("retained-person");
+  await expect(page.locator("body")).not.toContainText(original.operationId);
+  await expect
+    .poll(() => recoveryRecords(page))
+    .toEqual([expect.objectContaining({ operationId: original.operationId, act: "people.admit" })]);
+  expect(JSON.stringify(await recoveryRecords(page))).not.toContain("retained-person");
   await expectAccessible(page);
-  await page
-    .getByRole("button", {
-      name: "Keep editing",
-      exact: true,
-    })
-    .click();
-  await expect(
-    page.getByRole("button", {
-      name: "Sign out",
-      exact: true,
-    }),
-  ).toBeFocused();
-  const checkAccess = page.getByRole("button", {
-    name: "Check access",
-    exact: true,
-  });
-  const retry = page.getByRole("button", { name: "Send again", exact: true });
+
+  const checkAccess = page.getByRole("button", { name: "Check access", exact: true });
   await expect(checkAccess).toBeEnabled();
+  authorizedLookups.length = 0;
   hasAccess = true;
-  // An automatic refresh can restore access while the explicit check is being activated.
-  await Promise.race([checkAccess.click(), retry.waitFor()]);
-  await expect(retry).toBeVisible();
+  await Promise.race([checkAccess.click(), page.locator(".recovery-banner").waitFor()]);
+  await expect(page.locator(".recovery-banner")).toBeVisible();
+  await expect.poll(() => authorizedLookups).toContain(original.operationId);
+  await expect(page.locator("body")).not.toContainText("retained-person");
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
   expect(bytes).toHaveLength(1);
-  await retry.click();
-  await expect.poll(() => bytes.length).toBe(2);
-  expect(bytes[1]).toBe(bytes[0]);
   await expectAccessible(page);
   await clean();
 });

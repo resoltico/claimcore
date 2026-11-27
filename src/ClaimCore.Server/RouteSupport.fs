@@ -77,18 +77,7 @@ module internal RouteSupport =
                 RequestLog.reply ClaimCore.Application.Contracts.ReplyKind.Succeeded context
                 WebWire.attachment transfer content installation
 
-        if result.ExpireBrowserSession then
-            { new IResult with
-                member _.ExecuteAsync context =
-                    task {
-                        BrowserSessionTermination.mark context
-                        do! context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme)
-                        do! response.ExecuteAsync context
-                    }
-                    :> Task
-            }
-        else
-            response
+        response
 
     let handleFailures
         (sink: TextWriter)
@@ -128,6 +117,8 @@ module internal RouteSupport =
                         | true, (:? bool as completed) when completed ->
                             HostFailureReason.CompletedResponseFailed
                         | true, _ -> HostFailureReason.DispatchUnconfirmed
+                        | _ when (error :? BrowserSignInRejectedException) ->
+                            HostFailureReason.SessionRejected
                         | _ when (error :? AdmissionRejectedException) ->
                             HostFailureReason.RateLimited
                         | _ -> HostFailureReason.BeforeDispatchFailed

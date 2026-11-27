@@ -1,13 +1,15 @@
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { expect, test, type Page } from "./fixtures";
 import type { APIResponse } from "@playwright/test";
+import { operationId } from "../src/operation/operationId";
 
-import { consumerContractIdentity } from "@contracts/client";
+import { consumerContractIdentity, type ResponseFor } from "@contracts/client";
 import { recoveryRecords } from "./recovery-storage";
 import { selectedActor, syntheticPrincipals } from "./people-setup";
 import {
   awaitLoginAdmission,
   browserRequest,
+  installationId,
   expectAccessible,
   login,
   logout,
@@ -305,16 +307,17 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   browser,
   baseURL,
 }) => {
-  test.setTimeout(freshLoginWorkflowTimeout * 2);
+  // Four independent logins can each wait for a new admission window.
+  test.setTimeout(freshLoginWorkflowTimeout * 4);
   if (baseURL === undefined) {
     throw new Error("Published browser acceptance requires its configured HTTPS base URL.");
   }
   await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
-  await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+  await login(page, "Request access", "Sign in", "synthetic-outsider");
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto("/people-history");
-  await expect(page.getByRole("heading", { name: "You don’t have access yet" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Request access" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Access history" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Search cases" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
@@ -327,13 +330,13 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     const second = await other.newPage();
     await seedSignedOut(second);
     await second.goto("/", { waitUntil: "commit" });
-    await login(second, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    await login(second, "Request access", "Sign in", "synthetic-outsider");
     await signOut(page, page.getByRole("button", { name: "Sign out", exact: true }));
     await expectAnonymousSession(page);
     await expect(readSession(second)).resolves.toMatchObject({
       payload: { outcome: { data: { authenticated: true } } },
     });
-    await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    await login(page, "Request access", "Sign in", "synthetic-outsider");
     await page
       .getByRole("button", { name: "End my ClaimCore browser sessions", exact: true })
       .click();
@@ -353,7 +356,9 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     const response = await acknowledgement;
     expect(response.status()).toBe(200);
     expect(response.headers()["cache-control"]).toContain("no-store");
-    expect(response.request().postDataJSON()).toEqual({});
+    expect(response.request().postData()).toMatch(
+      /^\{"input:operationId":"[0-9a-f-]{14}7[0-9a-f-]{21}"\}$/u,
+    );
     const payload: unknown = await response.json();
     expect(payload).toMatchObject({
       representation: "HUMAN",
@@ -370,7 +375,7 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
     await second.reload({ waitUntil: "commit" });
     await expectAnonymousSession(second);
     // ClaimCore deletion did not revoke the identity-provider session or prevent later login.
-    await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+    await login(page, "Request access", "Sign in", "synthetic-outsider");
     await expect(readSession(page)).resolves.toMatchObject({
       payload: { outcome: { data: { authenticated: true } } },
     });
@@ -381,37 +386,280 @@ test("ends all ClaimCore browser sessions while allowing a fresh login afterward
   }
 });
 
-test("reports a dispatched session termination with a lost reply only once @engine", async ({
+type TerminationEvidence = {
+  outcome?: {
+    document?: {
+      screen?: {
+        regions?: {
+          content?: {
+            entries?: { key?: string; value?: { value?: number } }[];
+          };
+        }[];
+      };
+    };
+  };
+};
+const terminationCount = (payload: unknown) => {
+  const evidence = payload as TerminationEvidence;
+  const entry = evidence.outcome?.document?.screen?.regions
+    ?.flatMap((region) => region.content?.entries ?? [])
+    .find((item) => item.key === "count");
+  return entry?.value?.value;
+};
+
+test("settles a committed lost termination after sign-in without ending the newer session @engine", async ({
   page,
 }) => {
-  test.setTimeout(freshLoginWorkflowTimeout);
+  test.setTimeout(2 * freshLoginWorkflowTimeout);
   await seedSignedOut(page);
   await page.goto("/", { waitUntil: "commit" });
-  await login(page, "You don’t have access yet", "Sign in", "synthetic-outsider");
+  await login(page, "Request access", "Sign in", "synthetic-outsider");
   const action = "End my ClaimCore browser sessions";
-  let sent = 0;
+  const context = await browserRequest(page, "/api/context", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "ClaimCore-Representation": "HUMAN",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: "{}",
+  });
+  const current = context.payload as ResponseFor<"context", "HUMAN">;
+  const requester = current.outcome.kind === "SUCCEEDED" ? current.outcome.document.subject : null;
+  const scope = requester?.kind === "REQUESTER" ? requester.terminationScope : undefined;
+  if (scope === undefined) {
+    throw new Error("Expected the current session termination scope.");
+  }
+  // Earlier scenarios may have committed a cutoff. Seed IDs at the current window boundary.
+  const lifetime = 10 * 60_000;
+  const priorCutoff = scope.retirementCutoff === null ? 0 : Date.parse(scope.retirementCutoff) + 1;
+  const issued = Math.max(Date.parse(scope.observedAt) - lifetime, priorCutoff);
+  const staleAt = new Date(Date.parse(scope.observedAt) - 25 * 60_000)
+    .toISOString()
+    .replace("Z", "000Z");
+  let checked = 0;
+  await page.route("**/api/context", async (route) => {
+    const bound = route.request().headers()["claimcore-installation"] === scope.installationId;
+    if (bound) {
+      checked += 1;
+      if (checked > 2) {
+        await route.continue();
+        return;
+      }
+    }
+    const response = await route.fetch();
+    const payload = (await response.json()) as ResponseFor<"context", "HUMAN">;
+    if (payload.outcome.kind === "SUCCEEDED") {
+      const { document } = payload.outcome;
+      if (
+        document.subject.kind === "REQUESTER" &&
+        document.subject.terminationScope !== undefined
+      ) {
+        const cutoff = Date.parse(document.subject.terminationScope.retirementCutoff ?? "");
+        if (bound && checked === 1) {
+          expect(Number.isNaN(cutoff) || cutoff <= issued).toBe(true);
+          expect(Date.parse(document.subject.terminationScope.observedAt)).toBeGreaterThan(
+            issued + lifetime,
+          );
+          await route.fulfill({ response });
+          return;
+        }
+        if (bound) {
+          // Step the observed clock back after the real PostgreSQL cutoff commits.
+          expect(cutoff).toBeGreaterThan(issued);
+        }
+        await route.fulfill({
+          response,
+          json: {
+            ...payload,
+            outcome: {
+              ...payload.outcome,
+              document: {
+                ...document,
+                subject: {
+                  ...document.subject,
+                  terminationScope: { ...document.subject.terminationScope, observedAt: staleAt },
+                },
+              },
+            },
+          },
+        });
+        return;
+      }
+    }
+    await route.fulfill({ response });
+  });
+  const recoveryKey = "claimcore.sessionTerminations.v1";
+  const expiredTimestamp = issued.toString(16).padStart(12, "0");
+  const foreign = (index: number) => ({
+    serviceOrigin: new URL(page.url()).origin,
+    installationId: scope.installationId,
+    requesterKey: `10000000-0000-4000-8000-${index.toString(16).padStart(12, "0")}`,
+    target: "self",
+    id: `${expiredTimestamp.slice(0, 8)}-${expiredTimestamp.slice(8)}-7000-8000-${index.toString(16).padStart(12, "0")}`,
+  });
+  const expired = Array.from({ length: 16 }, (_, index) => foreign(index + 1));
+  const live = { ...foreign(17), id: operationId() };
+  const otherInstall = { ...foreign(19), installationId: "90000000-0000-4000-8000-000000000099" };
+  const damaged = { ...foreign(18), id: "unreadable" };
+  await page.evaluate(
+    ({ key, records }) => {
+      sessionStorage.setItem(key, JSON.stringify(records));
+    },
+    { key: recoveryKey, records: [...expired, live, damaged, otherInstall] },
+  );
+  await page.reload({ waitUntil: "commit" });
+  await expect(page.getByText("Some saved termination requests could not be read.")).toBeVisible();
+  await expect(page.getByText(live.requesterKey, { exact: false })).toHaveCount(0);
+
+  const requests: string[] = [];
+  let originalCount: number | undefined;
+  let retirementCheck: unknown;
   await page.route("**/api/session.terminateOwn", async (route) => {
-    sent += 1;
+    const body = route.request().postData() ?? "";
+    if (requests.length === 0 && body.includes('"input:confirmRetirement":true')) {
+      retirementCheck = JSON.parse(body);
+      const saved = await page.evaluate((key) => sessionStorage.getItem(key), recoveryKey);
+      expect(JSON.parse(saved ?? "[]")).toEqual([...expired, live, damaged, otherInstall]);
+      const reply = await route.fetch();
+      expect(await reply.json()).toMatchObject({ outcome: { kind: "RETIREMENT_CONFIRMED" } });
+      await route.fulfill({ response: reply });
+      return;
+    }
+    requests.push(body);
+    if (requests.length > 1) {
+      await route.continue();
+      return;
+    }
+    const retained = await page.evaluate((key) => sessionStorage.getItem(key), recoveryKey);
+    const attempts: unknown = JSON.parse(retained ?? "[]");
+    expect(attempts).toHaveLength(3);
+    expect(attempts).toMatchObject([live, otherInstall, { target: "self" }]);
     const reply = await route.fetch();
     expect(reply.status()).toBe(200);
-    expect(await reply.json()).toMatchObject({ outcome: { kind: "SUCCEEDED", self: true } });
+    const payload: unknown = await reply.json();
+    expect(payload).toMatchObject({ outcome: { kind: "SUCCEEDED", self: true } });
+    originalCount = terminationCount(payload);
+    expect(originalCount).toBeGreaterThan(0);
     await route.abort();
   });
-  const control = page.getByRole("button", { name: action, exact: true });
+  const control = page.getByRole("button", { name: "Start a new termination", exact: true });
   await control.click();
   const dialog = page.getByRole("dialog", { name: action, exact: true });
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
-  expect(sent).toBe(0);
+  expect(requests).toHaveLength(0);
   await control.click();
   await dialog.getByRole("button", { name: action, exact: true }).click();
   await expect(dialog.getByRole("alert")).toHaveText(
-    "The request was not confirmed. It may have ended the ClaimCore browser sessions. Repeating it can also end newer sessions.",
+    "The request may have ended browser sessions. Repeat it using the same request ID to recover the result. A new request ID can end newer sessions.",
   );
   await expect(dialog).not.toContainText("ClaimCore browser sessions ended.");
   await expect.poll(() => recoveryRecords(page, { allowMissing: true })).toEqual([]);
-  expect(sent).toBe(1);
+  expect(requests).toHaveLength(1);
+  expect(checked).toBe(2);
+  expect(retirementCheck).toEqual({ ...JSON.parse(requests[0]!), "input:confirmRetirement": true });
+  await expectAnonymousSession(page);
+  await page.reload({ waitUntil: "commit" });
+  await login(page, "Request access", "Sign in", "synthetic-outsider");
+  const resume = "Resume unconfirmed termination";
+  await expect(
+    page.getByRole("button", { name: "Start a new termination", exact: true }),
+  ).toBeVisible();
+  expect(requests).toHaveLength(1);
+  await page.getByRole("button", { name: resume, exact: true }).click();
+  await expect(dialog).toBeVisible();
+  expect(requests).toHaveLength(1);
+  const settlement = page.waitForResponse((reply) =>
+    reply.url().endsWith("/api/session.terminateOwn"),
+  );
+  await dialog.getByRole("button", { name: resume, exact: true }).click();
+  const confirmed = await settlement;
+  expect(confirmed.status()).toBe(200);
+  expect(terminationCount(await confirmed.json())).toBe(originalCount);
+  expect(requests).toHaveLength(2);
+  expect(checked).toBe(3);
+  const original: unknown = JSON.parse(requests[0]!);
+  if (typeof original !== "object" || original === null) {
+    throw new Error("Expected the original termination request object.");
+  }
+  expect(JSON.parse(requests[1]!)).toEqual({ ...original, "input:settleOnly": true });
+  await expect(page.getByText("ClaimCore browser sessions ended.")).toBeVisible();
+  await expect(page.getByRole("button", { name: resume, exact: true })).toHaveCount(0);
+  const remaining = await page.evaluate((key) => sessionStorage.getItem(key), recoveryKey);
+  expect(JSON.parse(remaining ?? "[]")).toEqual([live, otherInstall]);
+  await expect(readSession(page)).resolves.toMatchObject({
+    payload: { outcome: { data: { authenticated: true } } },
+  });
+});
+
+test("the installation header gates every own-session termination mode @engine", async ({
+  page,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  await seedSignedOut(page);
+  await page.goto("/", { waitUntil: "commit" });
+  await login(page, "Request access", "Sign in", "synthetic-outsider");
+  const token = await sessionToken(page);
+  const headers = { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token };
+  const scope = async () => {
+    const reply = await browserRequest(page, "/api/context", {
+      method: "POST",
+      headers,
+      body: "{}",
+    });
+    const payload = reply.payload as ResponseFor<"context", "DATA">;
+    if (
+      payload.outcome.kind !== "SUCCEEDED" ||
+      payload.outcome.data.terminationScope === undefined
+    ) {
+      throw new Error("Expected a termination scope for the unregistered principal.");
+    }
+    return payload.outcome.data.terminationScope;
+  };
+  const original = await scope();
+  const identifier = operationId();
+  const post = (mode: object, installation?: string) =>
+    browserRequest(page, "/api/session.terminateOwn", {
+      method: "POST",
+      headers: {
+        ...headers,
+        ...(installation === undefined ? {} : { "ClaimCore-Installation": installation }),
+      },
+      body: JSON.stringify({ "input:operationId": identifier, ...mode }),
+    });
+
+  for (const mode of [{}, { "input:settleOnly": true }, { "input:confirmRetirement": true }]) {
+    for (const invalid of [undefined, "invalid", "00000000-0000-0000-0000-000000000000"]) {
+      const refused = await post(mode, invalid);
+      expect(refused.status).toBe(400);
+      expect(refused.payload).toMatchObject({
+        hostFailure: { code: "INPUT_INVALID", phase: "NOT_STARTED" },
+      });
+    }
+    const wrong = await post(mode, "10000000-0000-4000-8000-000000000001");
+    expect(wrong.status).toBe(409);
+    expect(wrong.payload).toMatchObject({
+      hostFailure: { code: "INSTALLATION_MISMATCH", phase: "NOT_STARTED" },
+    });
+  }
+  expect((await scope()).retirementCutoff).toBe(original.retirementCutoff);
+  await expect(readSession(page)).resolves.toMatchObject({
+    payload: { outcome: { data: { authenticated: true } } },
+  });
+  expect((await post({ "input:settleOnly": true }, original.installationId)).payload).toMatchObject(
+    { outcome: { kind: "OUTCOME_UNKNOWN" } },
+  );
+  expect(
+    (await post({ "input:confirmRetirement": true }, original.installationId)).payload,
+  ).toMatchObject({ outcome: { kind: "RETIREMENT_CONFIRMED" } });
+  expect((await scope()).retirementCutoff).not.toBe(original.retirementCutoff);
+  const cut = (await post({}, original.installationId)).payload;
+  expect(cut).toMatchObject({ outcome: { kind: "SUCCEEDED", data: { self: true } } });
+  expect((cut as ResponseFor<"session.terminateOwn", "DATA">).outcome).toMatchObject({
+    data: { count: expect.any(Number) },
+  });
   await expectAnonymousSession(page);
 });
 
@@ -443,15 +691,36 @@ test("owner termination ends the selected person's existing ticket and preserves
       issuer: principal.issuer,
       subject: principal.stewardSubject,
     });
-    const replay = await browserRequest(page, "/api/people.terminateSessions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "ClaimCore-Representation": "HUMAN",
-        "X-ClaimCore-Antiforgery": await sessionToken(page),
-      },
-      body: JSON.stringify({ "input:actorId": actorId }),
+    const token = await sessionToken(page);
+    const register = await installationId(page, token);
+    const post = (mode: object, installation?: string) =>
+      browserRequest(page, "/api/people.terminateSessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ClaimCore-Representation": "HUMAN",
+          "X-ClaimCore-Antiforgery": token,
+          ...(installation === undefined ? {} : { "ClaimCore-Installation": installation }),
+        },
+        body: JSON.stringify({
+          "input:actorId": actorId,
+          "input:operationId": operationId(),
+          ...mode,
+        }),
+      });
+    for (const mode of [{}, { "input:settleOnly": true }, { "input:confirmRetirement": true }]) {
+      expect((await post(mode)).payload).toMatchObject({ hostFailure: { code: "INPUT_INVALID" } });
+      expect((await post(mode, "invalid")).payload).toMatchObject({
+        hostFailure: { code: "INPUT_INVALID" },
+      });
+      expect((await post(mode, "10000000-0000-4000-8000-000000000001")).payload).toMatchObject({
+        hostFailure: { code: "INSTALLATION_MISMATCH" },
+      });
+    }
+    await expect(readSession(person)).resolves.toMatchObject({
+      payload: { outcome: { data: { authenticated: true } } },
     });
+    const replay = await post({}, register);
     expect(replay.status).toBe(200);
     expect(replay.payload).toMatchObject({ outcome: { kind: "SUCCEEDED", self: false } });
     await expectAnonymousSession(person);

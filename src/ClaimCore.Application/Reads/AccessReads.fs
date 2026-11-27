@@ -18,22 +18,45 @@ module internal AccessReads =
         }
 
     let globalReadFacts (tx: ReadTx) principal =
-        let connection = tx.Connection
-        let token = tx.CancellationToken
-        Projections.globalReadFacts connection principal token
+        task {
+            let! usable = Credentials.admits tx principal
+            let! facts = Projections.globalReadFacts tx.Connection principal tx.CancellationToken
+
+            return
+                if usable then
+                    facts
+                else
+                    { facts with
+                        People = AccessView.empty
+                        AssignedRoles = []
+                    }
+        }
 
     let access (tx: ReadTx) principal caseId =
-        let connection = tx.Connection
-        let token = tx.CancellationToken
-
-        match caseId with
-        | Some id -> Projections.actor connection principal [ id ] token
-        | None -> Projections.actorWithVisibility connection principal token
+        task {
+            match! Credentials.admits tx principal with
+            | false -> return AccessView.empty
+            | true ->
+                match caseId with
+                | Some id ->
+                    return! Projections.actor tx.Connection principal [ id ] tx.CancellationToken
+                | None ->
+                    return!
+                        Projections.actorWithVisibility tx.Connection principal tx.CancellationToken
+        }
 
     let accessCases (tx: ReadTx) (principal, ids) =
-        let connection = tx.Connection
-        let token = tx.CancellationToken
-        Projections.actor connection principal (List.distinct ids) token
+        task {
+            match! Credentials.admits tx principal with
+            | false -> return AccessView.empty
+            | true ->
+                return!
+                    Projections.actor
+                        tx.Connection
+                        principal
+                        (List.distinct ids)
+                        tx.CancellationToken
+        }
 
     let assigneePage (tx: ReadTx) (query: AssigneeQuery) =
         let connection = tx.Connection

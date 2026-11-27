@@ -27,6 +27,10 @@ type ClientSecrets =
         Unscoped: string
     }
 
+// Give the fixture's whole-second issuer time to clear the bootstrap cutoff and clock allowance.
+let waitForFreshProviderProof () =
+    System.Threading.Tasks.Task.Delay(System.TimeSpan.FromSeconds 3.)
+
 let ownerSubject = "11111111-1111-4111-8111-111111111111"
 let stewardSubject = "22222222-2222-4222-8222-222222222222"
 let readerSubject = "33333333-3333-4333-8333-333333333333"
@@ -97,9 +101,12 @@ let private client (definition: ClientDefinition) =
     node["attributes"] <- attributes
 
     if scoped then
-        node["protocolMappers"] <-
-            parse
-                """[{"name":"api-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"api","id.token.claim":"false","access.token.claim":"true"}}]"""
+        let profile = if interactive then "human" else "service"
+
+        let mappers =
+            """[{"name":"api-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"api","id.token.claim":"false","access.token.claim":"true"}},{"name":"claimcore-principal","protocol":"openid-connect","protocolMapper":"oidc-hardcoded-claim-mapper","config":{"claim.name":"claimcore_principal","claim.value":"PROFILE","jsonType.label":"String","id.token.claim":"false","access.token.claim":"true"}}]"""
+
+        node["protocolMappers"] <- parse (mappers.Replace("PROFILE", profile))
 
     node
 

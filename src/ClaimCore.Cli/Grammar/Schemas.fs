@@ -16,7 +16,10 @@ module CliSchemas =
                         [ "installationId", Codec.uuid.Schema ]
                     else
                         [])),
-                (if Frames.acceptsInstallationBinding endpoint then
+                (if
+                     Frames.acceptsInstallationBinding endpoint
+                     && not (Api.terminatesSessions endpoint)
+                 then
                      [ "installationId" ]
                  else
                      [])

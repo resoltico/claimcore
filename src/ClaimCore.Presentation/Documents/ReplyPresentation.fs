@@ -51,7 +51,7 @@ module Refusals =
             RecommendedAction.CorrectInput
         | Refusal.RevisionConflict _
         | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)
-        | Refusal.People(PeopleRefusal.ActorChanged | PeopleRefusal.LastOwner | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
+        | Refusal.People(PeopleRefusal.ActorChanged | PeopleRefusal.LastOwner | PeopleRefusal.DistinctOwnerRequired | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
             RecommendedAction.ReviewLatest
 
     let actualRevision =

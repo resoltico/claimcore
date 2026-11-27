@@ -775,5 +775,50 @@
     "text": "저장된 환경설정 초기화",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "미확인 세션 종료 재개",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "새 세션 종료 시작",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "이전 요청의 저장된 결과를 확인합니다. 이후 세션은 계속 열려 있습니다.",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "새 요청으로 더 최근 세션이 종료될 수 있습니다. 이전 요청 ID는 결과를 복구할 수 있는 동안 유지됩니다.",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "이전 요청이 현재 복구 기간을 벗어났습니다. 저장된 요청 ID는 유지됩니다.",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "이전 요청이 만료되었습니다. 결과는 아직 확인되지 않았습니다.",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "저장된 요청은 다른 계정, 설치 또는 대상에 속합니다. 재개하려면 해당 선택으로 돌아가세요.",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "만료된 요청 지우기",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "저장된 세션 종료 요청 중 일부를 읽을 수 없습니다.",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

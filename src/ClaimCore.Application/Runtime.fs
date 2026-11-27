@@ -52,7 +52,17 @@ type private RuntimeResource
 
     interface IRuntime with
         member _.Housekeep(dateAt, token) =
-            Housekeeping.prune source installation Housekeeping.DefaultBatch dateAt token
+            task {
+                do!
+                    Transactions.settleCredentials
+                        source
+                        Transactions.timeouts
+                        (Baseline.requireExpected installation)
+                        token
+
+                return!
+                    Housekeeping.prune source installation Housekeeping.DefaultBatch dateAt token
+            }
 
         member _.RunDigests(basis, send, record, token) =
             let admit ct =
@@ -192,6 +202,13 @@ module Runtime =
 
                                 return Some(witness, primary)
                         }
+
+                    do!
+                        Transactions.settleCredentials
+                            source
+                            Transactions.timeouts
+                            (Baseline.requireExpected installation)
+                            cancellationToken
 
                     return
                         Ok(new RuntimeResource(source, installation, cipher, witness) :> IRuntime)

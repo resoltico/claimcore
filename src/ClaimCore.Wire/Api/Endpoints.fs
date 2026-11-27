@@ -567,6 +567,15 @@ module Api =
             "DisclosureTrailReply"
             ResponseCodecs.disclosureTrailPage
 
+    let peopleRequestsSubmit =
+        { actorEndpoint
+              (ActorEndpoint.Command CommandTaskId.RequestAccess)
+              RequestCodecs.empty
+              "AccessRequestSubmitReply"
+              Codec.nullValue with
+            Effect = EndpointEffect.OperationalWrite
+        }
+
     let peopleRequestsDismiss =
         { actorEndpoint
               (ActorEndpoint.Command CommandTaskId.DismissAccessRequest)
@@ -590,7 +599,8 @@ module Api =
             Classify = SessionTerminationCodecs.classify
             ReadReply =
                 function
-                | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded(_, document)) ->
+                | RepresentationReply.Human(HumanSessionTerminationResult.Succeeded(_, document))
+                | RepresentationReply.Human(HumanSessionTerminationResult.RetirementConfirmed document) ->
                     Some(
                         RepresentationReply.Human
                             {
@@ -611,7 +621,8 @@ module Api =
                                 Outcome = HumanReadOutcome.Failed fault
                             }
                     )
-                | RepresentationReply.Data(SessionTerminationResult.Succeeded _) ->
+                | RepresentationReply.Data(SessionTerminationResult.Succeeded _)
+                | RepresentationReply.Data SessionTerminationResult.RetirementConfirmed ->
                     Some(RepresentationReply.Data(Outcome.Succeeded()))
                 | RepresentationReply.Data(SessionTerminationResult.Rejected refusal) ->
                     Some(RepresentationReply.Data(Outcome.Rejected refusal))
@@ -631,7 +642,7 @@ module Api =
     let terminateOwnSessions =
         termination
             CommandTaskId.TerminateOwnSessions
-            RequestCodecs.empty
+            RequestCodecs.terminateOwnSessionsRequest
             "OwnSessionTerminationReply"
 
     let terminatePersonSessions =
@@ -674,6 +685,8 @@ module Api =
             EndpointDefinition.create peopleRequests
         | ActorEndpoint.Query QueryTaskId.DisclosureTrail ->
             EndpointDefinition.create disclosureTrail
+        | ActorEndpoint.Command CommandTaskId.RequestAccess ->
+            EndpointDefinition.create peopleRequestsSubmit
         | ActorEndpoint.Command CommandTaskId.DismissAccessRequest ->
             EndpointDefinition.create peopleRequestsDismiss
         | ActorEndpoint.Command CommandTaskId.TerminateOwnSessions ->
@@ -722,11 +735,17 @@ module Api =
         | EndpointId.Actor _ -> true
         | EndpointId.Host _ -> false
 
+    let terminatesSessions (endpoint: Route) =
+        match endpoint.Id with
+        | EndpointId.Actor(ActorEndpoint.Command(CommandTaskId.TerminateOwnSessions | CommandTaskId.TerminatePersonSessions)) ->
+            true
+        | _ -> false
+
     let requiresInstallation (endpoint: Route) =
         match endpoint.Id with
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
         | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) -> true
-        | _ -> false
+        | _ -> terminatesSessions endpoint
 
     let executesLedger endpoint =
         effect endpoint = EndpointEffect.LedgerExecution

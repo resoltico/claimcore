@@ -42,6 +42,7 @@ let internal contextCodec () =
         (RepresentationReply.Data(
             Outcome.Succeeded
                 {
+                    TerminationScope = None
                     Requester =
                         RequesterState.Active
                             {
@@ -82,6 +83,7 @@ let internal contextCodec () =
                                         )
                                     )
                                 HasScopedCases = false
+                                AuthorityVersion = 1L
                                 Maintenance = RegisterMaintenance.initial
                                 Capability = []
                                 View = []

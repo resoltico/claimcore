@@ -579,11 +579,8 @@ let internal signInIdentityChange fixture =
             }
 
         match preview.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed review) ->
-            Expect.isTrue
-                review.ChangesOwnSignInIdentity
-                "A self-change is identified for rendering"
-        | other -> failtestf "Expected self-change review: %A" other
+        | Outcome.Rejected(Refusal.People PeopleRefusal.DistinctOwnerRequired) -> ()
+        | other -> failtestf "Expected routine Owner self-rebind refusal: %A" other
 
         let! changed =
             execute
@@ -594,6 +591,14 @@ let internal signInIdentityChange fixture =
                 (identityValues replacement)
 
         acceptedPeople changed
+
+        let! former = Service.context (core fixture prior) () token
+
+        match former with
+        | Outcome.Succeeded {
+                                Requester = RequesterState.FormerIdentity
+                            } -> ()
+        | other -> failtestf "Expected former requester status: %A" other
 
         let! obsolete = Service.get (core fixture prior) { Target = target } token
 

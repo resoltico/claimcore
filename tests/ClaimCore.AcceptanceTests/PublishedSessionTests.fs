@@ -346,7 +346,7 @@ let private ticketBoundary (fixture: PublishedFixture.Fixture) sessionKey (paylo
         )
 
     let clear =
-        provider.CreateProtector("ClaimCore.Server.DatabaseSessionTicket.1").Unprotect payload
+        provider.CreateProtector("ClaimCore.Server.DatabaseSessionTicket.2").Unprotect payload
 
     let idToken =
         try
@@ -424,7 +424,7 @@ let private newKeyProtectsTicket (fixture: PublishedFixture.Fixture) keyId oldPa
                     fun builder -> builder.SetApplicationName("ClaimCore.Server") |> ignore
                 )
             // These persisted purpose names are deliberately asserted independently of the writer.
-            let protector = provider.CreateProtector("ClaimCore.Server.DatabaseSessionTicket.1")
+            let protector = provider.CreateProtector("ClaimCore.Server.DatabaseSessionTicket.2")
             let clear = protector.Unprotect newer.Head
 
             try
@@ -510,7 +510,27 @@ let private qualify () =
         try
             use _ownership = fixture
             do! fixture.Start()
-            browserPhase fixture "login" "primary-login"
+            // Fresh owner proof needs a whole second beyond the provider clock lead.
+            do! Task.Delay(TimeSpan.FromSeconds 3.)
+
+            do!
+                task {
+                    let connectionFile = Path.Combine(fixture.Directory, "owner.connection")
+                    use source = NpgsqlDataSource.Create(File.ReadAllText connectionFile)
+                    use! connection = source.OpenConnectionAsync()
+                    use! transaction = connection.BeginTransactionAsync()
+
+                    use command =
+                        new NpgsqlCommand(
+                            "SELECT * FROM claimcore.ledger_head FOR UPDATE",
+                            connection
+                        )
+
+                    let! _ = command.ExecuteNonQueryAsync()
+                    browserPhase fixture "login" "primary-login"
+                    do! transaction.RollbackAsync()
+                }
+
             let! before = lifetimes fixture
             Expect.equal before.Length 1 "Real OIDC login creates exactly one server-side ticket"
             let! idToken = rollover fixture before

@@ -775,5 +775,50 @@
     "text": "保存済みの設定をリセット",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "未確認のセッション終了を再開",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "新しいセッション終了を開始",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "前のリクエストの保存結果を確認します。それ以降のセッションは維持されます。",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "新しいリクエストによって、より新しいセッションが終了することがあります。以前のリクエスト ID は、結果を復旧できる間は保持されます。",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "以前のリクエストは現在の復旧期限を過ぎています。保存済みのリクエスト ID は保持されます。",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "前のリクエストの有効期限が切れました。結果は未確認のままです。",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "別のアカウント、インストール、または対象に保存済みのリクエストがあります。再開するには元の選択に戻ってください。",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "期限切れのリクエストを忘れる",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "保存済みのセッション終了リクエストの一部を読み取れませんでした。",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

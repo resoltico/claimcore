@@ -48,12 +48,7 @@ module internal OperationService =
 
     let private replayReceipt (services: ServiceContext) (tx: ReadTx) record =
         task {
-            let! person = PersonAcquisition.principal tx services.Principal
-
-            let access =
-                person
-                |> Option.map ClaimCore.Domain.Aggregates.Person.access
-                |> AccessView.ofActor
+            let! access = ExecutionEnvironment.requester tx services.Principal
 
             let! receipt =
                 ReceiptReads.read

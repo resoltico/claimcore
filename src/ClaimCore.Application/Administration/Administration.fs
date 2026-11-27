@@ -129,7 +129,7 @@ module internal LedgerAdministration =
             let! reserved =
                 EncryptionBudget.reserveActive source InstallationCipher.operationAllowance token
 
-            return!
+            let! result =
                 DatabaseSession.transaction
                     source
                     Data.IsolationLevel.ReadCommitted
@@ -235,6 +235,19 @@ module internal LedgerAdministration =
                                         RecordCorruptException "Owner recovery recording failed."
                                     )
                         })
+
+            match result with
+            | OwnerRecoveryResult.Recovered _ ->
+                do!
+                    Transactions.settleCredentials
+                        source
+                        Transactions.timeouts
+                        (fun connection ct ->
+                            task { let! _ = Baseline.require connection ct in return () })
+                        token
+            | OwnerRecoveryResult.Unchanged _ -> ()
+
+            return result
         }
 
 module internal AdministrationFailures =
@@ -417,8 +430,6 @@ type Administration(connectionString: string, productVersion: string, masterKey:
         }
 
     member _.RotateEncryptionGeneration(handle, token) =
-        let newGeneration = Baseline.newEncryptionGeneration ()
-
         DatabaseSession.transaction
             source
             Data.IsolationLevel.ReadCommitted
@@ -434,7 +445,7 @@ type Administration(connectionString: string, productVersion: string, masterKey:
                     use! _admitted =
                         Baseline.loadCipher connection installation.InstallationId masterKey token
 
-                    do! Baseline.rotateEncryptionGeneration connection newGeneration token
+                    let! newGeneration = Baseline.rotateEncryptionGeneration connection None token
                     do! Baseline.advanceRecoveryPublication connection token
                     do! DatabaseSession.commit transaction token
                     return newGeneration

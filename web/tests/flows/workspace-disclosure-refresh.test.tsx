@@ -1,4 +1,3 @@
-import { workspaceSignOut } from "../support/workspace-actions";
 import type { RequesterDocument } from "../../src/protocol/types";
 import { installationActions, activeRequester } from "../support/human-requester.fixtures";
 import {
@@ -336,7 +335,7 @@ it("keeps the requested case route while an actual read refusal removes every cu
 });
 
 it.each(["NO_ROLES", "DISABLED"] as const)(
-  "retains same-requester uncertain bytes through %s without replay and restores the draft after access returns",
+  "keeps an uncertain operation from resuming a private draft after %s",
   async (kind) => {
     const active = contextFor(
       ["CASES", "PEOPLE", "OPERATIONS"],
@@ -365,6 +364,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       subject: {
         kind: "REQUESTER",
         state: kind,
+        authorityVersion: null,
         installationId: kind === "NO_ROLES" ? self.installationId : null,
         actorId: self.actorId,
       },
@@ -405,22 +405,17 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       </>,
     );
     await beginUnknownPeople(user);
-    const [{ bytes }] = execute.mock.calls[0]!;
     await act(() => Promise.resolve().then(refresh));
     await screen.findByRole("heading", {
       name: kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",
     });
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
     expect(execute).toHaveBeenCalledOnce();
-    await user.click(await workspaceSignOut(user));
-    expect(await screen.findByRole("dialog")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Keep editing" }));
     await user.click(screen.getByRole("button", { name: "Check access" }));
-    await user.click(await screen.findByRole("button", { name: "Continue current request" }));
-    const retry = await screen.findByRole("button", { name: "Send again" });
-    await user.click(retry);
-    expect(execute).toHaveBeenCalledTimes(2);
-    expect(execute.mock.calls[1]![0].bytes).toBe(bytes);
+    await screen.findByRole("link", { name: "People and access" });
+    expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Continue current request" })).toBeNull();
+    expect(execute).toHaveBeenCalledOnce();
   },
 );
 
@@ -454,6 +449,7 @@ it.each(["actor", "installation"] as const)(
       subject: {
         kind: "REQUESTER",
         state: "NO_ROLES",
+        authorityVersion: null,
         installationId:
           difference === "installation"
             ? "90000000-0000-4000-8000-000000000099"

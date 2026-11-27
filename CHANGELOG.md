@@ -8,6 +8,11 @@
 - If a prepared restore target is permanently lost, the witness owner can [supersede its pending attempt](docs/operating.md#backups-and-restore) without reopening traffic.
 - Preserve the last admitted ledger prefix and operation-expiry cutoff across restores, including restores with a disclosure gap.
 - Restored installations suppress digests through the later of reopening and the last authorized dispatch date. Existing same-day claims remain durable.
+- Configure the approved OIDC client profiles and synchronized clocks. Use matching Web, CLI and regenerated API clients.
+- Request access explicitly. Replaced identities stay reserved to their original account and cannot enter the access inbox.
+- Sign in again after admission, re-enablement, identity replacement or restore. A different signed-in Owner must perform a routine Owner identity change.
+- End browser sessions across an account’s reserved identities. Resume an unconfirmed Web termination after signing in to recover its saved count and keep newer sessions open.
+- Bind session termination, settlement and retirement to the intended installation. Keep the original installation ID when preparing or recovering CLI requests.
 - Ship matching server and Web artifacts. Startup and publish check compiled handshake identity, HTML references, dependency closure, viewer resources and asset bytes.
 - Recover healthy operations even when another local record is damaged. CLI JSON listings report the count of unreadable records.
 - Restart cursor traversals after encryption generation rotation. Keep older wrapping keys for retained same-format backups.

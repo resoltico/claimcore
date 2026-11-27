@@ -140,6 +140,8 @@ module TaskChoiceId =
         | TaskInputId.DisclosureUntil
         | TaskInputId.ResponsibleActorFilter
         | TaskInputId.CaseDate _
+        | TaskInputId.SettleOnly
+        | TaskInputId.ConfirmRetirement
         | TaskInputId.IncludeInactive -> None
 
 [<RequireQualifiedAccess>]

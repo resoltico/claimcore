@@ -27,7 +27,9 @@
                   "outcome": "SUCCEEDED",
                   "export": {
                     "query": "case.list",
-                    "selection": [{"key": "view", "value": "NEEDS_ATTENTION"}],
+                    "selection": [
+                      { "key": "view", "value": "NEEDS_ATTENTION" }
+                    ],
                     "rowCount": 12
                   }
                 }
@@ -505,11 +507,7 @@
               "summaryRecordedBy": null
             },
             "headline": "PAID",
-            "attention": [
-              "NO_NEXT_ACTION",
-              "UNASSIGNED",
-              "READY_TO_CLOSE"
-            ],
+            "attention": ["NO_NEXT_ACTION", "UNASSIGNED", "READY_TO_CLOSE"],
             "stages": {
               "kind": "TRACKER",
               "current": "PAID",
@@ -608,29 +606,20 @@
                     "payableCurrency": null
                   },
                   "parties": {
-                    "CLAIMANT": [
-                      "Synthetic claimant"
-                    ],
-                    "INSURER": [
-                      "Synthetic insurer"
-                    ]
+                    "CLAIMANT": ["Synthetic claimant"],
+                    "INSURER": ["Synthetic insurer"]
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "caseId": "20000000-0000-7000-8000-000000000001",
                 "headline": "UNDECIDED",
-                "attention": [
-                  "NO_NEXT_ACTION",
-                  "UNASSIGNED"
-                ],
+                "attention": ["NO_NEXT_ACTION", "UNASSIGNED"],
                 "nextAction": null,
                 "responsible": null,
                 "pendingReminders": 0,
                 "stages": {
                   "current": "OPENED",
-                  "completed": [
-                    "OPENED"
-                  ]
+                  "completed": ["OPENED"]
                 },
                 "paymentCount": 0,
                 "lastPaymentDate": null,
@@ -650,12 +639,8 @@
                     "payableCurrency": null
                   },
                   "parties": {
-                    "CLAIMANT": [
-                      "Synthetic claimant"
-                    ],
-                    "INSURER": [
-                      "Synthetic insurer"
-                    ]
+                    "CLAIMANT": ["Synthetic claimant"],
+                    "INSURER": ["Synthetic insurer"]
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -1196,6 +1181,7 @@
           "data": {
             "requester": {
               "kind": "ACTIVE",
+              "authorityVersion": 1,
               "productVersion": "x",
               "businessDate": "2026-01-01",
               "timeZone": "x",
@@ -1237,11 +1223,7 @@
                 "MANAGE_ACCESS",
                 "READ_ACCESS"
               ],
-              "views": [
-                "CASES",
-                "PEOPLE",
-                "OPERATIONS"
-              ],
+              "views": ["CASES", "PEOPLE", "OPERATIONS"],
               "hasScopedCases": false,
               "actorId": "10000000-0000-7000-8000-000000000001",
               "installationId": "90000000-0000-7000-8000-000000000001",
@@ -1696,9 +1678,7 @@
               "active": true,
               "timing": "UPCOMING",
               "responsible": null,
-              "claimants": [
-                "Synthetic claimant"
-              ]
+              "claimants": ["Synthetic claimant"]
             }
           }
         },
@@ -1749,9 +1729,7 @@
                 "active": true,
                 "timing": "UPCOMING",
                 "responsible": null,
-                "claimants": [
-                  "Synthetic claimant"
-                ]
+                "claimants": ["Synthetic claimant"]
               },
               {
                 "reminder": {
@@ -1774,15 +1752,11 @@
                   "principalKind": "HUMAN",
                   "availability": "AVAILABLE"
                 },
-                "acts": [
-                  "reminder.reopen"
-                ],
+                "acts": ["reminder.reopen"],
                 "active": false,
                 "timing": null,
                 "responsible": null,
-                "claimants": [
-                  "Synthetic claimant"
-                ]
+                "claimants": ["Synthetic claimant"]
               },
               {
                 "reminder": {
@@ -1805,15 +1779,11 @@
                   "principalKind": "HUMAN",
                   "availability": "AVAILABLE"
                 },
-                "acts": [
-                  "reminder.reopen"
-                ],
+                "acts": ["reminder.reopen"],
                 "active": true,
                 "timing": null,
                 "responsible": null,
-                "claimants": [
-                  "Synthetic claimant"
-                ]
+                "claimants": ["Synthetic claimant"]
               }
             ],
             "nextCursor": null
@@ -3062,6 +3032,15 @@
             "payees": []
           }
         }
+      }
+    },
+    {
+      "name": "people.requests.submit-confirmed",
+      "endpoint": "people.requests.submit",
+      "valid": true,
+      "value": {
+        "representation": "DATA",
+        "outcome": { "kind": "SUCCEEDED", "data": null }
       }
     },
     {

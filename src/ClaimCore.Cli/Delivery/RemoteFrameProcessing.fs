@@ -57,6 +57,37 @@ module private FrameInvocation =
             value.Class |> OperationSettlement.ofReply |> OperationSettlement.isFinal
         | _ -> false
 
+    let private termination
+        (access: AuthenticatedFrameAccess)
+        (target: RemoteServiceCall.Access)
+        frame
+        beforeSend
+        cancelled
+        =
+        task {
+            let target =
+                { target with
+                    InstallationId = Frames.installationId frame
+                }
+
+            match! RemoteServiceCall.terminationScope access.Client target cancelled with
+            | Error reply -> return CliReply.forAttempt frame DeliveryState.NotSent reply
+            | Ok scope ->
+                match Frames.bindInstallation scope.InstallationId frame with
+                | Error failure ->
+                    return CliReply.local failure |> CliReply.forAttempt frame DeliveryState.NotSent
+                | Ok bound ->
+                    return!
+                        RemoteServiceCall.send
+                            access.Client
+                            { target with
+                                InstallationId = Some scope.InstallationId
+                            }
+                            bound
+                            (fun () -> beforeSend bound)
+                            cancelled
+        }
+
     let rec prepared
         transferClient
         (access: AuthenticatedFrameAccess)
@@ -74,7 +105,9 @@ module private FrameInvocation =
                     Authorization = token.Authorization
                 }
 
-            if
+            if Api.terminatesSessions (Frames.endpoint frame) then
+                return! termination access target frame beforeSend cancelled
+            elif
                 not (Api.requiresInstallation (Frames.endpoint frame))
                 && (Frames.endpoint frame).Id
                    <> EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview)
@@ -281,7 +314,46 @@ module private FrameInvocation =
                                 Environment.GetEnvironmentVariable name |> Option.ofObj)
                 }
 
-            prepared access.TransferClient transport token frame beforeSend consent cancelled)
+            task {
+                let! reply =
+                    prepared
+                        access.TransferClient
+                        transport
+                        token
+                        frame
+                        beforeSend
+                        consent
+                        cancelled
+
+                if access.IsCurrent token then
+                    let! renew =
+                        task {
+                            if RemoteServiceCall.signInRequired reply then
+                                return true
+                            else
+                                match reply.Frame.Result with
+                                | FrameResult.Reply value when value.Class = ReplyKind.Rejected ->
+                                    let target: RemoteServiceCall.Access =
+                                        {
+                                            Service = access.Configuration.Service
+                                            InstallationId = None
+                                            Authorization = token.Authorization
+                                        }
+
+                                    match!
+                                        RemoteServiceCall.context access.Client target cancelled
+                                    with
+                                    | Error status ->
+                                        return RemoteServiceCall.signInRequired status
+                                    | Ok _ -> return false
+                                | _ -> return false
+                        }
+
+                    if renew && access.IsCurrent token then
+                        do! access.DiscardTokens cancelled
+
+                return reply
+            })
 
     let private expectedAttachment (selection: AttachmentReadRequest) (listed: CliReply) =
         match listed.Frame.Result with
@@ -333,7 +405,11 @@ module private FrameInvocation =
                     not cancelled.IsCancellationRequested && access.IsCurrent token
 
                 match! RemoteServiceCall.context access.Client target cancelled with
-                | Error reply -> return Error(AttachmentDownloadFailure.Access reply)
+                | Error reply ->
+                    if current () && RemoteServiceCall.signInRequired reply then
+                        do! access.DiscardTokens cancelled
+
+                    return Error(AttachmentDownloadFailure.Access reply)
                 | Ok _ when not (current ()) -> return local ClientFailure.Cancelled
                 | Ok context ->
                     let bound =

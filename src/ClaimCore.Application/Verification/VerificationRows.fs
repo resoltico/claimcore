@@ -349,20 +349,27 @@ module internal VerificationRows =
                     expected
                     |> Map.map (fun _ row ->
                         { row.Actor with Profile = None },
-                        PrincipalKey.naturalKey row.Actor.Principal)
+                        PrincipalKey.naturalKey row.Actor.Principal,
+                        row.CredentialBoundary)
 
                 let! actors =
                     compareRows
                         connection
                         VerificationFinding.PeopleProjection
-                        (fun ((actor: Actor), _) -> actor.ActorId)
+                        (fun ((actor: Actor), _, _) -> actor.ActorId)
                         identities
-                        "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,principal_key FROM claimcore.actors ORDER BY actor_id"
+                        "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact,principal_key,credential_generation,credential_cutoff FROM claimcore.actors ORDER BY actor_id"
                         (fun row ->
                             { Projections.actorRow row with
                                 Profile = None
                             },
-                            DatabaseSession.value<string> 7 row)
+                            DatabaseSession.value<string> 7 row,
+                            {
+                                CredentialGeneration =
+                                    DatabaseSession.value<int64> 8 row
+                                    |> DatabaseSession.admitted Sequence.create
+                                CredentialCutoff = DatabaseSession.instant 9 row
+                            })
                         token
 
                 match actors with

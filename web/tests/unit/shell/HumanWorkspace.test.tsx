@@ -68,6 +68,7 @@ const inactive = (state: "NO_ROLES" | "DISABLED" | "NOT_REGISTERED"): HumanDocum
   subject: {
     kind: "REQUESTER",
     state,
+    authorityVersion: null,
     installationId: state === "NO_ROLES" ? activeRequester.subject.installationId : null,
     actorId: state === "NOT_REGISTERED" ? null : activeRequester.subject.actorId,
   },

@@ -773,5 +773,50 @@
     "text": "إعادة ضبط التفضيلات المحفوظة",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "استئناف إنهاء الجلسات غير المؤكد",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "بدء طلب إنهاء جديد",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "تحقق من نتيجة الطلب السابق المحفوظة. ستظل الجلسات الأحدث مفتوحة.",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "قد ينهي طلب جديد الجلسات الأحدث. تُحفظ معرّفات الطلبات السابقة ما دام استرداد نتائجها ممكنًا.",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "الطلب السابق خارج مدة الاسترداد الحالية. يظل معرّف الطلب المحفوظ محفوظًا.",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "انتهت مهلة طلب الإنهاء السابق. لا تزال نتيجته غير مؤكدة.",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "هناك طلب محفوظ يخص حسابًا أو تثبيتًا أو هدفًا آخر. عُد إلى ذلك الاختيار لاستئنافه.",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "نسيان الطلب المنتهي",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "تعذّرت قراءة بعض طلبات إنهاء الجلسات المحفوظة.",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

@@ -22,6 +22,21 @@ module internal AccessRequests =
 
     let expiredPredicate alias = $"{alias}last_seen<$1::timestamptz"
 
+    let pending (tx: ReadTx) principal =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    "SELECT 1 FROM claimcore.access_request WHERE principal_key=$1 AND last_seen >= $2"
+                    [|
+                        box (PrincipalKey.naturalKey principal)
+                        box (AccessRequest.cutoff tx.ObservedAt)
+                    |]
+                    tx.CancellationToken
+
+            return not rows.IsEmpty
+        }
+
     let parameters principal =
         let kind, issuer, subject = PrincipalKey.parts principal
 
@@ -40,7 +55,7 @@ module internal AccessRequests =
 
     let refresh connection principal (claims: RequesterClaims) observed token =
         task {
-            // This lock bounds capacity across different principals. It is never acquired by ledger writes.
+            // The capacity lock follows the write head and principal locks.
             let! _ =
                 DatabaseSession.execute
                     connection

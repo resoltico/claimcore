@@ -42,6 +42,7 @@ let oidc =
         ClientSecret = "synthetic"
         ApiAudience = "api"
         CliClientId = "cli"
+        ServiceClientIds = Set.singleton "service"
     }
 
 let limits =
@@ -163,7 +164,7 @@ let private pipeline files (application: WebApplication) sink readiness =
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
-let private login (context: HttpContext) : Task =
+let private login (storage: ISessionStore option) (context: HttpContext) : Task =
     task {
         let identity =
             ClaimsIdentity(
@@ -185,7 +186,33 @@ let private login (context: HttpContext) : Task =
                 identity.AddClaim(Claim(name, context.Request.Query[name].ToString()))
 
         let properties = AuthenticationProperties()
-        properties.Items[AuthMiddleware.idTokenProperty] <- "synthetic-logout-hint"
+
+        let cookies =
+            context.RequestServices
+                .GetRequiredService<
+                    Microsoft.Extensions.Options.IOptionsMonitor<CookieAuthenticationOptions>
+                  >()
+                .Get(CookieAuthenticationDefaults.AuthenticationScheme)
+
+        if isNull cookies.SessionStore then
+            properties.Items[AuthMiddleware.idTokenProperty] <- "synthetic-logout-hint"
+
+        if context.Request.Query.ContainsKey "protected" then
+            let store =
+                storage
+                |> Option.defaultWith (fun () ->
+                    invalidOp "A protected fixture login needs session storage.")
+
+            let! flow = store.StartFlow context.RequestAborted
+            let now = DateTimeOffset.UtcNow
+            properties.Items[BrowserTicket.flowProperty] <- flow.ToString("D")
+
+            BrowserTicket.recordProof
+                properties
+                {
+                    IssuedAt = now
+                    AuthenticatedAt = now
+                }
 
         do!
             context.SignInAsync(
@@ -310,7 +337,7 @@ type Host
 
     do
         pipeline files application sink (fun () -> Task.FromResult ready)
-        application.MapPost("/__test/login", RequestDelegate login) |> ignore
+        application.MapPost("/__test/login", RequestDelegate(login sessions)) |> ignore
 
         HostRoutes.map
             files
@@ -426,6 +453,9 @@ type Host
 
     member this.Login() =
         this.Send(HttpMethod.Post, "/__test/login", None, [])
+
+    member this.LoginProtected() =
+        this.Send(HttpMethod.Post, "/__test/login?protected=true", None, [])
 
     member this.CallResponse
         (

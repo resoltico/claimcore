@@ -56,6 +56,7 @@ module QueryTaskId =
 
 [<RequireQualifiedAccess>]
 type CommandTaskId =
+    | RequestAccess
     | DismissAccessRequest
     | TerminateOwnSessions
     | TerminatePersonSessions
@@ -67,6 +68,7 @@ module CommandTaskId =
 
     let vocabulary =
         Vocabulary.define "commandTask" cases (function
+            | CommandTaskId.RequestAccess -> "people.requests.submit"
             | CommandTaskId.DismissAccessRequest -> "people.requests.dismiss"
             | CommandTaskId.TerminateOwnSessions -> "session.terminateOwn"
             | CommandTaskId.TerminatePersonSessions -> "people.terminateSessions")
@@ -78,6 +80,7 @@ module CommandTaskId =
 /// Operational requests are complete at the control boundary; they have no ledger identity.
 [<RequireQualifiedAccess>]
 type CommandRequest =
+    | RequestAccess
     | DismissAccessRequest of PrincipalKey
     | TerminateOwnSessions
     | TerminatePersonSessions of ActorId
@@ -85,6 +88,7 @@ type CommandRequest =
 module CommandRequest =
     let task =
         function
+        | CommandRequest.RequestAccess -> CommandTaskId.RequestAccess
         | CommandRequest.DismissAccessRequest _ -> CommandTaskId.DismissAccessRequest
         | CommandRequest.TerminateOwnSessions -> CommandTaskId.TerminateOwnSessions
         | CommandRequest.TerminatePersonSessions _ -> CommandTaskId.TerminatePersonSessions

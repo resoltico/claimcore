@@ -10,6 +10,7 @@ open System.Net.Http
 open System.Text
 open System.Text.Json
 open System.Threading.Tasks
+open Expecto
 open ClaimCore.ServerTests.OidcLiveBrowser
 open ClaimCore.ServerTests.OidcLiveKeys
 open ClaimCore.ServerTests.OidcLiveTokens
@@ -137,8 +138,10 @@ let private servicePeople (scenario: ServicePeopleScenario) =
         let tag (value: JsonElement option) =
             value |> Option.map (fun value -> value.GetProperty("kind").GetString())
 
-        if tag first <> Some "SUCCEEDED" then
-            invalidOp "Registered service could not read its case."
+        Expect.equal
+            (tag first)
+            (Some "SUCCEEDED")
+            "Registered service can read its synthetic case with a fresh bearer"
 
         let! second =
             serviceToken
@@ -151,8 +154,10 @@ let private servicePeople (scenario: ServicePeopleScenario) =
         let! status, denied = caseRequest local second None "SYNTHETIC-001"
         let! _, absent = caseRequest local token None "SYNTHETIC-MISSING"
 
-        if authenticated <> 204 || status <> 200 || tag denied <> Some "REJECTED" then
-            invalidOp "Distinct unregistered service must authenticate and receive a typed refusal."
+        Expect.equal
+            (authenticated, status, tag denied)
+            (204, 200, Some "REJECTED")
+            "A second admitted client without a registered actor authenticates but cannot read"
 
         let refusal value =
             value

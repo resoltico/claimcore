@@ -96,6 +96,42 @@ type SessionChanges<'value> =
 module internal SessionChanges =
     let unchanged value = { Value = value; Ended = [] }
 
+type HumanAuthentication =
+    {
+        IssuedAt: DateTimeOffset
+        AuthenticatedAt: DateTimeOffset
+    }
+
+[<RequireQualifiedAccess>]
+type BrowserCredential =
+    | StatusOnly
+    | Protected of
+        installation: Guid *
+        recoveryGeneration: Guid *
+        actor: ActorId *
+        generation: Sequence
+
+/// The transport supplies these facts only after validating its own credential.
+[<RequireQualifiedAccess>]
+type VerifiedCredential =
+    | Browser of BrowserCredential
+    | HumanBearer of HumanAuthentication
+    | MachineBearer of issuedAt: DateTimeOffset
+
+module internal CredentialFreshness =
+    // Issuers are admitted only with synchronized clocks and this maximum possible lead.
+    let maximumLead = TimeSpan.FromSeconds 2.
+
+    let after (observed: DateTimeOffset) (cutoff: DateTimeOffset) (issued: DateTimeOffset) =
+        cutoff <= observed
+        && issued - cutoff > maximumLead
+        && issued - observed <= maximumLead
+
+    let human observed cutoff (proof: HumanAuthentication) =
+        proof.AuthenticatedAt <= proof.IssuedAt
+        && after observed cutoff proof.IssuedAt
+        && after observed cutoff proof.AuthenticatedAt
+
 /// Principal metadata is checked against the protected ticket by the cookie adapter.
 type StoredSessionTicket =
     {
@@ -103,10 +139,18 @@ type StoredSessionTicket =
         Payload: byte array
     }
 
-/// Operational authentication storage, independent of ledger ordering and access decisions.
+/// Operational browser flows and tickets use locally committed ordering evidence.
 type ISessionStore =
+    abstract StartFlow: CancellationToken -> Task<Guid>
+
     abstract Create:
-        PrincipalKey * byte array * DateTimeOffset option * TimeSpan * TimeSpan * CancellationToken ->
+        PrincipalKey *
+        (Guid * HumanAuthentication) option *
+        (BrowserCredential -> byte array) *
+        DateTimeOffset option *
+        TimeSpan *
+        TimeSpan *
+        CancellationToken ->
             Task<SessionChanges<string>>
 
     abstract Retrieve:

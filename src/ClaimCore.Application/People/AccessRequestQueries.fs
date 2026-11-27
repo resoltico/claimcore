@@ -115,6 +115,55 @@ module internal AccessRequestQueries =
             return readResult result
         }
 
+    let submit (services: ServiceContext) () token =
+        task {
+            let! result =
+                services.Store.Write
+                    {
+                        WriteOperation.RequiresEncryption = false
+                        CancellationToken = token
+                        Work =
+                            fun tx ->
+                                task {
+                                    let principal = services.Principal
+
+                                    let! _ =
+                                        PrincipalLock.acquire
+                                            tx.Connection
+                                            principal
+                                            tx.CancellationToken
+
+                                    let! owner = PersonAcquisition.principalOwner tx principal
+
+                                    match owner with
+                                    | Some _ ->
+                                        return
+                                            Verdict.Refuse(
+                                                Refusal.People PeopleRefusal.ActorAlreadyRegistered
+                                            )
+                                    | None ->
+                                        do!
+                                            AccessRequests.refresh
+                                                tx.Connection
+                                                principal
+                                                services.Claims
+                                                tx.ObservedAt
+                                                tx.CancellationToken
+
+                                        return Verdict.Proceed()
+                                }
+                    }
+
+            return
+                result
+                |> Result.map (function
+                    | Verdict.Proceed() -> Outcome.Succeeded()
+                    | Verdict.Replay _ -> Outcome.Failed CoreFault.StoreIntegrityError
+                    | Verdict.Refuse refusal -> Outcome.Rejected refusal
+                    | Verdict.Fail fault -> Outcome.Failed fault)
+                |> readResult
+        }
+
     let dismiss (services: ServiceContext) (input: PrincipalInput) token =
         task {
             let! result =

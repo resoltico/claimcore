@@ -64,7 +64,8 @@ let private caseFlow (database: PostgresFixture.Database) storage =
                 installationId = database.Fixture.InstallationId
             )
 
-        let! _ = host.Login()
+        let! status, _ = host.LoginProtected()
+        Expect.equal status 200 "The synthetic sign-in completes the protected browser flow"
         let! antiforgery = host.Token()
 
         let operation =
@@ -154,6 +155,7 @@ let run () =
 
         try
             let! _ = caseWorker database.Fixture
+            do! IdentityRealm.waitForFreshProviderProof ()
 
             let storage =
                 SessionStore(database.RuntimeSource, database.Installation) :> ISessionStore

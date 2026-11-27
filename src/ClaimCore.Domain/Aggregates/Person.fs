@@ -11,6 +11,7 @@ type Person =
             EnabledValue: bool
             ProfileValue: ProfileValue
             RevisionValue: Revision
+            CredentialBoundaryValue: CredentialBoundary
             GrantsValue: Map<ActorGrant, EffectPosition>
             ProfileErasureValue: EffectPosition option
         }
@@ -26,6 +27,7 @@ type Person =
     member this.Id = this.Identity
     member this.Profile = this.ProfileValue
     member this.Revision = this.RevisionValue
+    member this.CredentialBoundary = this.CredentialBoundaryValue
     member this.Grants = this.GrantsValue
     member this.ProfileErasure = this.ProfileErasureValue
 
@@ -110,6 +112,24 @@ module Person =
                                     Map.remove assignment.Grant current)
                             before
 
+                    let boundary =
+                        match state with
+                        | Some prior when
+                            prior.Actor.Enabled = value.Enabled && prior.Actor.Principal = principal
+                            ->
+                            prior.CredentialBoundary
+                        | _ ->
+                            {
+                                CredentialGeneration = EffectPosition.sequence change.Stamp.Position
+                                CredentialCutoff =
+                                    state
+                                    |> Option.map (fun prior ->
+                                        max
+                                            prior.CredentialBoundary.CredentialCutoff
+                                            change.Stamp.RecordedAt)
+                                    |> Option.defaultValue change.Stamp.RecordedAt
+                            }
+
                     Ok
                         {
                             Identity = id
@@ -117,6 +137,7 @@ module Person =
                             EnabledValue = value.Enabled
                             ProfileValue = value.Profile
                             RevisionValue = change.Revision
+                            CredentialBoundaryValue = boundary
                             GrantsValue = grants
                             ProfileErasureValue =
                                 if change.Erases.IsSome then Some change.Stamp.Position
@@ -152,6 +173,7 @@ module Person =
         (identity: PartChange)
         (actor: Actor)
         revision
+        (boundary: CredentialBoundary)
         (grants: Map<ActorGrant, EffectPosition>)
         (erasure: EffectPosition option)
         =
@@ -173,6 +195,10 @@ module Person =
                 && latest.Revision = revision
                 && revision >= Revision.first
                 && latest.Stamp.Position >= origin.Stamp.Position
+                && boundary.CredentialGeneration >= EffectPosition.sequence identity.Stamp.Position
+                && boundary.CredentialGeneration <= EffectPosition.sequence latest.Stamp.Position
+                && boundary.CredentialCutoff
+                   >= max origin.Stamp.RecordedAt identity.Stamp.RecordedAt
                 && actor.ActorId = ActorId.ofOperationId origin.Stamp.OperationId
                 && (created.Principal
                     |> Option.exists (fun principal ->
@@ -222,6 +248,7 @@ module Person =
                         EnabledValue = actor.Enabled
                         ProfileValue = current.Profile
                         RevisionValue = revision
+                        CredentialBoundaryValue = boundary
                         GrantsValue = grants
                         ProfileErasureValue = erasure
                     }

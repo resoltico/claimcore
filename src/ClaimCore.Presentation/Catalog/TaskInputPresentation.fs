@@ -31,6 +31,8 @@ module TaskInputPresentation =
         | TaskInputId.ReminderKindFilter
         | TaskInputId.DeadlineOutcomeFilter
         | TaskInputId.IncludeInactive
+        | TaskInputId.SettleOnly
+        | TaskInputId.ConfirmRetirement
         | TaskInputId.Scope
         | TaskInputId.ActorId
         | TaskInputId.CaseId
@@ -68,6 +70,8 @@ module TaskInputPresentation =
         | TaskInputId.DeadlineOutcomeFilter
         | TaskInputId.CaseDate _
         | TaskInputId.GroupBy
+        | TaskInputId.SettleOnly
+        | TaskInputId.ConfirmRetirement
         | TaskInputId.IncludeInactive -> None
         | _ -> Some(messageKey input "hint")
 

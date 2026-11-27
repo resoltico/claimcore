@@ -773,5 +773,50 @@
     "text": "Atiestatīt saglabātos iestatījumus",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "Turpināt neapstiprināto sesiju pārtraukšanu",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "Sākt jaunu sesiju pārtraukšanu",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "Pārbaudiet iepriekšējā pieprasījuma saglabāto rezultātu. Vēlāk sāktās sesijas paliks atvērtas.",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "Jauns pieprasījums var izbeigt jaunākas sesijas. Iepriekšējo pieprasījumu ID tiek paturēti, kamēr to rezultātus var atkopt.",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "Iepriekšējais pieprasījums pašlaik ir ārpus atkopšanas perioda. Tā saglabātais pieprasījuma ID tiek paturēts.",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "Iepriekšējā pieprasījuma termiņš ir beidzies. Tā rezultāts joprojām nav apstiprināts.",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "Saglabātais pieprasījums attiecas uz citu kontu, instalāciju vai mērķi. Lai to turpinātu, atgriezieties pie attiecīgās izvēles.",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "Aizmirst pieprasījumu ar beigušos termiņu",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "Dažus saglabātos sesiju pārtraukšanas pieprasījumus nevarēja nolasīt.",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

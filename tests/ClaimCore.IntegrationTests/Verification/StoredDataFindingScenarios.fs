@@ -161,15 +161,15 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
                 (token))
 
         accepted reopened |> ignore
-        // The digest claim references the creation operation, so this isolated corruption
-        // witness removes that dependent key before dropping the ledger uniqueness constraint.
+        // These projections reference creation operations. The isolated corruption fixture
+        // removes their dependent keys before introducing duplicate ledger identities.
         do!
             sql
                 database
-                "ALTER TABLE claimcore.digest_runs DROP CONSTRAINT digest_runs_actor_id_fkey"
+                """ALTER TABLE claimcore.digest_runs DROP CONSTRAINT digest_runs_actor_id_fkey;
+                   ALTER TABLE claimcore.credential_publications DROP CONSTRAINT credential_publications_actor_id_fkey;
+                   ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key"""
                 [||]
-
-        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_operation_id_key" [||]
 
         for sequence in [ 5L .. int64 (3 + occurrences) ] do
             do!

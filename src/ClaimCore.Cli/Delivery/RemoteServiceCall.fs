@@ -202,11 +202,37 @@ module RemoteServiceCall =
                 CliReply.local ClientFailure.Configuration
                 |> CliReply.forAttempt frame DeliveryState.NotSent
             )
+        elif
+            Api.terminatesSessions (Frames.endpoint frame)
+            && Frames.installationId frame <> access.InstallationId
+        then
+            System.Threading.Tasks.Task.FromResult(
+                CliReply.local ClientFailure.InstallationMismatch
+                |> CliReply.forAttempt frame DeliveryState.NotSent
+            )
         else
             sendBound client access frame beforeSend cancelled
 
+    let signInRequired (reply: CliReply) =
+        match reply.Frame.Result with
+        | FrameResult.HostFailure failure -> failure.Code = HostFailureCode.SessionRejected
+        | FrameResult.LocalFailure CliFailure.AuthenticationFailed -> true
+        | FrameResult.Reply value ->
+            match ServiceReply.value Api.context value with
+            | Some(RepresentationReply.Data(Outcome.Succeeded {
+                                                                  Requester = RequesterState.SignInRequired
+                                                              })) -> true
+            | Some(RepresentationReply.Human {
+                                                 Outcome = HumanReadOutcome.Succeeded document
+                                             }) ->
+                match document.Subject with
+                | DocumentSubject.Requester subject -> subject.State = RequesterKind.SignInRequired
+                | _ -> false
+            | _ -> false
+        | _ -> false
+
     /// Preparation uses the same bounded transport admission and preserves structured host failures.
-    let context (client: HttpClient) (access: Access) (cancelled: CancellationToken) =
+    let private requester (client: HttpClient) (access: Access) (cancelled: CancellationToken) =
         task {
             let invocation =
                 Frames.create Api.context ()
@@ -218,18 +244,12 @@ module RemoteServiceCall =
                 match reply.Frame.Result with
                 | FrameResult.Reply value ->
                     match ServiceReply.value Api.context value with
-                    | Some(RepresentationReply.Data(result: Outcome<ContextReply>)) ->
-                        match result with
-                        | Outcome.Succeeded {
-                                                Requester = RequesterState.Active context
-                                            } -> return Ok context
-                        | Outcome.Succeeded _ ->
-                            return
-                                Error
-                                    { reply with
-                                        ExitCode = ExitCode.value ExitCode.Rejected
-                                    }
-                        | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
+                    | Some(RepresentationReply.Data(Outcome.Succeeded {
+                                                                          Requester = RequesterState.SignInRequired
+                                                                      })) ->
+                        return Error(CliReply.local ClientFailure.Authentication)
+                    | Some(RepresentationReply.Data(Outcome.Succeeded context)) ->
+                        return Ok(context, reply)
                     | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
                 | _ -> return Error reply
             with
@@ -237,4 +257,41 @@ module RemoteServiceCall =
             | :? OperationCanceledException
             | :? IO.IOException
             | :? InvalidOperationException -> return Error(CliReply.local ClientFailure.Unavailable)
+        }
+
+    let private select selection client access cancelled =
+        task {
+            match! requester client access cancelled with
+            | Error reply -> return Error reply
+            | Ok(context, reply) ->
+                return
+                    selection context
+                    |> Option.map Ok
+                    |> Option.defaultValue (
+                        Error
+                            { reply with
+                                ExitCode = ExitCode.value ExitCode.Rejected
+                            }
+                    )
+        }
+
+    let context client access cancelled =
+        select
+            (fun context ->
+                match context.Requester with
+                | RequesterState.Active active -> Some active
+                | _ -> None)
+            client
+            access
+            cancelled
+
+    let terminationScope client access cancelled =
+        task {
+            match! requester client access cancelled with
+            | Error reply -> return Error reply
+            | Ok(context, _) ->
+                return
+                    context.TerminationScope
+                    |> Option.map Ok
+                    |> Option.defaultValue (Error(CliReply.local ClientFailure.Authentication))
         }

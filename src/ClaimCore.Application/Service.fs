@@ -238,6 +238,37 @@ module Service =
 
     let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
+    let withCredential proof (services: ServiceContext) =
+        let evidence = Some(services.Principal, proof)
+
+        mapStore
+            (fun store ->
+                { new IStore with
+                    member _.Context query =
+                        store.Context { query with Credential = evidence }
+
+                    member _.RecordDisclosure(event, token) = store.RecordDisclosure(event, token)
+
+                    member _.Read operation =
+                        store.Read
+                            { operation with
+                                Work =
+                                    fun tx ->
+                                        tx.Credential <- evidence
+                                        operation.Work tx
+                            }
+
+                    member _.Write operation =
+                        store.Write
+                            { operation with
+                                Work =
+                                    fun tx ->
+                                        tx.Credential <- evidence
+                                        operation.Work tx
+                            }
+                })
+            services
+
     let executeSubmission = OperationService.executeSubmission
     let previewSubmission = OperationService.previewSubmission
     let attachmentUploadIntent = OperationService.attachmentUploadIntent
@@ -291,6 +322,8 @@ module Service =
     let internal provisionOwner = OperationService.provisionOwner
 
     let accessRequests = AccessRequestQueries.page
+    let requestAccess = AccessRequestQueries.submit
+
     let dismissAccessRequest = AccessRequestQueries.dismiss
 
     let terminateOwnSessions = SessionTerminationQueries.self

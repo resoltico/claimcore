@@ -134,6 +134,9 @@ module CommandGrammar =
     let needsValue (input: TaskInputDeclaration) =
         input.Mode = TaskInputMode.Required && input.DefaultText.IsNone
 
+    let terminatesSessions operation =
+        Api.tryFind operation |> Option.exists Api.terminatesSessions
+
     let private declaredInputs operation =
         (TaskDeclarations.describe operation).Inputs
         |> List.map (fun declaration ->
@@ -148,6 +151,10 @@ module CommandGrammar =
                 && not (
                     declaration.Source = InputSource.OperationIdentity
                     && (TaskRouting.act operation).IsSome
+                )
+                && not (
+                    name = TaskInputId.Target InputTarget.OperationId
+                    && terminatesSessions operation
                 )
                 && not fixedRevision
                 && (match name with
@@ -183,7 +190,7 @@ module CommandGrammar =
                     || name = TaskInputId.Target InputTarget.Limit
                     ->
                     CommandAtom.Integer
-                | None when name = TaskInputId.IncludeInactive -> CommandAtom.Boolean
+                | None when declaration.Atom = TaskAtom.Boolean -> CommandAtom.Boolean
                 | None -> CommandAtom.Text
 
             {
@@ -283,6 +290,9 @@ module CommandGrammar =
             else
                 "--dry-run", ""
                 "--details", ""
+
+                if terminatesSessions operation then
+                    "--installation-id", "UUID"
 
                 if TaskRouting.requiresExactConfirmation operation then
                     "--confirm", "TARGET"

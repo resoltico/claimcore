@@ -31,6 +31,7 @@ type OidcConfiguration =
         ClientSecret: string
         ApiAudience: string
         CliClientId: string
+        ServiceClientIds: Set<string>
     }
 
 [<NoEquality; NoComparison>]
@@ -139,7 +140,17 @@ module Configuration =
             let audience = requiredName WebSetting.OidcApiAudience
             let cliClient = requiredName WebSetting.OidcCliClientId
 
-            if [ clientId; audience; cliClient ] |> Set.ofList |> Set.count <> 3 then
+            let serviceClients =
+                (requiredName WebSetting.OidcServiceClientIds).Split(',')
+                |> Array.map _.Trim()
+                |> Array.toList
+
+            let all = clientId :: audience :: cliClient :: serviceClients
+
+            if
+                (all |> Set.ofList |> Set.count) <> all.Length
+                || serviceClients |> List.exists String.IsNullOrWhiteSpace
+            then
                 invalid ()
 
             let trustRoot =
@@ -157,6 +168,7 @@ module Configuration =
                     ClientSecret = clientSecret
                     ApiAudience = audience
                     CliClientId = cliClient
+                    ServiceClientIds = Set.ofList serviceClients
                 }
 
     /// The startup caller owns the certificates of a successfully loaded configuration.

@@ -177,22 +177,25 @@ it("confirmed session termination advances privacy state without a second deleti
   await act(() => result.current.refresh());
   const replacement = result.current.state.epoch;
   act(() => {
-    result.current.endedBrowserSessions(original);
+    result.current.refreshAfterTermination(original);
   });
   expect(result.current.state).toMatchObject({
     kind: "authenticated",
     token: "replacement",
     epoch: replacement,
   });
+  fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: "same-current" }));
   act(() => {
-    result.current.endedBrowserSessions(replacement);
+    result.current.refreshAfterTermination(replacement);
   });
-  expect(result.current.state).toMatchObject({
-    kind: "anonymous",
-    token: null,
-    epoch: replacement + 1,
+  await waitFor(() => {
+    expect(result.current.state).toMatchObject({
+      kind: "authenticated",
+      token: "same-current",
+      epoch: replacement + 1,
+    });
   });
-  expect(fetch).toHaveBeenCalledTimes(2);
+  expect(fetch).toHaveBeenCalledTimes(3);
 });
 
 it("publishes authentication and session termination even when the storage getter throws", async () => {
@@ -207,10 +210,15 @@ it("publishes authentication and session termination even when the storage gette
     await waitFor(() => {
       expect(result.current.state).toEqual({ kind: "authenticated", token: "owned", epoch: 1 });
     });
+    vi.mocked(fetch).mockResolvedValueOnce(
+      session({ authenticated: false, antiforgeryToken: null }),
+    );
     act(() => {
-      result.current.endedBrowserSessions(1);
+      result.current.refreshAfterTermination(1);
     });
-    expect(result.current.state).toMatchObject({ kind: "anonymous", epoch: 2 });
+    await waitFor(() => {
+      expect(result.current.state).toMatchObject({ kind: "anonymous", epoch: 2 });
+    });
   } finally {
     storage.mockRestore();
   }

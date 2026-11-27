@@ -3,6 +3,7 @@ import { selectedActor, applyPeople, syntheticPrincipals } from "./people-setup"
 import { operationId as mintOperationId } from "../src/operation/operationId";
 import { startPeopleCreation, chooseChoice, goToView } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
+import { recoveryRecords } from "./recovery-storage";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type BrowserContext } from "./fixtures";
 
@@ -109,16 +110,12 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
     ),
   ).toHaveCount(0);
   await expect(page.locator(".people-listing .data-table")).toHaveCount(0);
-  const resume = page.getByRole("button", {
-    name: ui("en", "ui.continuePeopleRequest"),
-    exact: true,
-  });
-  await expect(resume).toBeEnabled();
-  await resume.click();
+  await expect(
+    page.getByRole("button", { name: ui("en", "ui.continuePeopleRequest"), exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
-  ).toBeEnabled();
-  await expect(page.locator(".people-rows > tr")).toHaveCount(0);
+  ).toHaveCount(0);
 };
 
 const cleanupPeople = async (
@@ -214,16 +211,19 @@ test("people review and uncertainty survive locale changes while refusal clears 
     expect(writes).toEqual([]);
     await challenge.fill(subject);
     await uncertainAdmission(steward, prepared);
+    await expect
+      .poll(() => recoveryRecords(steward))
+      .toEqual([
+        expect.objectContaining({ operationId: prepared.operationId, act: "people.admit" }),
+      ]);
+    expect(JSON.stringify(await recoveryRecords(steward))).not.toContain(subject);
     expect(writes).toEqual([prepared.bytes.toString("utf8")]);
     await ownerGrant(page, false);
     await refusedRetry(steward, prepared.bytes);
     expect(writes).toEqual([prepared.bytes.toString("utf8"), prepared.bytes.toString("utf8")]);
-    await expect(steward.locator('section[aria-labelledby="people-title"]')).not.toContainText(
-      priorName,
-    );
-    await expect(steward.locator('section[aria-labelledby="people-title"]')).not.toContainText(
-      subject,
-    );
+    await expect(steward.locator('section[aria-labelledby="people-title"]')).toHaveCount(0);
+    await expect(steward.locator("body")).not.toContainText(priorName);
+    await expect(steward.locator("body")).not.toContainText(subject);
     await expectAccessible(steward);
   } catch (error) {
     primary =

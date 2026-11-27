@@ -299,6 +299,33 @@ let tests =
                         | ExecuteResult.Accepted _ -> ()
                         | other -> failtestf "Expected acceptance: %A" other
 
+                        let priorAuthentication = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+
+                        let held =
+                            service
+                            |> Service.withCredential (
+                                VerifiedCredential.HumanBearer
+                                    {
+                                        IssuedAt = priorAuthentication
+                                        AuthenticatedAt = priorAuthentication
+                                    }
+                            )
+
+                        let! blocked = lookup held operation
+
+                        Expect.equal
+                            blocked
+                            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+                            "A held bearer cannot disclose its own receipt after the credential cut"
+
+                        let! visible = lookup service operation
+
+                        match visible with
+                        | Outcome.Succeeded(OperationLookupResult.Accepted(_, true)) -> ()
+                        | other ->
+                            failtestf "Current authority can settle the original receipt: %A" other
+
+
                         let late =
                             ControlledStore(
                                 db.Fixture.Store,

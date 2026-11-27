@@ -15,6 +15,7 @@ type internal WitnessPrimary =
         SystemId: int64
         Timeline: string
         Flushed: string
+        CredentialFloor: DateTimeOffset option
     }
 
 module internal WitnessPrimary =
@@ -28,7 +29,7 @@ module internal WitnessPrimary =
                     connection
                     """SELECT i.generation, c.system_identifier,
                               left(pg_catalog.pg_walfile_name(pg_catalog.pg_current_wal_insert_lsn()),8),
-                              pg_catalog.pg_current_wal_flush_lsn()::text, i.primary_id
+                              pg_catalog.pg_current_wal_flush_lsn()::text, i.primary_id, i.credential_floor
                        FROM claimcore.recovery_generation i CROSS JOIN pg_catalog.pg_control_system() c
                        WHERE NOT pg_catalog.pg_is_in_recovery() AND current_setting('fsync')='on'"""
                     [||]
@@ -43,6 +44,8 @@ module internal WitnessPrimary =
                         SystemId = DatabaseSession.value<int64> 1 row
                         Timeline = DatabaseSession.value<string> 2 row
                         Flushed = DatabaseSession.value<string> 3 row
+                        CredentialFloor =
+                            DatabaseSession.optional<DateTime> 5 row |> Option.map DateTimeOffset
                     }
             | _ ->
                 return
@@ -146,7 +149,11 @@ type internal RecoveryWitness(source: NpgsqlDataSource, installationId: Guid) =
         }
 
     member _.IsActive(primary, token) =
-        call primary "SELECT claimcore_witness.is_active($1,$2,$3,$4,$5)" [||] token
+        call
+            primary
+            "SELECT claimcore_witness.is_active($1,$2,$3,$4,$5,$6)"
+            [| DatabaseSession.parameter primary.CredentialFloor |]
+            token
 
     member _.Acknowledge(primary, token) =
         call
@@ -256,6 +263,7 @@ module internal WitnessRestore =
             CheckpointDigest: byte array option
             RequiredCheckpoint: InstallationCheckpoint
             Preparation: byte array option
+            CredentialFloor: DateTimeOffset option
         }
 
     let fence source systemId installation transition token =
@@ -277,7 +285,7 @@ module internal WitnessRestore =
                                   (SELECT sealed_approval FROM claimcore_witness.transitions t
                                    WHERE t.installation=i.installation AND t.transition=$2),
                                   (d.decision).checkpoint_digest,(d.decision).required_sequence,
-                                  (d.decision).required_hash,(d.decision).required_expiry_ticks
+                                  (d.decision).required_hash,(d.decision).required_expiry_ticks,i.credential_floor
                            FROM claimcore_witness.installations i
                            JOIN claimcore_witness.fence_decisions d ON d.installation=i.installation AND d.transition=$2
                            WHERE i.installation=$1 AND (i.transition=$2 OR (i.transition IS NULL AND generation=$2))"""
@@ -302,6 +310,9 @@ module internal WitnessRestore =
                                 Preparation = DatabaseSession.optional 10 row
                                 SealedApproval = DatabaseSession.optional 11 row
                                 CheckpointDigest = DatabaseSession.optional 12 row
+                                CredentialFloor =
+                                    DatabaseSession.optional<DateTime> 16 row
+                                    |> Option.map DateTimeOffset
                                 RequiredCheckpoint =
                                     CheckpointEvidence.fromStorage
                                         installation
@@ -436,6 +447,27 @@ module internal WitnessRestore =
                 return DatabaseSession.value<bool> 0 (List.exactlyOne rows)
             })
 
+    /// Sample the independently owned provider while the chosen target is fenced.
+    let credentialClock source systemId installation transition token =
+        DatabaseSession.read source token (fun connection ->
+            task {
+                do! WitnessCluster.requireIndependent systemId connection token
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT clock_timestamp(),credential_floor FROM claimcore_witness.installations WHERE installation=$1 AND transition=$2"
+                        [| box installation; box transition |]
+                        token
+
+                return
+                    rows
+                    |> List.tryExactlyOne
+                    |> Option.map (fun row ->
+                        DatabaseSession.instant 0 row,
+                        DatabaseSession.optional<DateTime> 1 row |> Option.map DateTimeOffset)
+            })
+
     let bindTarget
         source
         installation
@@ -444,6 +476,7 @@ module internal WitnessRestore =
         (evidence: byte array)
         (preparation: byte array)
         (checkpoint: InstallationCheckpoint)
+        (credentialFloor: DateTimeOffset)
         token
         =
         DatabaseSession.transaction source IsolationLevel.ReadCommitted token (fun connection tx ->
@@ -455,7 +488,7 @@ module internal WitnessRestore =
                     DatabaseSession.rows
                         connection
                         """SELECT CASE WHEN current_setting('fsync')='on' THEN
-                              claimcore_witness.prepare_target($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                              claimcore_witness.prepare_target($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
                               ELSE false END"""
                         [|
                             box installation
@@ -470,6 +503,7 @@ module internal WitnessRestore =
                             DatabaseSession.parameter (
                                 checkpoint.ExpiredBefore |> Option.map _.UtcTicks
                             )
+                            box credentialFloor
                         |]
                         token
 

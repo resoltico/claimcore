@@ -1383,12 +1383,14 @@
     "source": "1465f2b6264a"
   },
   "requesterState.NOT_REGISTERED.label": {
-    "text": "Zugriff angefragt",
-    "source": "119387f35ffc"
+    "text": "Zugriff beantragen",
+    "source": "b06f1662da4a",
+    "machineMade": true
   },
   "requesterState.NOT_REGISTERED.meaning": {
-    "text": "Ein Inhaber muss dieses Konto zulassen, bevor es auf ClaimCore zugreifen kann.",
-    "source": "9f93027815d5"
+    "text": "Senden Sie einen Antrag, damit ein Inhaber diese Anmeldeidentität zulassen kann.",
+    "source": "af80a6ed5417",
+    "machineMade": true
   },
   "endpoint.disclosure.trail.label": {
     "text": "Zugriffs- und Exportprotokoll",
@@ -3000,8 +3002,9 @@
     "source": "fbb28e68f709"
   },
   "label.sessionTerminationUnknown": {
-    "text": "Die Anfrage wurde nicht bestätigt. Möglicherweise wurden die Browsersitzungen in ClaimCore beendet. Eine Wiederholung kann auch neuere Sitzungen beenden.",
-    "source": "1ef989edf86f"
+    "text": "Die Anfrage hat möglicherweise Browsersitzungen beendet. Wiederholen Sie sie mit derselben Anfrage-ID, um das Ergebnis abzurufen. Eine neue Anfrage-ID kann neuere Sitzungen beenden.",
+    "source": "d8331eda3989",
+    "machineMade": true
   },
   "label.exportLimitExceeded": {
     "text": "Der Export überschreitet die Größenbegrenzung für Downloads. Schränken Sie die Auswahl ein oder verwenden Sie die CLI-Seitennavigation.",
@@ -4733,6 +4736,76 @@
   "digestOutcome.UNKNOWN.shortLabel": {
     "text": "Annahme durch das Relay unklar",
     "source": "77ee1f586df5",
+    "machineMade": true
+  },
+  "diagnostic.DISTINCT_OWNER_REQUIRED": {
+    "text": "Ein anderer angemeldeter Inhaber muss die Anmeldeidentität dieses Inhabers ändern.",
+    "source": "5841aa2d3007",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.label": {
+    "text": "Zugriff beantragen",
+    "source": "b06f1662da4a",
+    "machineMade": true
+  },
+  "endpoint.people.requests.submit.meaning": {
+    "text": "Senden oder aktualisieren Sie Ihren Zugangsantrag.",
+    "source": "7f400ff5361f",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.label": {
+    "text": "Anmeldeidentität ersetzt",
+    "source": "77f63171ae89",
+    "machineMade": true
+  },
+  "requesterState.FORMER_IDENTITY.meaning": {
+    "text": "Melden Sie sich ab und verwenden Sie Ihre aktuelle Anmeldeidentität oder wenden Sie sich an einen Inhaber.",
+    "source": "d8fed4a88ce5",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.label": {
+    "text": "Erneut anmelden",
+    "source": "51fbe1dc8a73",
+    "machineMade": true
+  },
+  "requesterState.SIGN_IN_REQUIRED.meaning": {
+    "text": "Melden Sie sich ab und wieder an, um dieses Konto weiter zu verwenden.",
+    "source": "6eaa28ff9e2f",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.label": {
+    "text": "Zugriff angefragt",
+    "source": "119387f35ffc",
+    "machineMade": true
+  },
+  "requesterState.ACCESS_PENDING.meaning": {
+    "text": "Ein Inhaber muss dieses Konto zulassen, bevor es auf ClaimCore zugreifen kann.",
+    "source": "9f93027815d5",
+    "machineMade": true
+  },
+  "input.settleOnly.label": {
+    "text": "Nur gespeichertes Ergebnis abrufen",
+    "source": "9bb096ba5a38",
+    "machineMade": true
+  },
+  "input.settleOnly.rule": {
+    "text": "Das gespeicherte Ergebnis für diese Anfrage-ID zurückgeben. Browsersitzungen bleiben unverändert.",
+    "source": "8f146aa73078",
+    "machineMade": true
+  },
+  "input.confirmRetirement.label": {
+    "text": "Entfernung abgelaufener Ergebnisse bestätigen",
+    "source": "0cd4a8292d8c",
+    "machineMade": true
+  },
+  "input.confirmRetirement.rule": {
+    "text": "Setzen Sie die verbindliche Grenze für abgelaufene Ergebnisse vor. Browsersitzungen bleiben unverändert.",
+    "source": "1c32586dd444",
+    "machineMade": true
+  },
+  "label.sessionRetirementConfirmed": {
+    "text": "Die Entfernung abgelaufener Ergebnisse der Sitzungsbeendigung wurde bestätigt.",
+    "source": "f5bdfec416d5",
     "machineMade": true
   }
 }

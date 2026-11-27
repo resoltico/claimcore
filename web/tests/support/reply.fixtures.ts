@@ -244,6 +244,7 @@ const replies: Replies = {
   "disclosure.trail": () => read({ kind: "LIST" }),
   "people.requests": () => read({ kind: "LIST" }),
   "people.requests.dismiss": () => read({ kind: "LIST" }),
+  "people.requests.submit": () => read({ kind: "LIST" }),
   "operation.execute": (subject) => ({
     representation: "HUMAN",
     operationId,

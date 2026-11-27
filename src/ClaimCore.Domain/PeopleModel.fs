@@ -124,6 +124,13 @@ module PrincipalKey =
         |> Convert.ToHexStringLower
 
 
+/// Stable evidence of the last admission, enablement change or identity replacement.
+type CredentialBoundary =
+    {
+        CredentialGeneration: Sequence
+        CredentialCutoff: DateTimeOffset
+    }
+
 [<RequireQualifiedAccess>]
 type ScopeKind =
     | Installation

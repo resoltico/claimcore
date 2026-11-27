@@ -64,6 +64,12 @@ module SessionKeys =
             .PersistKeysToFileSystem(directory)
         |> ignore
 
+        services.AddSingleton<
+            Microsoft.AspNetCore.Antiforgery.IAntiforgeryAdditionalDataProvider,
+            BrowserAntiforgeryScope
+         >()
+        |> ignore
+
         services.AddSingleton<IPostConfigureOptions<CookieAuthenticationOptions>>(fun provider ->
             let protection = provider.GetRequiredService<IDataProtectionProvider>()
             let diagnose (code: string) = Console.Error.WriteLine code

@@ -374,3 +374,134 @@ let tests =
             then
                 do! run "chromium" CaseReferencePolicy.SystemAssignedOnly |> Async.AwaitTask
         })
+
+[<Tests>]
+let installationBindingTests =
+    testTask "published CLI rejects a prepared termination from another fresh register" {
+        let scope fixture =
+            CliCalls.human fixture "synthetic-outsider" "context" {| |} 0
+            |> CliCalls.require "SUCCEEDED"
+            |> fun context -> context.GetProperty("terminationScope")
+
+        let! original, prepared =
+            task {
+                use fixture = new PublishedFixture.Fixture()
+                do! fixture.Start()
+
+                let installation =
+                    (scope fixture).GetProperty("installationId").GetString() |> nonNull
+
+                let result =
+                    CliCalls.invoke
+                        fixture
+                        fixture.Environment
+                        [
+                            "session"
+                            "terminate-own"
+                            "--installation-id"
+                            installation
+                            "--dry-run"
+                        ]
+                        Array.empty
+                        0
+
+                Expect.equal result.ExitCode 0 "Published preparation succeeds"
+
+                let frame =
+                    ClaimCore.Cli.Frames.admit result.StandardOutput
+                    |> Result.toOption
+                    |> Option.get
+
+                Expect.equal
+                    (ClaimCore.Cli.Frames.installationId frame)
+                    (Some(Guid.Parse installation))
+                    "Preparation binds original installation"
+
+                fixture.Complete()
+                return installation, result.StandardOutput
+            }
+
+        use fresh = new PublishedFixture.Fixture()
+        do! fresh.Start()
+        let before = scope fresh
+        let installation = before.GetProperty("installationId").GetString() |> nonNull
+        Expect.notEqual installation original "An independently initialized register was selected"
+
+        let environment = CliCalls.interactiveEnvironment fresh "synthetic-outsider" "valid"
+
+        let invoke bytes code =
+            let result = CliCalls.invoke fresh environment [ "call" ] bytes code
+            Expect.equal result.ExitCode code "Published CLI exit"
+
+            ClaimCore.Cli.Frames.decode result.StandardOutput
+            |> Result.toOption
+            |> Option.get
+
+        let refused = invoke prepared 3
+
+        Expect.equal
+            refused.Delivery
+            ClaimCore.Cli.DeliveryState.NotSent
+            "Wrong-register preparation never dispatches"
+
+        match refused.Result with
+        | ClaimCore.Cli.FrameResult.HostFailure failure ->
+            Expect.equal
+                failure.Code
+                ClaimCore.Wire.HostFailureCode.InstallationMismatch
+                "Original installation is retained"
+        | _ -> failtest "Expected installation mismatch at the published CLI/service boundary."
+
+        let raw install =
+            let input =
+                dict
+                    [
+                        "input:operationId", box (CliCalls.id ())
+                        "input:confirmRetirement", box true
+                    ]
+
+            match install with
+            | None -> CliCalls.frame "session.terminateOwn" input
+            | Some binding ->
+                JsonSerializer.SerializeToUtf8Bytes
+                    {|
+                        endpoint = "session.terminateOwn"
+                        input = input
+                        installationId = binding
+                    |}
+
+        for malformed in [ None; Some "invalid"; Some(Guid.Empty.ToString("D")) ] do
+            let rejected = invoke (raw malformed) 2
+
+            Expect.equal
+                rejected.Delivery
+                ClaimCore.Cli.DeliveryState.NotSent
+                "Missing or invalid bound frames never dispatch"
+
+            match rejected.Result with
+            | ClaimCore.Cli.FrameResult.LocalFailure(ClaimCore.Cli.CliFailure.InvalidFrame _) -> ()
+            | _ -> failtest "Expected a local frame refusal."
+
+        let still = scope fresh
+
+        Expect.equal
+            (still.GetProperty("retirementCutoff").GetRawText())
+            (before.GetProperty("retirementCutoff").GetRawText())
+            "Misdelivery leaves the fresh register cutoff unchanged"
+
+        let committed = CliCalls.run fresh environment (raw (Some installation)) 0
+
+        Expect.equal
+            (CliCalls.outcomeKind committed)
+            "RETIREMENT_CONFIRMED"
+            "A correctly bound retirement succeeds"
+
+        let freshCommand = CliCalls.verb fresh environment [ "session"; "terminate-own" ] 0
+        let count = CliCalls.require "SUCCEEDED" freshCommand
+
+        Expect.isTrue
+            (count.GetProperty("self").GetBoolean())
+            "Fresh named CLI obtains typed unregistered scope"
+
+        fresh.Complete()
+    }

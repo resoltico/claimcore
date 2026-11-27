@@ -15,7 +15,13 @@ import { Dashboard } from "../../../src/shell/Dashboard";
 import type { RequesterDocument } from "../../../src/protocol/types";
 const inactive: ReadonlyArray<RequesterDocument> = [
   {
-    subject: { kind: "REQUESTER", state: "NOT_REGISTERED", installationId: null, actorId: null },
+    subject: {
+      kind: "REQUESTER",
+      state: "NOT_REGISTERED",
+      installationId: null,
+      actorId: null,
+      authorityVersion: null,
+    },
     actions: [],
     links: [],
     history: null,
@@ -65,6 +71,7 @@ const inactive: ReadonlyArray<RequesterDocument> = [
     subject: {
       kind: "REQUESTER",
       state: "NO_ROLES",
+      authorityVersion: null,
       installationId: "90000000-0000-4000-8000-000000000001",
       actorId: "10000000-0000-4000-8000-000000000001",
     },
@@ -98,6 +105,7 @@ const inactive: ReadonlyArray<RequesterDocument> = [
     subject: {
       kind: "REQUESTER",
       state: "DISABLED",
+      authorityVersion: null,
       installationId: null,
       actorId: "10000000-0000-4000-8000-000000000001",
     },

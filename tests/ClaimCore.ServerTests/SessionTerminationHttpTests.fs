@@ -18,25 +18,25 @@ open Microsoft.Extensions.Options
 [<Tests>]
 let tests =
     testCaseAsync
-        "confirmed self termination expires the browser cookie once and suppresses queued sliding renewal"
+        "confirmed self termination ends the persisted session without expiring a newer cookie"
         (async {
             use! fixture =
                 OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
                 |> Async.AwaitTask
 
-            let mutable renewals = 0
             let mutable removals = 0
             let storage = fixture.Sessions
 
             let counted =
                 { new ISessionStore with
-                    member _.Create(principal, payload, expiry, idle, absolute, token) =
-                        storage.Create(principal, payload, expiry, idle, absolute, token)
+                    member _.StartFlow token = storage.StartFlow token
+
+                    member _.Create(principal, login, protect, expiry, idle, absolute, token) =
+                        storage.Create(principal, login, protect, expiry, idle, absolute, token)
 
                     member _.Retrieve(key, token) = storage.Retrieve(key, token)
 
                     member _.Renew(key, principal, payload, validate, token) =
-                        renewals <- renewals + 1
                         storage.Renew(key, principal, payload, validate, token)
 
                     member _.Remove(key, reason, token) =
@@ -52,27 +52,28 @@ let tests =
                     sessions = counted
                 )
 
-            let! status, _ = host.Login() |> Async.AwaitTask
-            Expect.equal status 200 "Real protected cookie issued"
+            let! status, _ =
+                host.Send(
+                    System.Net.Http.HttpMethod.Post,
+                    "/__test/login?subject=unbound",
+                    None,
+                    []
+                )
+                |> Async.AwaitTask
+
+            Expect.equal status 200 "Real status-only cookie for an unbound requester issued"
             let! token = host.Token() |> Async.AwaitTask
-
-            let options =
-                host.Services
-                    .GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
-                    .Get(CookieAuthenticationDefaults.AuthenticationScheme)
-
-            options.Events.OnCheckSlidingExpiration <-
-                Func<CookieSlidingExpirationContext, Task>(fun context ->
-                    context.ShouldRenew <- true
-                    Task.CompletedTask)
 
             let before = fixture.EntryCount
 
             use! response =
                 host.CallResponse(
                     "session.terminateOwn",
-                    Encoding.UTF8.GetBytes "{}",
+                    Encoding.UTF8.GetBytes(
+                        $"""{{"input:operationId":"{Guid.CreateVersion7():D}"}}"""
+                    ),
                     token,
+                    installation = fixture.InstallationId.ToString("D"),
                     representation = Representation.Human
                 )
                 |> Async.AwaitTask
@@ -97,15 +98,11 @@ let tests =
                 "All browser tickets deleted in the confirmed transaction"
 
             Expect.equal fixture.EntryCount before "Session deletion does not append history"
-            Expect.equal removals 0 "Sign-out callback does not repeat committed storage deletion"
-            Expect.equal renewals 0 "Queued sliding renewal is suppressed by actual cookie sign-out"
-            let cookies = response.Headers.GetValues("Set-Cookie") |> Seq.toList
+            Expect.equal removals 0 "The response does not perform a second deletion"
 
-            Expect.isTrue
-                (cookies
-                 |> List.exists (fun value ->
-                     value.StartsWith("__Host-ClaimCoreSession=;", StringComparison.Ordinal)))
-                "Configured authentication cookie is expired"
+            Expect.isFalse
+                (response.Headers.TryGetValues("Set-Cookie") |> fst)
+                "A termination response cannot expire a newer cookie"
 
             let! _, session = host.Bootstrap() |> Async.AwaitTask
             use anonymous = JsonDocument.Parse session
@@ -118,11 +115,23 @@ let tests =
                     .GetBoolean())
                 "Current browser is anonymous"
 
+            let! anonymousProof = host.Token() |> Async.AwaitTask
+
             let! rejected, _ =
-                host.Call("context", Encoding.UTF8.GetBytes "{}", token) |> Async.AwaitTask
+                host.Call("context", Encoding.UTF8.GetBytes "{}", anonymousProof)
+                |> Async.AwaitTask
 
             Expect.equal rejected 401 "Old cookie cannot reach private core context"
-            let! _ = host.Login() |> Async.AwaitTask
+
+            let! _ =
+                host.Send(
+                    System.Net.Http.HttpMethod.Post,
+                    "/__test/login?subject=unbound",
+                    None,
+                    []
+                )
+                |> Async.AwaitTask
+
             let! _, session = host.Bootstrap() |> Async.AwaitTask
             use fresh = JsonDocument.Parse session
 

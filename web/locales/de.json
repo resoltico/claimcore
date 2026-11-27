@@ -775,5 +775,50 @@
     "text": "Gespeicherte Einstellungen zurücksetzen",
     "source": "fc93ea1e629a",
     "machineMade": true
+  },
+  "ui.resumeTermination": {
+    "text": "Unbestätigte Beendigung fortsetzen",
+    "source": "9baa4cbcfbc0",
+    "machineMade": true
+  },
+  "ui.newTermination": {
+    "text": "Neue Beendigung starten",
+    "source": "176b872297a2",
+    "machineMade": true
+  },
+  "ui.resumeTerminationDescription": {
+    "text": "Rufen Sie das gespeicherte Ergebnis der früheren Anfrage ab. Spätere Sitzungen bleiben geöffnet.",
+    "source": "5e5028c228d9",
+    "machineMade": true
+  },
+  "ui.newTerminationDescription": {
+    "text": "Eine neue Anfrage kann neuere Sitzungen beenden. Frühere Anfrage-IDs bleiben erhalten, solange ihre Ergebnisse wiederhergestellt werden können.",
+    "source": "0c8f33094c40",
+    "machineMade": true
+  },
+  "ui.terminationOutsideWindow": {
+    "text": "Die frühere Anfrage liegt außerhalb des aktuellen Wiederherstellungszeitraums. Ihre gespeicherte Anfrage-ID bleibt erhalten.",
+    "source": "7e1313e139df",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryExpired": {
+    "text": "Die frühere Anfrage ist abgelaufen. Ihr Ergebnis bleibt unbestätigt.",
+    "source": "a30df175e054",
+    "machineMade": true
+  },
+  "ui.terminationScopeMismatch": {
+    "text": "Eine gespeicherte Anfrage gehört zu einem anderen Konto, einer anderen Installation oder einem anderen Ziel. Kehren Sie zu dieser Auswahl zurück.",
+    "source": "6f0b981f41a2",
+    "machineMade": true
+  },
+  "ui.forgetTermination": {
+    "text": "Abgelaufene Anfrage vergessen",
+    "source": "138c3c19aae3",
+    "machineMade": true
+  },
+  "ui.terminationRecoveryDamaged": {
+    "text": "Einige gespeicherte Anfragen zur Sitzungsbeendigung konnten nicht gelesen werden.",
+    "source": "78d074180601",
+    "machineMade": true
   }
 }

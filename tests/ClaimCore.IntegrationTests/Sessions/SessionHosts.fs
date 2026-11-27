@@ -95,6 +95,7 @@ let host directory (database: PostgresFixture.Database) extraRoutes =
                 ClientSecret = "synthetic-secret"
                 ApiAudience = "synthetic-api"
                 CliClientId = "synthetic-cli"
+                ServiceClientIds = Set.singleton "service"
             }
             (TimeSpan.FromHours 8.)
             builder.Services

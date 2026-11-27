@@ -57,6 +57,9 @@ type RequesterKind =
     | NoRoles
     | Disabled
     | NotRegistered
+    | AccessPending
+    | FormerIdentity
+    | SignInRequired
 
 module RequesterKind =
     let vocabulary =
@@ -70,8 +73,28 @@ type RequesterState =
     | NoRoles of RequesterWithoutRoles
     | Disabled of ActorRef
     | NotRegistered of UnregisteredRequester
+    | AccessPending of UnregisteredRequester
+    | FormerIdentity
+    | SignInRequired
 
-type ContextReply = { Requester: RequesterState }
+module RequesterState =
+    let offersOwnSessionTermination =
+        function
+        | RequesterState.Active context ->
+            OwnSessionScope.select (Some context.ActorId) true |> Option.isSome
+        | RequesterState.NoRoles context ->
+            OwnSessionScope.select (Some context.Self.ActorId) true |> Option.isSome
+        | RequesterState.Disabled _
+        | RequesterState.SignInRequired -> false
+        | RequesterState.NotRegistered _
+        | RequesterState.AccessPending _
+        | RequesterState.FormerIdentity -> OwnSessionScope.select None false |> Option.isSome
+
+type ContextReply =
+    {
+        Requester: RequesterState
+        TerminationScope: SessionTerminationScope option
+    }
 
 type AccessRequest =
     {

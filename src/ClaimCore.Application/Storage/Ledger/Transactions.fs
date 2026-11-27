@@ -139,6 +139,23 @@ module internal Transactions =
         transact source settings token action (fun _ result ->
             System.Threading.Tasks.Task.FromResult(Ok result))
 
+    let settleCredentials source settings require token =
+        task {
+            match!
+                write source settings token (fun connection ->
+                    task {
+                        do! require connection token
+                        let! _ = Credentials.settle connection token
+                        return (), true
+                    })
+            with
+            | Ok() -> ()
+            | Error _ ->
+                // The business write may already be durable. Housekeeping can publish
+                // the generation later; absent publication grants no provider authority.
+                ()
+        }
+
     let writeAndObserveCommit source settings token action observe =
         transact source settings token action (fun connection result ->
             task {

@@ -239,10 +239,8 @@ module internal Baseline =
             return InstallationCipher.unwrap masterKey installationId active admitted wrapped
         }
 
-    let newEncryptionGeneration () = Guid.NewGuid()
-
     /// Caller holds the common ledger head. Older generations stay admitted for decryption.
-    let rotateEncryptionGeneration connection generation token =
+    let rotateEncryptionGeneration connection (reserved: Guid option) token =
         task {
             let! _ =
                 DatabaseSession.execute
@@ -251,14 +249,15 @@ module internal Baseline =
                     [||]
                     token
 
-            let! _ =
-                DatabaseSession.execute
+            let! rows =
+                DatabaseSession.rows
                     connection
-                    "INSERT INTO claimcore.encryption_generations(generation,active) VALUES ($1,true)"
-                    [| box generation |]
+                    """INSERT INTO claimcore.encryption_generations(generation,active)
+                       VALUES (coalesce($1::uuid,gen_random_uuid()),true) RETURNING generation"""
+                    [| reserved |> Option.map box |> Option.defaultValue (box DBNull.Value) |]
                     token
 
-            return ()
+            return DatabaseSession.value<Guid> 0 (List.exactlyOne rows)
         }
 
     let currentEncryptionGeneration connection generation token =

@@ -81,26 +81,45 @@ let private accessTokenIdentity () =
 
     let principal client subject =
         ClaimsPrincipal(
-            ClaimsIdentity([ Claim("azp", client); Claim("sub", subject) ], "verified-bearer")
+            ClaimsIdentity(
+                [
+                    Claim("azp", client)
+                    Claim("sub", subject)
+                    Claim("typ", "Bearer")
+                    Claim(
+                        "claimcore_principal",
+                        if client = "claimcore-cli" then "human" else "service"
+                    )
+                    Claim("iat", "1800000000", ClaimValueTypes.Integer64)
+                    Claim("auth_time", "1800000000", ClaimValueTypes.Integer64)
+                ],
+                "verified-bearer"
+            )
         )
 
     let classify client subject =
-        PrincipalIdentity.fromAccessToken issuer "claimcore-cli" (principal client subject)
+        PrincipalIdentity.fromAccessToken
+            issuer
+            "claimcore-cli"
+            (Set.singleton "claimcore-service")
+            (principal client subject)
+        |> Result.map AuthenticatedPrincipals.key
 
     Expect.equal
         (classify "claimcore-cli" "person-1")
-        (PrincipalIdentity.human issuer "person-1")
+        (PrincipalIdentity.human issuer "person-1"
+         |> Result.map AuthenticatedPrincipals.key)
         "Interactive bearer maps to human subject"
 
     Expect.equal
         (classify "claimcore-service" "service-account")
-        (PrincipalIdentity.service issuer "claimcore-service")
+        (PrincipalIdentity.service issuer "claimcore-service"
+         |> Result.map AuthenticatedPrincipals.key)
         "Service bearer maps to client ID, not service-account subject"
 
-    Expect.equal
+    Expect.isError
         (classify "another-service" "service-subject")
-        (PrincipalIdentity.service issuer "another-service")
-        "Each other verified client is a distinct service"
+        "An unlisted client cannot use the service profile"
 
 let private emailHintVerification () =
     let issuer = Uri("https://issuer.example.test/realms/claimcore")
@@ -118,6 +137,10 @@ let private emailHintVerification () =
             [
                 Claim("sub", "synthetic-requester")
                 Claim("azp", "claimcore-cli")
+                Claim("typ", "Bearer")
+                Claim("claimcore_principal", "human")
+                Claim("iat", "1800000000", ClaimValueTypes.Integer64)
+                Claim("auth_time", "1800000000", ClaimValueTypes.Integer64)
                 Claim("email", "requester@example.test")
             ]
             @ verified
@@ -127,7 +150,10 @@ let private emailHintVerification () =
         for authenticate in
             [
                 PrincipalIdentity.fromBrowserSession issuer
-                PrincipalIdentity.fromAccessToken issuer "claimcore-cli"
+                PrincipalIdentity.fromAccessToken
+                    issuer
+                    "claimcore-cli"
+                    (Set.singleton "claimcore-service")
             ] do
             let result =
                 authenticate principal
@@ -145,6 +171,7 @@ let private middlewareConfiguration () =
         ClientSecret = "synthetic-secret"
         ApiAudience = "claimcore-api"
         CliClientId = "claimcore-cli"
+        ServiceClientIds = Set.singleton "service"
     }
 
 let private middlewarePolicy () =

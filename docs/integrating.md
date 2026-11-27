@@ -297,9 +297,11 @@ Server upload admission independently enforces the applicable byte and framing l
 
 ## Post a command
 
-Post the request from a `COMMAND` binding directly to the endpoint named in its task definition.
-This submission uses no operation ID or preview. For example, `people.requests.dismiss` accepts
-a kind-aware principal with the issuer and subject from the request:
+Post to the endpoint named in the `COMMAND` binding. The binding supplies any selected identity.
+`context` reads requester state. Submit or refresh an access request through
+`people.requests.submit` with `{}` whenever Core offers that action. Former identities receive
+`FORMER_IDENTITY` without an actor link. A current binding awaiting fresh proof returns
+`SIGN_IN_REQUIRED`. For dismissal, send the kind-aware principal from the request:
 
 ```json
 {
@@ -309,22 +311,37 @@ a kind-aware principal with the issuer and subject from the request:
 }
 ```
 
-Command requests admit only their declared semantic input keys. Render the returned HUMAN document
-for command feedback. Do not repeat an uncertain operational write automatically.
+Command requests admit their declared semantic input keys. Render the returned HUMAN document
+for command feedback.
 
 ### Browser-session termination transport
 
-`session.terminateOwn` accepts `{}`. `people.terminateSessions` accepts the selected registered person
-as `{"input:actorId":"UUID"}` and requires current ManageAccess. Both are authenticated operational
-writes, with the existing origin/antiforgery/contract/body gates. They do not require an installation
-header, but any supplied `ClaimCore-Installation` header must be one valid matching UUID. The same
-optional binding rule applies to preview and other actor routes; absent optional preview bindings
-remain valid. OpenAPI declares required versus optional installation headers.
+`session.terminateOwn` takes `{"input:operationId":"UUIDv7"}`.
+`people.terminateSessions` takes that same UUIDv7 request identity and `"input:actorId":"UUID"`.
+The selected-person command requires current ManageAccess. Own-session termination for a bound
+account requires current credential proof, including for roleless accounts. A verified principal
+without a current account binding can end only its own sessions. Every mode requires
+`ClaimCore-Installation` with the intended register UUID from the typed requester termination
+scope. Missing or invalid values return `INPUT_INVALID`. A different installation returns
+`INSTALLATION_MISMATCH`. Both refusals occur before the command changes tickets or its cutoff.
 
-DATA returns `SUCCEEDED` with `data.count` and `data.self`, or typed `REJECTED`, `FAILED` or
-`OUTCOME_UNKNOWN`. HUMAN carries the supplied completion/uncertainty document; confirmed success also
-has a required boolean `self` so clients clear the right current browser ownership. Unknown results
-have no count or operation identity. They are not safe automatic retries relative to later sessions.
+A confirmed reply contains the measured number of deleted tickets and whether the caller selected
+their own tickets. To recover an uncertain result, use the original request ID and selection with
+`"input:settleOnly":true` under current authority before the request window closes. Settlement
+returns the saved count or `OUTCOME_UNKNOWN` when no saved result is available. Settlement leaves
+current tickets intact. A conflicting intent or expired ID refuses. The
+[operation lifetime](../src/ClaimCore.Domain/OperationLifetime.fs) owns the time window.
+Requester context exposes a read-only, installation-bound `retirementCutoff` in its
+termination scope. IDs issued strictly before that committed cutoff are permanently out of scope
+for settlement. The current recovery window uses the separately observed server clock.
+
+Either termination command accepts `"input:confirmRetirement":true` with an admissible new
+request ID. This mode takes precedence over settlement and runs under the same current authority.
+It advances the cutoff and prunes expired results without issuing a cut, saving a termination result
+or deleting tickets. A committed confirmation returns `RETIREMENT_CONFIRMED`. Read the current
+scope again before treating a saved ID as retired.
+Session termination has no ledger entry or `operation.get` result.
+
 
 ## Recover an uncertain change
 
@@ -509,5 +526,9 @@ date. JSON requests/replies, DATA output, CSV, identifiers and protocol tokens r
 
 A ledger request's identity and installation are frozen at its first preview. A long confirmation
 cannot silently allocate another operation or switch installations. Expiry requires an explicit new
-review. Operational commands do not acquire ledger recovery identities; uncertain delivery is
-reported without a journal retry frame or automatic repeat.
+review. Session termination has its own recovery. Fresh named commands can omit the request
+ID and use the current typed termination scope. An explicit request ID or `--dry-run` requires
+`--installation-id UUID`. JSON invocation frames require `installationId`, including during
+settlement or retirement. After uncertain termination, use the settlement-only frame printed
+by the CLI against its original installation. An uncertain retirement prints its original bound
+request. These commands use no ledger journal and never repeat automatically.

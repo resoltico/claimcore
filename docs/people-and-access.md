@@ -51,19 +51,21 @@ registering someone does not change their sign-in-provider membership.
 
 ## Handle access requests
 
-A signed-in person who is not registered sees an explanation that an owner needs to add their account.
-Their access request appears in People and access. Review the issuer and subject as the sign-in
+Sign in with an identity that has never been bound to an account, then choose **Request access**.
+A service can submit the same request with `claimcore people requests submit`. Checking status does not
+send a request. Sending again refreshes the current request. An owner sees it in People and access. Review the issuer and subject as the sign-in
 identity. The identity provider supplies any name and username hints without verification. An email
 hint shows whether the provider verified that address. Confirm the identity with a trusted source,
 check the suggested profile details, choose roles, and type the subject to add the account.
 
-Dismiss removes a request without granting access. A later sign-in can make a new request. Human
+Dismiss removes a request without granting access. An eligible caller can submit a new request. Human
 and service identities with the same issuer and subject stay distinct. If the request list changes
 while you page through it, use **Try again** to restart from the first page.
 
 Someone registered without roles sees **No roles assigned**. A disabled account sees **Account disabled**.
-After an owner changes access, **Check access** refreshes the person's own access state. These pages do
-not use Recovery as a substitute for access.
+**Check access** refreshes the person's own status. After admission or re-enablement,
+sign out and sign in again. Profile and grant changes take effect on the next authorized action
+with the same current credential.
 
 For a case-specific role, choose reference or ID and enter only that target. Switching the selection
 replaces the active target; blank or malformed active text is retained for a precise correction. An
@@ -99,9 +101,10 @@ an actor ID.
 
 An owner can use **Change sign-in identity** to enter a person's new issuer and subject. Keep the
 same account type. The person keeps their actor ID, roles, case responsibilities and recorded work.
-Earlier sign-in identities remain reserved to the same person. Signing in with an old identity
-after the change gives no case access. Review a self-change before confirming, since the current
-identity can lose access as soon as the change takes effect.
+Earlier identities remain reserved to the same person and can only be returned to that account.
+An earlier identity receives private sign-in guidance and cannot create an access request.
+Rebinding retires the account's protected credentials. The person must sign in with the new identity.
+A different signed-in Owner must change an enabled Owner's identity.
 
 If you need to restore owner access through the database owner connection, see
 [Recover owner access](operating.md#recover-owner-access).
@@ -148,25 +151,41 @@ reads of the trail itself. See [disclosure trail operations](operating.md#disclo
 
 In Settings or on the access screen, **End my ClaimCore browser sessions** ends all of your
 ClaimCore browser sessions, including the current one. The access screen exposes this action before
-registration and without roles. Ordinary **Sign out** ends the current ClaimCore browser session
+registration and to roleless accounts with current credentials. A bound account that needs to
+sign in again can still sign out of its current session. Ordinary **Sign out** ends the current ClaimCore browser session
 and hands off to the identity provider when its sign-out endpoint is available.
 
 An owner can select a person and choose **End this person’s ClaimCore browser sessions**. Permission
 is checked again when deletion runs. A confirmed result reports the number of stored session tickets
-removed; an unconfirmed result reports no count. Do not repeat an unconfirmed request automatically:
-a later attempt can also end newer sessions.
+removed, including tickets for earlier reserved identities and tickets issued before registration.
+A former identity can end only its own verified-principal tickets. On an unconfirmed result,
+choose **Resume unconfirmed termination** in the same tab after signing in with current access.
+This checks for the saved count and leaves newer sessions open. Choose **Start a new termination**
+to end newer sessions deliberately. The same tab keeps earlier unresolved IDs while their results
+can still be recovered. A server clock observation can place a request outside the current recovery
+window. Web keeps its ID until a committed cutoff confirms that it has expired.
+
+Web rechecks your current access when you resume or when saved requests for this register reach
+their limit. If expired requests fill the tab, confirming a new termination also asks the server to
+confirm retirement before sending the termination. Retirement leaves browser sessions open.
+Saving a new request clears independently unreadable entries and IDs older than the committed
+cutoff for this register. You can also forget a matching request after confirmed expiry.
+Other registers keep their own saved requests.
 
 The two bulk actions affect ClaimCore browser tickets only. Identity-provider sessions, credentials
-and independent bearer tokens remain valid. Previously admitted work can finish, and sessions
-created after deletion commits may survive. Disabling and
-re-enabling an account never restores deleted tickets. See the [session lock and commit contract](operating.md#access-review-and-sessions).
+and independent bearer tokens remain valid. Previously admitted work can finish.
+Only a sign-in flow started after the termination cut can create a new ticket for a selected identity. See the [session lock and commit contract](operating.md#access-review-and-sessions).
 
 The CLI exposes the same nonledger commands:
 
 ```sh
-claimcore session terminate-own --dry-run
-claimcore people terminate-sessions ACTOR-ID --dry-run
+claimcore session terminate-own REQUEST-ID --installation-id REGISTER-ID --dry-run
+claimcore people terminate-sessions ACTOR-ID REQUEST-ID --installation-id REGISTER-ID --dry-run
 ```
 
-These examples prepare without sending. Omit `--dry-run` to execute a deliberate request. The commands
-have no preview endpoint, ledger operation ID or recovery lookup.
+Use the installation ID from the requester termination scope. Keep it with the prepared frame
+through dispatch and recovery.
+
+Use a fresh UUIDv7 request ID for a new command. Omit `--dry-run` to send it. Record the ID and
+selected account before sending. Use `--settle-only true` with that ID and selection to check
+the saved result after an interruption.
