@@ -21,20 +21,39 @@ export const EndpointProvider = ({
   const { cache } = useMemo(() => ({ scope, cache: new EndpointCache(browserAvailable) }), [scope]);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let frame: number | undefined;
     let suspended = false;
-    const update = (active: boolean) => {
+    const stopWatching = () => {
       clearTimeout(timer);
+      if (frame !== undefined) {
+        cancelAnimationFrame(frame);
+      }
+    };
+    const update = (active: boolean) => {
+      stopWatching();
       flushSync(() => {
         cache.changeDisplay(active);
       });
     };
-    const observe = () => {
+    function observe() {
       const active = !suspended && browserAvailable();
       update(active);
       if (active) {
-        timer = setTimeout(observe, privateDisplayLifetimeMs);
+        watchDeadline();
       }
-    };
+    }
+    function checkFrame() {
+      // A foreground frame can run before a delayed timer. Invalidate before it paints.
+      if (cache.admitsDisplay(cache.display())) {
+        frame = requestAnimationFrame(checkFrame);
+      } else {
+        observe();
+      }
+    }
+    function watchDeadline() {
+      timer = setTimeout(observe, privateDisplayLifetimeMs);
+      frame = requestAnimationFrame(checkFrame);
+    }
     const suspend = () => {
       suspended = true;
       update(false);
@@ -52,7 +71,7 @@ export const EndpointProvider = ({
       cache.changeDisplay(active);
     }
     if (active) {
-      timer = setTimeout(observe, privateDisplayLifetimeMs);
+      watchDeadline();
     }
     window.addEventListener("focus", observe);
     window.addEventListener("pageshow", resume);
@@ -61,7 +80,7 @@ export const EndpointProvider = ({
     window.addEventListener("online", observe);
     document.addEventListener("visibilitychange", observe);
     return () => {
-      clearTimeout(timer);
+      stopWatching();
       window.removeEventListener("focus", observe);
       window.removeEventListener("pageshow", resume);
       window.removeEventListener("pagehide", suspend);

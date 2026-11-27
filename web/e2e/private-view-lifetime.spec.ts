@@ -1,7 +1,100 @@
 import { randomUUID } from "node:crypto";
+import { uploadAttachment } from "./attachment-workflow";
+import { redPage, syntheticPdf } from "./attachment-pdf-fixtures";
 import { expect, test } from "./fixtures";
 import { openCase } from "./case-workflow";
 import { login, openAuthenticated, seedSignedOut } from "./session-helpers";
+
+test("a delayed timer cannot keep private views visible past the foreground deadline @engine", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const fact = `PRIVATE-OVERDUE-${randomUUID().slice(0, 8)}`;
+  await page.addInitScript(() => {
+    if (window !== window.top) {
+      return;
+    }
+    const now = performance.now.bind(performance);
+    let extra = 0;
+    Object.defineProperty(performance, "now", { value: () => now() + extra });
+    window.addEventListener("qualification-advance-monotonic", () => {
+      extra = 16_000;
+    });
+    const schedule = window.setTimeout.bind(window);
+    Object.defineProperty(window, "setTimeout", {
+      configurable: true,
+      value: (handler: TimerHandler, delay?: number, ...args: unknown[]) =>
+        schedule(handler, delay === 15_000 ? 600_000 : delay, ...args),
+    });
+  });
+  await openAuthenticated(page);
+  await openCase(page, fact);
+  const workspace = page.locator(".case-workspace");
+  await expect(workspace).toContainText(fact);
+  const attachments = page.getByRole("region", { name: "Attachments", exact: true });
+  const name = `${fact}.pdf`;
+  const { row } = await uploadAttachment(
+    page,
+    attachments,
+    name,
+    name,
+    "application/pdf",
+    syntheticPdf([redPage]),
+  );
+  await row.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(row.getByRole("status")).toHaveText("Page 1 of 1");
+
+  const history = page.locator(".case-timeline-panel");
+  await history.getByRole("button", { name: "View details", exact: true }).last().click();
+  const dialog = page.getByRole("dialog", { name: "View details", exact: true });
+  await expect(dialog).toContainText(fact);
+  await expect(workspace.locator("iframe")).toHaveCount(1);
+
+  const prepared = Promise.withResolvers<boolean>();
+  const release = Promise.withResolvers<void>();
+  await page.route(
+    "**/api/case.get",
+    async (route) => {
+      const reply = await route.fetch();
+      prepared.resolve(reply.ok() && (await reply.text()).includes(fact));
+      await release.promise;
+      await route.fulfill({ response: reply });
+    },
+    { times: 1 },
+  );
+
+  try {
+    const afterFrames = await page.evaluate(async (marker) => {
+      const start = performance.now();
+      window.dispatchEvent(new Event("qualification-advance-monotonic"));
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      });
+      return {
+        elapsed: performance.now() - start,
+        visible: document.visibilityState === "visible",
+        staleFact: document.body.textContent.includes(marker),
+        retainedPreview: document.querySelector(".case-workspace iframe") !== null,
+      };
+    }, fact);
+    expect(afterFrames.elapsed).toBeGreaterThan(15_000);
+    expect(afterFrames.visible).toBe(true);
+    expect(afterFrames.staleFact).toBe(false);
+    expect(afterFrames.retainedPreview).toBe(false);
+    expect(await prepared.promise).toBe(true);
+    await expect(page.locator("body")).not.toContainText(fact);
+    release.resolve();
+    await expect(workspace).toContainText(fact);
+    await expect(dialog).toHaveCount(0);
+    await expect(workspace.locator("iframe")).toHaveCount(0);
+  } finally {
+    release.resolve();
+  }
+});
 
 test("private facts expire on the monotonic clock and await a new admission @engine", async ({
   page,

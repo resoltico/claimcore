@@ -68,9 +68,11 @@ authorization. A document suspended for history restoration stays masked until i
 page-show event.
 An authorized display generation has a 15-second foreground lifetime measured by the browser's
 monotonic clock. The app masks its endpoint views when that generation ends and waits for fresh
-authorization. An earlier reply cannot restore a masked view. Attachment previews and CSV
-downloads under app control use the same display generation. Screenshots, copied text, and
-files already saved are outside this control.
+authorization. Foreground animation frames check the same deadline before paint, even if the
+refresh timer is late. If the browser suspends script execution, masking runs when it can process
+the next lifecycle event or frame. An earlier reply cannot restore a masked view. Attachment
+previews and CSV downloads under app control use the same display generation. Screenshots, copied
+text, and files already saved are outside this control.
 
 The [read timing probe](../tests/ClaimCore.IntegrationTests/Storage/ReadTimingProbe.fs) measures
 the requester context, work counts and a case page with their audit writes over repeated
