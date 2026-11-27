@@ -363,8 +363,9 @@
     "source": "1dc1592f82ad"
   },
   "ui.recoveryDescription": {
-    "text": "これらの変更が記録されたか確認できませんでした。ClaimCoreが自動で確認します。各回答は{window}以内に確定します。",
-    "source": "eff410b18411"
+    "text": "これらの変更が記録されたか確認できませんでした。ClaimCoreが自動で確認します。変更の準備から{window}が経過すると、照会に成功した場合は現在の履歴に記録がないことを確定できます。復元後に変更を繰り返す前に、以前の結果が復元済みの履歴に含まれることを運用担当者に確認してください。",
+    "source": "ce73c48c3904",
+    "machineMade": true
   },
   "ui.recoveryEmpty": {
     "text": "未確認の変更はありません。",
@@ -373,6 +374,16 @@
   "ui.recoveryCoordinationUnavailable": {
     "text": "自動復旧は一時停止しています。保存済みの操作を手動で確認するか、ブラウザーのストレージへのアクセスを復元して自動確認を再開してください。",
     "source": "8a69c206fcd3",
+    "machineMade": true
+  },
+  "ui.recoveryEarlierFormat": {
+    "text": "以前の復旧記録は保持されています。それらの変更を確認するには、以前のバージョンのClaimCoreと対応するサービスを使用してください。",
+    "source": "822ed469aee8",
+    "machineMade": true
+  },
+  "ui.recoveryDamagedRecord": {
+    "text": "一部の復旧記録を識別または読み取ることができませんでした。これらの記録は保持されています。操作IDがわかる場合は、その操作を直接確認できます。",
+    "source": "b169f2312f6d",
     "machineMade": true
   },
   "ui.recoveryListingUnavailable": {

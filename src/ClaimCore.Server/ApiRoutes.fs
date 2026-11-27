@@ -246,9 +246,9 @@ module internal ApiRoutes =
 
         | _ -> None
 
-    let private confirmationAdmission (admission: PrincipalAdmission) principal token =
+    let private phaseAdmission (admission: PrincipalAdmission) principal workload token =
         task {
-            let! acquired = admission.Acquire(principal, RequestWorkload.Write, token)
+            let! acquired = admission.Acquire(principal, workload, token)
 
             match acquired with
             | None -> return raise (WorkloadAdmissionRejectedException())
@@ -257,6 +257,9 @@ module internal ApiRoutes =
 
     let handle (handler: ClaimCore.Server.Route) configuration withActor (context: HttpContext) =
         let endpoint = handler.Description
+
+        let phasedLookup =
+            endpoint.Id = EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet)
 
         task {
             HttpHeaders.noStore context
@@ -278,12 +281,19 @@ module internal ApiRoutes =
                 | Ok principal ->
                     let admission = context.RequestServices.GetRequiredService<PrincipalAdmission>()
 
+                    let principalKey = AuthenticatedPrincipals.key principal
+
                     let! lease =
-                        admission.Acquire(
-                            AuthenticatedPrincipals.key principal,
-                            workload endpoint,
-                            context.RequestAborted
-                        )
+                        if phasedLookup then
+                            // Ingress remains held through response writing. A lookup acquires database
+                            // capacity only while executing a provider phase.
+                            Task.FromResult(Some(AdmissionLease.once ignore))
+                        else
+                            admission.Acquire(
+                                principalKey,
+                                workload endpoint,
+                                context.RequestAborted
+                            )
 
                     match lease with
                     | None -> return RouteSupport.hostFailure context HostFailureReason.RateLimited
@@ -324,58 +334,72 @@ module internal ApiRoutes =
                                     RouteSupport.hostFailure context HostFailureReason.InputInvalid
                             else
                                 let! result =
-                                    withActor (AuthenticatedPrincipals.key principal) (fun core ->
-                                        let core =
-                                            Service.withClaims
-                                                (AuthenticatedPrincipals.claims principal)
-                                                core
-
-                                        let core =
-                                            match endpoint.Id with
-                                            | EndpointId.Actor(ActorEndpoint.Query QueryTaskId.OperationGet) ->
-                                                Service.withWriteAdmission
-                                                    (confirmationAdmission
-                                                        admission
-                                                        (AuthenticatedPrincipals.key principal))
+                                    withActor
+                                        (AuthenticatedPrincipals.key principal)
+                                        cancellation
+                                        (fun core ->
+                                            let core =
+                                                Service.withClaims
+                                                    (AuthenticatedPrincipals.claims principal)
                                                     core
-                                            | _ -> core
 
-                                        let core =
-                                            if Api.effect endpoint = EndpointEffect.Read then
-                                                Service.withReadCancellation
-                                                    context.RequestAborted
+                                            let core =
+                                                if phasedLookup then
                                                     core
-                                            else
-                                                core
-
-                                        task {
-                                            if
-                                                (Api.requiresInstallation endpoint
-                                                 || suppliedBinding)
-                                                && not (
-                                                    binding
-                                                    |> Option.exists (
-                                                        Service.matchesInstallation core
+                                                    |> Service.withReadAdmission (
+                                                        phaseAdmission
+                                                            admission
+                                                            principalKey
+                                                            RequestWorkload.Read
                                                     )
-                                                )
-                                            then
-                                                return Error HostFailureReason.InstallationMismatch
-                                            else
-                                                try
-                                                    let! reply =
-                                                        prepared.Invoke
-                                                            (Result.defaultValue
-                                                                Representation.Data
-                                                                selection)
-                                                            (Some core)
-                                                            cancellation
-                                                            (fun () ->
-                                                                RouteSupport.markCompleted context)
+                                                    |> Service.withWriteAdmission (
+                                                        phaseAdmission
+                                                            admission
+                                                            principalKey
+                                                            RequestWorkload.Write
+                                                    )
+                                                else
+                                                    core
 
-                                                    return Ok reply
-                                                with :? WorkloadAdmissionRejectedException ->
-                                                    return Error HostFailureReason.RateLimited
-                                        })
+                                            let core =
+                                                if Api.effect endpoint = EndpointEffect.Read then
+                                                    Service.withReadCancellation
+                                                        context.RequestAborted
+                                                        core
+                                                else
+                                                    core
+
+                                            task {
+                                                if
+                                                    (Api.requiresInstallation endpoint
+                                                     || suppliedBinding)
+                                                    && not (
+                                                        binding
+                                                        |> Option.exists (
+                                                            Service.matchesInstallation core
+                                                        )
+                                                    )
+                                                then
+                                                    return
+                                                        Error
+                                                            HostFailureReason.InstallationMismatch
+                                                else
+                                                    try
+                                                        let! reply =
+                                                            prepared.Invoke
+                                                                (Result.defaultValue
+                                                                    Representation.Data
+                                                                    selection)
+                                                                (Some core)
+                                                                cancellation
+                                                                (fun () ->
+                                                                    RouteSupport.markCompleted
+                                                                        context)
+
+                                                        return Ok reply
+                                                    with :? WorkloadAdmissionRejectedException ->
+                                                        return Error HostFailureReason.RateLimited
+                                            })
 
                                 match result with
                                 | Some(Error reason) ->

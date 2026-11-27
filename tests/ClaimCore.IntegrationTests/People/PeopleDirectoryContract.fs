@@ -291,6 +291,7 @@ let internal corruptAssignment fixture =
         let! injected =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = false
                     CancellationToken = token
                     Work =
                         fun tx ->

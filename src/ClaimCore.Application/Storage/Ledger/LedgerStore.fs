@@ -21,7 +21,8 @@ type internal LedgerStore
         installation: Installation,
         cipher: InstallationCipher,
         settings,
-        ?caseReferenceEntropy: unit -> byte array
+        ?caseReferenceEntropy: unit -> byte array,
+        ?witness: RecoveryWitness * WitnessPrimary
     ) =
     static let drawEntropy () =
         System.Security.Cryptography.RandomNumberGenerator.GetBytes CaseReference.EntropyBytes
@@ -87,45 +88,114 @@ type internal LedgerStore
                 })
 
         member _.RecordDisclosure(event, token) =
-            Transactions.write source settings token (fun connection ->
+            let append connection =
                 task {
                     do! Baseline.requireExpected installation connection token
+                    let! _ = WitnessPrimary.configureDisclosure connection token
                     let! _ = DisclosureStorage.append connection event token
                     return (), true
-                })
+                }
 
-        member _.Write
-            ({
-                 WriteOperation.Work = work
-                 CancellationToken = token
-             })
-            =
-            Transactions.write source settings token (fun connection ->
+            match witness with
+            | None -> Transactions.write source settings token append
+            | Some(evidence, admitted) ->
                 task {
-                    do! Baseline.requireExpected installation connection token
-                    let! head, observedAt = Transactions.head connection token
-                    FailureDiagnostics.phase FailurePhase.Read
+                    let! committed =
+                        Transactions.writeAndObserveCommit
+                            source
+                            settings
+                            token
+                            append
+                            WitnessPrimary.read
 
-                    let! verdict =
-                        work (
-                            WriteTx(
-                                connection,
-                                installation,
-                                cipher,
-                                head,
-                                observedAt,
-                                caseReferenceEntropy,
-                                token
+                    match committed with
+                    | Error failure -> return Error failure
+                    | Ok((), primary) when
+                        primary.Generation = admitted.Generation
+                        && primary.PrimaryId = admitted.PrimaryId
+                        && primary.SystemId = admitted.SystemId
+                        && primary.Timeline = admitted.Timeline
+                        ->
+                        // The provider has disposed its main connection before any independent wait.
+                        let! acknowledged = evidence.Acknowledge(primary, token)
+
+                        return
+                            if acknowledged then
+                                Ok()
+                            else
+                                Error StoreFailure.Unavailable
+                    | Ok _ -> return Error StoreFailure.Unavailable
+                }
+
+        member _.Write(operation) =
+            let token = operation.CancellationToken
+
+            let run () =
+                Transactions.write source settings token (fun connection ->
+                    task {
+                        do! Baseline.requireExpected installation connection token
+                        let! head, observedAt = Transactions.head connection token
+                        FailureDiagnostics.phase FailurePhase.Read
+
+                        if operation.RequiresEncryption then
+                            let! current =
+                                Baseline.currentEncryptionGeneration
+                                    connection
+                                    cipher.Generation
+                                    token
+
+                            if not current then
+                                raise (
+                                    RecordCorruptException
+                                        "The write reservation belongs to a retired encryption generation."
+                                )
+
+                        let invoke scope =
+                            operation.Work(
+                                WriteTx(
+                                    connection,
+                                    installation,
+                                    scope,
+                                    head,
+                                    observedAt,
+                                    caseReferenceEntropy,
+                                    token
+                                )
                             )
 
-                        )
+                        let! verdict =
+                            task {
+                                if operation.RequiresEncryption then
+                                    use allocated =
+                                        cipher.ForEncryption InstallationCipher.operationAllowance
 
-                    let commit =
-                        match verdict with
-                        | Verdict.Proceed _ -> true
-                        | Verdict.Replay _
-                        | Verdict.Refuse _
-                        | Verdict.Fail _ -> false
+                                    return! invoke allocated
+                                else
+                                    return! invoke cipher
+                            }
 
-                    return verdict, commit
-                })
+                        let commit =
+                            match verdict with
+                            | Verdict.Proceed _ -> true
+                            | Verdict.Replay _
+                            | Verdict.Refuse _
+                            | Verdict.Fail _ -> false
+
+                        return verdict, commit
+                    })
+
+            if not operation.RequiresEncryption then
+                run ()
+            else
+                task {
+                    match!
+                        EncryptionBudget.reserve
+                            source
+                            cipher.Generation
+                            InstallationCipher.operationAllowance
+                            token
+                    with
+                    | Ok true -> return! run ()
+                    | Ok false -> return Error StoreFailure.Unavailable
+                    | Error failure -> return Error failure
+                }

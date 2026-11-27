@@ -24,8 +24,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "更改尚未确认。请使用 {retryCommand} 重发完全相同的请求，或使用 {statusCommand} 检查。更改的允许时间结束后，回答将确定。",
-    "source": "0c2a0dcdff67"
+    "text": "更改尚未确认。请使用 {statusCommand} 查询，或在同一份历史记录保持完整时使用 {retryCommand} 重发完全相同的请求。 从备份还原后，请先让运维人员确认还原后的历史记录涵盖先前的结果，再重复这项更改。",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "身份验证失败。",
@@ -148,8 +149,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "传送未确认时，退出码 4 会输出可重新发送的准确请求。\n重新发送不会重复记录。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 检查；回答将在 {window} 内确定。",
-    "source": "d798be5ae516"
+    "text": "传送未确认时，退出码 4 会原样输出请求。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 查询原始操作。 更改准备满 {window} 后，成功的查询可以最终确认当前历史记录中没有这项更改。\n只要同一份历史记录保持完整，重新发送完全相同的请求就不会重复记录这项更改。 从备份还原后，请先让运维人员确认还原后的历史记录涵盖先前的结果，再重复这项更改。",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "离线准备请求，检查结构定义，然后发送通过准入检查的帧。",

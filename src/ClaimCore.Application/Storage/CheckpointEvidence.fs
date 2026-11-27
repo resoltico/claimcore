@@ -57,6 +57,31 @@ module internal CheckpointEvidence =
                         }
         }
 
+    let fromStorage installation sequence hash (ticks: int64 option) =
+        let position = StoredEntries.position sequence hash
+
+        let frontier =
+            ticks |> Option.map (fun ticks -> DateTimeOffset(ticks, TimeSpan.Zero))
+
+        InstallationCheckpoint.create installation position frontier
+        |> Option.defaultWith (fun () ->
+            raise (RecordCorruptException "Invalid installation checkpoint."))
+
+    let retainsPosition connection (position: LedgerPosition) token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT EXISTS(SELECT FROM claimcore.ledger WHERE sequence=$1 AND entry_hash=$2)"
+                    [|
+                        box (Sequence.value position.Sequence)
+                        box (EntryHash.toBytes position.EntryHash)
+                    |]
+                    token
+
+            return DatabaseSession.value<bool> 0 (List.exactlyOne rows)
+        }
+
     let read connection installation token =
         task {
             let! rows =
@@ -68,18 +93,11 @@ module internal CheckpointEvidence =
 
             match rows with
             | [ row ] ->
-                let position =
-                    StoredEntries.position
-                        (DatabaseSession.value<int64> 0 row)
-                        (DatabaseSession.value<byte array> 1 row)
-
-                let frontier =
-                    DatabaseSession.optional<int64> 2 row
-                    |> Option.map (fun ticks -> DateTimeOffset(ticks, TimeSpan.Zero))
-
                 return
-                    InstallationCheckpoint.create installation position frontier
-                    |> Option.defaultWith (fun () ->
-                        raise (RecordCorruptException "Invalid installation checkpoint."))
+                    fromStorage
+                        installation
+                        (DatabaseSession.value 0 row)
+                        (DatabaseSession.value 1 row)
+                        (DatabaseSession.optional 2 row)
             | _ -> return raise (RecordCorruptException "Installation checkpoint is absent.")
         }

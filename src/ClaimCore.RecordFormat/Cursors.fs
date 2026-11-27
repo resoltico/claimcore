@@ -214,6 +214,9 @@ module Cursors =
         |> System.Security.Cryptography.SHA256.HashData
         |> base64
 
+    let caseReportScope (installation: Guid) requester date filter grouping =
+        installation.ToString("D") + ":" + reportScope requester date filter grouping
+
     let encodeCaseReport installation requester date filter grouping position =
         if not (CaseReportPosition.admits grouping position) then
             invalidArg (nameof position) "Invalid report position."

@@ -24,8 +24,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "Änderung unbestätigt. Senden Sie mit {retryCommand} genau dieselbe Anfrage erneut oder prüfen Sie mit {statusCommand}. Nach Ablauf des Änderungszeitraums ist die Antwort endgültig.",
-    "source": "0c2a0dcdff67"
+    "text": "Änderung unbestätigt. Prüfen Sie sie mit {statusCommand} oder senden Sie mit {retryCommand} genau dieselbe Anfrage erneut, solange derselbe Verlauf erhalten ist. Bitten Sie nach einer Wiederherstellung den Betreiber vor dem Wiederholen der Änderung zu bestätigen, dass der wiederhergestellte Verlauf das frühere Ergebnis abdeckt.",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "Authentifizierung fehlgeschlagen.",
@@ -148,8 +149,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "Bei unbestätigter Übermittlung gibt Exitcode 4 die genaue Anfrage zum erneuten Senden aus.\nErneutes Senden kann sie nicht doppelt erfassen.\nPrüfen Sie mit `claimcore recovery list` und `claimcore recovery check`; die Antwort wird innerhalb von {window} endgültig.",
-    "source": "d798be5ae516"
+    "text": "Bei unbestätigter Übermittlung gibt Exitcode 4 die genaue Anfrage aus.\nPrüfen Sie den ursprünglichen Vorgang mit `claimcore recovery list` und `claimcore recovery check`. Wenn die Vorbereitung einer Änderung {window} zurückliegt, kann eine erfolgreiche Prüfung endgültig bestätigen, dass sie im aktuellen Verlauf fehlt.\nSolange derselbe Verlauf erhalten ist, kann das erneute Senden genau derselben Anfrage die Änderung nicht doppelt erfassen. Bitten Sie nach einer Wiederherstellung den Betreiber vor dem Wiederholen der Änderung zu bestätigen, dass der wiederhergestellte Verlauf das frühere Ergebnis abdeckt.",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "Bereiten Sie Anfragen offline vor, prüfen Sie Schemata und senden Sie dann einen zugelassenen Rahmen.",

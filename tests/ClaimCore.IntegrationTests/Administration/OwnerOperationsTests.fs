@@ -34,7 +34,7 @@ let private statusAndModes (database: PostgresFixture.Database) =
 
         Expect.equal
             initial.InstallationFormat
-            11
+            12
             "Fresh installations use the current durable format"
 
         Expect.isFalse initial.Maintenance.Active "Fresh schema is writable"

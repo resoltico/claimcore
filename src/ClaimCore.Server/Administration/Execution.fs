@@ -11,19 +11,36 @@ open ClaimCore.Application.Administration
 
 module Execution =
     let private perform (administration: Administration) token command =
+        let enroll installation =
+            task {
+                match Inputs.witnessConnection () with
+                | Error fault -> return Error fault
+                | Ok None -> return Ok()
+                | Ok(Some connection) ->
+                    do! administration.EnrollWitness(connection, installation, token)
+                    return Ok()
+            }
+
         task {
             match command with
             | Initialize(zone, owner, policy, true) ->
                 let! result = administration.InitializeIfMissing(zone, owner, policy, token)
 
-                return
+                let installation, reply =
                     match result with
-                    | InitializationResult.Initialized id -> Replies.initialized id
+                    | InitializationResult.Initialized id -> id, Replies.initialized id
                     | InitializationResult.ExistingInstallation id ->
-                        Replies.initializationSkipped id
+                        id, Replies.initializationSkipped id
+
+                match! enroll installation with
+                | Ok() -> return reply
+                | Error fault -> return Replies.operatorFault fault
             | Initialize(zone, owner, policy, false) ->
                 let! installation = administration.Initialize(zone, owner, policy, token)
-                return Replies.initialized installation
+
+                match! enroll installation with
+                | Ok() -> return Replies.initialized installation
+                | Error fault -> return Replies.operatorFault fault
             | RecoverOwner input ->
                 let! result = administration.RecoverOwner(input, token)
                 return Replies.ownerRecovery result
@@ -34,6 +51,9 @@ module Execution =
                     use replacement = replacement
                     let! installation = administration.RotateMasterKey(replacement, token)
                     return Replies.masterKeyRotated installation
+            | RotateEncryptionGeneration handle ->
+                let! generation = administration.RotateEncryptionGeneration(handle, token)
+                return Replies.encryptionGenerationRotated generation
             | Verify expected ->
                 let started = System.Diagnostics.Stopwatch.GetTimestamp()
                 let! result = administration.Verify(expected, token)
@@ -66,12 +86,33 @@ module Execution =
                     finally
                         System.Security.Cryptography.CryptographicOperations.ZeroMemory(Span bytes)
             | AdmitRestoredInstallation(checkpoint, handle) ->
-                let! result = administration.AdmitRestoredInstallation(checkpoint, handle, token)
+                match Inputs.restoreWitness () with
+                | Error fault -> return Replies.operatorFault fault
+                | Ok(connection, transition, history) ->
+                    let! result =
+                        administration.AdmitWitnessedRestore(
+                            checkpoint,
+                            handle,
+                            connection,
+                            transition,
+                            history,
+                            token
+                        )
 
-                return Replies.restoreAdmission result
+                    return Replies.restoreAdmission result
             | Status ->
                 let! status = administration.Status(token)
                 return Replies.status status
+            | Maintenance(MaintenanceChange.Resume handle as change) ->
+                match Inputs.witnessConnection () with
+                | Error fault -> return Replies.operatorFault fault
+                | Ok connection ->
+                    let! result =
+                        match connection with
+                        | Some witness -> administration.ResumeWithWitness(handle, witness, token)
+                        | None -> administration.Maintenance(change, token)
+
+                    return Replies.maintenance result
             | Maintenance change ->
                 let! result = administration.Maintenance(change, token)
                 return Replies.maintenance result

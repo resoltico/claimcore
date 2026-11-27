@@ -194,3 +194,24 @@ it("confirmed session termination advances privacy state without a second deleti
   });
   expect(fetch).toHaveBeenCalledTimes(2);
 });
+
+it("publishes authentication and session termination even when the storage getter throws", async () => {
+  const storage = vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
+    throw new Error("Storage getter denied");
+  });
+  try {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      session({ authenticated: true, antiforgeryToken: "owned" }),
+    );
+    const { result } = renderHook(() => useSession());
+    await waitFor(() => {
+      expect(result.current.state).toEqual({ kind: "authenticated", token: "owned", epoch: 1 });
+    });
+    act(() => {
+      result.current.endedBrowserSessions(1);
+    });
+    expect(result.current.state).toMatchObject({ kind: "anonymous", epoch: 2 });
+  } finally {
+    storage.mockRestore();
+  }
+});

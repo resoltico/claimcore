@@ -122,6 +122,7 @@ module internal RegisterMaintenanceStore =
     let publishStaged source masterKey prepared token stage work =
         withFence source masterKey prepared token stage (fun connection transaction cipher ->
             task {
+                let! _ = WitnessPrimary.configureDisclosure connection token
                 let! result = work connection cipher
 
                 match result with
@@ -135,9 +136,42 @@ module internal RegisterMaintenanceStore =
     let publish source masterKey prepared token work =
         publishStaged source masterKey prepared token withoutStaging work
 
+    /// Re-read evidence under the maintenance and head protection used for publication.
+    let confirmWith source masterKey prepared token observe =
+        withFence source masterKey prepared token withoutStaging (fun connection _ cipher ->
+            observe connection cipher)
+
+    let reserveRestoreTarget source masterKey prepared generation token validate =
+        withFence source masterKey prepared token withoutStaging (fun connection transaction _ ->
+            task {
+                do! validate connection
+
+                let! existing =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT primary_id FROM claimcore.restore_targets WHERE generation=$1"
+                        [| box generation |]
+                        token
+
+                match existing with
+                | [ row ] -> return DatabaseSession.value<Guid> 0 row
+                | _ ->
+                    let! _ = WitnessPrimary.configureDisclosure connection token
+
+                    let! reserved =
+                        DatabaseSession.rows
+                            connection
+                            "INSERT INTO claimcore.restore_targets(generation) VALUES ($1) RETURNING primary_id"
+                            [| box generation |]
+                            token
+
+                    do! DatabaseSession.commit transaction token
+                    return DatabaseSession.value<Guid> 0 (List.exactlyOne reserved)
+            })
+
     /// A successful fenced observation has no durable write, commit or generation advance.
     let confirm source masterKey prepared token value =
-        withFence source masterKey prepared token withoutStaging (fun _ _ _ ->
+        confirmWith source masterKey prepared token (fun _ _ ->
             System.Threading.Tasks.Task.FromResult value)
 
     /// Apply one transition inside the caller's transaction while it owns the common head lock.
@@ -166,7 +200,25 @@ module internal RegisterMaintenanceStore =
             return after, changed
         }
 
-    let change (source: NpgsqlDataSource) masterKey change (token: CancellationToken) =
+    let reopenPending connection token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT reopen_pending FROM claimcore.recovery_generation WHERE singleton"
+                    [||]
+                    token
+
+            return DatabaseSession.value<bool> 0 (List.exactlyOne rows)
+        }
+
+    let private changeChecked
+        (source: NpgsqlDataSource)
+        masterKey
+        change
+        reopening
+        (token: CancellationToken)
+        =
         DatabaseSession.transaction
             source
             Data.IsolationLevel.ReadCommitted
@@ -181,6 +233,37 @@ module internal RegisterMaintenanceStore =
                     use! _cipher =
                         Baseline.loadCipher connection installation.InstallationId masterKey token
 
+                    match change with
+                    | MaintenanceChange.Resume _ ->
+                        let! pending = reopenPending connection token
+
+                        if pending then
+                            match reopening with
+                            | Some(generation, target, date) when
+                                (InstallationCheck.calendar installation.BusinessTimeZone).DateAt
+                                    observed
+                                    =
+                                    date
+                                ->
+                                let! cleared =
+                                    DatabaseSession.execute
+                                        connection
+                                        """UPDATE claimcore.recovery_generation SET reopen_pending=false
+                                           WHERE generation=$1 AND primary_id=$2 AND reopen_pending"""
+                                        [| box generation; box target |]
+                                        token
+
+                                if cleared <> 1 then
+                                    raise (
+                                        OperatorFaultException
+                                            OperatorFault.StaleRecoveryPreparation
+                                    )
+                            | _ ->
+                                raise (
+                                    OperatorFaultException OperatorFault.StaleRecoveryPreparation
+                                )
+                    | _ -> ()
+
                     let! after, changed = changeWithinHeadLock connection change token
 
                     do! DatabaseSession.commit transaction token
@@ -193,3 +276,10 @@ module internal RegisterMaintenanceStore =
                             Changed = changed
                         }
                 })
+
+
+    let change source masterKey requested token =
+        changeChecked source masterKey requested None token
+
+    let changeForReopen source masterKey handle evidence token =
+        changeChecked source masterKey (MaintenanceChange.Resume handle) (Some evidence) token

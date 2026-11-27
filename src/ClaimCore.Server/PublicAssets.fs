@@ -1,6 +1,8 @@
 namespace ClaimCore.Server
 
 open System
+open Acornima
+open Acornima.Ast
 open System.IO
 open System.Security.Cryptography
 open System.Text
@@ -100,12 +102,250 @@ module internal PublicAssets =
         | ".gz" -> "application/gzip"
         | _ -> invalidOp "Unsupported public build asset."
 
+    let private literalSpecifier (source: Expression) =
+        match source with
+        | :? StringLiteral as literal -> Some literal.Value
+        | :? TemplateLiteral as literal when literal.Expressions.Count = 0 ->
+            Option.ofObj literal.Quasis[0].Value.Cooked
+        | _ -> None
+
+    // Parse the executable bytes independently of the bundler inventory. The workspace
+    // ships literal dynamic imports. Its viewer is a self-contained inline script.
+    let private moduleReferences (entry: Node) requireLiteral onReference onLiteral =
+        let rec walk (node: Node) =
+            match node with
+            | :? ImportDeclaration as declaration -> onReference declaration.Source.Value
+            | :? ExportNamedDeclaration as declaration ->
+                declaration.Source
+                |> Option.ofObj
+                |> Option.iter (fun source -> onReference source.Value)
+            | :? ExportAllDeclaration as declaration -> onReference declaration.Source.Value
+            | :? ImportExpression as expression ->
+                match literalSpecifier expression.Source with
+                | Some specifier -> onReference specifier
+                | None when requireLiteral ->
+                    invalidOp "A browser module uses an undeclared computed import."
+                | None -> ()
+            | :? NewExpression as expression when expression.Arguments.Count > 0 ->
+                match expression.Callee, literalSpecifier expression.Arguments[0] with
+                | (:? Identifier as constructor), Some specifier when
+                    constructor.Name = "Worker" || constructor.Name = "SharedWorker"
+                    ->
+                    onReference specifier
+                | _ -> ()
+            | :? StringLiteral as literal -> onLiteral literal.Value
+            | :? TemplateLiteral as literal when literal.Expressions.Count = 0 ->
+                literal.Quasis[0].Value.Cooked |> Option.ofObj |> Option.iter onLiteral
+            | _ -> ()
+
+            for child in node.ChildNodes do
+                walk child
+
+        walk entry
+
+    let private validateReferences
+        (inventory: JsonElement)
+        (files: Map<string, Asset>)
+        (viewer: Viewer)
+        =
+        let text path =
+            UTF8Encoding(false, true).GetString(files[path].Bytes)
+
+        let stringValue (value: JsonElement) = value.GetString() |> nonNull
+
+        let require path =
+            if not (Map.containsKey path files) then
+                invalidOp $"A packaged asset refers to an unlisted dependency ({path})."
+
+        let graph =
+            inventory.GetProperty("graph").EnumerateObject()
+            |> Seq.map (fun entry ->
+                require entry.Name
+                let targets = entry.Value.EnumerateArray() |> Seq.map stringValue |> Seq.toList
+                targets |> List.iter require
+                entry.Name, targets)
+            |> Seq.toList
+
+        let graphMap = Map.ofList graph
+
+        if graph.Length <> graphMap.Count then
+            invalidOp "Duplicate packaged dependency graph node."
+
+        let identities =
+            inventory.GetProperty("identityChunks").EnumerateArray()
+            |> Seq.map stringValue
+            |> Set.ofSeq
+
+        for path in identities do
+            require path
+
+            if not ((text path).Contains(ContractIdentity.value, StringComparison.Ordinal)) then
+                invalidOp "The compiled browser handshake identity disagrees with this server."
+
+        let htmlReferences path =
+            let document = text path
+
+            let scripts =
+                Regex.Matches(
+                    document,
+                    """<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']""",
+                    RegexOptions.IgnoreCase
+                )
+
+            let links =
+                Regex.Matches(
+                    document,
+                    """<link\b[^>]*\bhref\s*=\s*["']([^"']+)["']""",
+                    RegexOptions.IgnoreCase
+                )
+
+            let references (matches: MatchCollection) =
+                matches |> Seq.map (fun m -> m.Groups[1].Value)
+
+            let roots = references scripts |> Seq.toList
+            Seq.append roots (references links) |> Seq.iter require
+            roots
+
+        let rec reachable seen pending =
+            match pending with
+            | [] -> seen
+            | path :: rest when Set.contains path seen -> reachable seen rest
+            | path :: rest ->
+                reachable
+                    (Set.add path seen)
+                    ((Map.tryFind path graphMap |> Option.defaultValue []) @ rest)
+
+        let workspace = htmlReferences indexPath
+        let recovery = htmlReferences recoveryPath
+
+        if List.isEmpty workspace || List.isEmpty recovery then
+            invalidOp "A packaged browser document is missing its script roots."
+
+        for script in workspace @ recovery do
+            if not (Map.containsKey script graphMap) then
+                invalidOp "A packaged HTML script is absent from the dependency graph."
+
+        if (Set.intersect (reachable Set.empty workspace) identities).IsEmpty then
+            invalidOp "The workspace cannot reach the compiled handshake identity."
+
+        let resolve path (target: string) =
+            let origin = Uri("https://public.invalid" + path)
+            let uri = Uri(origin, target)
+
+            if
+                uri.Host <> origin.Host
+                || uri.Scheme <> origin.Scheme
+                || uri.Port <> origin.Port
+            then
+                invalidOp "A packaged dependency refers outside the public inventory."
+
+            require uri.AbsolutePath
+            uri.AbsolutePath
+
+        // Vite's preload table and compiled resource mappings carry root asset
+        // paths as string literals. They need admission even when no import names them.
+        let assetLiteral (value: string) =
+            if
+                Regex.IsMatch(
+                    value,
+                    """^/?assets/[A-Za-z0-9_./~-]+\.(?:js|css|json|svg|png|webp|woff2|wasm|bcmap)\z"""
+                )
+            then
+                require ("/" + value.TrimStart('/'))
+
+        let parser = Parser()
+
+        for KeyValue(path, dependencies) in graphMap do
+            if not (path.EndsWith(".js", StringComparison.Ordinal)) then
+                invalidOp "A bundle graph node must be a JavaScript module."
+
+            let reference (specifier: string) =
+                if
+                    not (
+                        specifier.StartsWith("./", StringComparison.Ordinal)
+                        || specifier.StartsWith("../", StringComparison.Ordinal)
+                        || specifier.StartsWith("/", StringComparison.Ordinal)
+                    )
+                then
+                    invalidOp "A browser module dependency must be a packaged URL."
+
+                let target = resolve path specifier
+
+                if not (List.contains target dependencies && Map.containsKey target graphMap) then
+                    invalidOp "A compiled module dependency is absent from the packaged graph."
+
+            moduleReferences (parser.ParseModule(text path)) true reference assetLiteral
+
+        let inlineScript =
+            Regex
+                .Match(
+                    UTF8Encoding(false, true).GetString viewer.Bytes,
+                    """<script>([\s\S]*?)</script>"""
+                )
+                .Groups[1].Value
+
+        let workerPrograms = ResizeArray<string>()
+
+        let inlineDependency _ =
+            invalidOp "The inline attachment viewer cannot load a packaged module."
+
+        moduleReferences (parser.ParseScript inlineScript) false inlineDependency (fun literal ->
+            assetLiteral literal
+
+            if Regex.IsMatch(literal, @"^var\s+ClaimCorePdfWorker\s*=") then
+                workerPrograms.Add literal)
+
+        for KeyValue(path, asset) in files do
+            if asset.ContentType.StartsWith("text/css", StringComparison.Ordinal) then
+                for entry in
+                    Regex.Matches(
+                        text path,
+                        """url\(\s*["']?([^"'\s)]+)""",
+                        RegexOptions.IgnoreCase
+                    ) do
+                    let target = entry.Groups[1].Value
+
+                    if
+                        not (
+                            target.StartsWith("data:", StringComparison.Ordinal)
+                            || target.StartsWith("#", StringComparison.Ordinal)
+                        )
+                    then
+                        resolve path target |> ignore
+
+        let viewerResources =
+            inventory.GetProperty("viewer").GetProperty("resources").EnumerateArray()
+            |> Seq.map stringValue
+            |> Seq.toList
+
+        viewerResources |> List.iter require
+
+        let resourceReferences =
+            graphMap
+            |> Map.keys
+            |> Seq.collect (fun path ->
+                Regex.Matches(text path, """/assets/pdf-[a-zA-Z0-9_.-]+\.(?:bcmap|wasm)""")
+                |> Seq.map _.Value)
+            |> Set.ofSeq
+
+        if not resourceReferences.IsEmpty && workerPrograms.Count <> 1 then
+            invalidOp "The published viewer must contain its compiled worker."
+
+        for worker in workerPrograms do
+            moduleReferences (parser.ParseScript worker) false inlineDependency assetLiteral
+
+        if
+            resourceReferences <> Set.ofList viewerResources
+            || resourceReferences.Count <> viewerResources.Length
+        then
+            invalidOp "Packaged viewer resources disagree with the compiled viewer mapping."
+
     let private load directory =
         let root = Path.GetFullPath directory + string Path.DirectorySeparatorChar
         let manifest = Path.Combine(directory, "public-assets.json")
         use document = JsonDocument.Parse(File.ReadAllBytes manifest)
 
-        if document.RootElement.GetProperty("schema").GetInt32() <> 4 then
+        if document.RootElement.GetProperty("schema").GetInt32() <> 5 then
             invalidOp "Unsupported public inventory."
 
         let viewer = readViewer directory document.RootElement
@@ -179,6 +419,7 @@ module internal PublicAssets =
         then
             invalidOp "The public catalog inventory must cover every offered language exactly once."
 
+        validateReferences document.RootElement files viewer
         files, viewer
 
     let private serveAsset (context: HttpContext) (path: string) asset : Task =

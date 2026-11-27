@@ -7,6 +7,8 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Application.Storage
+open ClaimCore.Application.Reads
+open ClaimCore.Json
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
@@ -709,11 +711,241 @@ let private currencyBoundary (database: PostgresFixture.Database) =
 
     }
 
+let private cacheEvidence () =
+    task {
+        let! database = PostgresFixture.createWithStatementCounts ()
+
+        try
+            let fixture = database.Fixture
+            let! owner = caseWorker fixture
+
+            for operation, received in [ 10, "2026-10-01"; 11, "2026-11-01" ] do
+                let! opened = openCase fixture owner operation (Some received) (Some "1")
+                accepted opened |> ignore
+
+            use! observer = database.SuperuserSource.OpenConnectionAsync()
+
+            let! _ =
+                DatabaseSession.execute observer "CREATE EXTENSION pg_stat_statements" [||] token
+
+            let calls needle =
+                task {
+                    let! rows =
+                        DatabaseSession.rows
+                            observer
+                            "SELECT coalesce(sum(calls),0)::bigint FROM public.pg_stat_statements WHERE lower(query) LIKE $1"
+                            [| box needle |]
+                            token
+
+                    return DatabaseSession.value<int64> 0 rows.Head
+                }
+
+            let read filter cursor =
+                task {
+                    let! page =
+                        Service.caseSummary
+                            owner
+                            {
+                                Selection =
+                                    {
+                                        Filter = filter
+                                        GroupBy = Some CaseGrouping.ReceivedMonth
+                                    }
+                                Page = { AfterCursor = cursor; Limit = 1 }
+                            }
+                            token
+
+                    return success page
+                }
+
+            let filter = CaseListFilter.empty<string>
+            let! first = read filter None
+            Expect.isSome first.NextCursor "Two groups require two pages"
+            let! hit = read filter first.NextCursor
+            Expect.equal hit.Rows.Length 1 "Continuation returns the second group"
+            let! aggregates = calls "%with selected as materialized%"
+            let! witnesses = calls "%select jsonb_build_array(c.case_id,%"
+            Expect.equal aggregates 1L "An authorized hit avoids repeated aggregation"
+
+            Expect.equal
+                witnesses
+                1L
+                "The unchanged authenticated traversal avoids repeating its whole-scope proof"
+
+            for index in 1..17 do
+                let! _ =
+                    read
+                        { filter with
+                            Text = Some $"absent-{index}"
+                        }
+                        None
+
+                ()
+
+            let! before = calls "%with selected as materialized%"
+            let! miss = read filter first.NextCursor
+            let! after = calls "%with selected as materialized%"
+
+            Expect.equal
+                after
+                (before + 1L)
+                "Eviction takes the SQL path on the same validated continuation"
+
+            Expect.equal miss.Rows hit.Rows "A cache miss preserves the same authorized data"
+            let firstMonth = DateOnly(2010, 1, 1)
+
+            for index in 0..126 do
+                let month =
+                    firstMonth
+                        .AddMonths(index)
+                        .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
+
+                let! opened = openCase fixture owner (100 + index) (Some month) (Some "1")
+                accepted opened |> ignore
+
+            let! oversized = read filter None
+            Expect.isSome oversized.NextCursor "A report with 129 groups requires continuation"
+            let! beforeOversizedContinuation = calls "%with selected as materialized%"
+            let! oversizedTail = read filter oversized.NextCursor
+            let! afterOversizedContinuation = calls "%with selected as materialized%"
+
+            Expect.equal
+                afterOversizedContinuation
+                (beforeOversizedContinuation + 1L)
+                "An oversized report is deliberately not retained and continues through SQL"
+
+            Expect.equal
+                (groups oversizedTail |> Map.toList)
+                [ "2010-02", 1L ]
+                "The oversized fallback preserves the exact second group"
+        finally
+            database.Fixture.Dispose()
+    }
+
+let private maximumEnvelope (database: PostgresFixture.Database) =
+    task {
+        let stamp = DateTimeOffset(2026, 3, 8, 7, 30, 0, TimeSpan.Zero)
+        let actor = CaseFixtures.actorId (id database.Fixture 1)
+        let capacity = Paging.MaximumAccessRequestCursorCharacters
+        use! connection = database.RuntimeSource.OpenConnectionAsync token
+        let tx = ReadTx(connection, database.Installation, database.Cipher, stamp, token)
+
+        let emit length =
+            ScopedTraversal.pageWithBasis
+                tx
+                "qualification-envelope"
+                capacity
+                actor
+                None
+                Ok
+                (fun value -> value)
+                (fun () ->
+                    System.Threading.Tasks.Task.FromResult(
+                        {
+                            Generation = "g"
+                            ValidUntil = DateTimeOffset.MaxValue
+                        }
+                    ))
+                (fun () -> System.Threading.Tasks.Task.FromResult "w")
+                (fun _ _ -> System.Threading.Tasks.Task.FromResult(String('a', length)))
+                false
+                Some
+                None
+
+        // Independent byte calculation: 24,576 total bytes encode to 32,768 base64url
+        // characters. The authenticated header uses 76 bytes and the traversal metadata 44.
+        let! result = emit 24456
+
+        let continuation =
+            result |> Result.defaultWith (string >> failtest) |> snd |> Option.get
+
+        Expect.equal
+            continuation.Length
+            capacity
+            "The actual encrypted continuation reaches the published outer limit"
+
+        let request cursor =
+            Api.peopleRequests.Input.Write { AfterCursor = Some cursor; Limit = 1 }
+
+        Expect.isOk
+            (Api.peopleRequests.Input.Read "$" (request continuation))
+            "The request receiver accepts the emitted maximum"
+
+        let data: AccessRequestPage =
+            {
+                Basis = ServiceContext.basis (core database.Fixture database.Fixture.Owner) stamp
+                Items = []
+                NextCursor = Some continuation
+            }
+
+        let admit (codec: Codec<_>) value = codec.Read "$" (codec.Write value)
+        let dataReply cursor = { data with NextCursor = Some cursor }
+
+        let humanReply cursor =
+            AccessRequestsScreen.document (dataReply cursor)
+
+        Expect.isOk
+            (admit ResponseCodecs.accessRequestsPage data)
+            "The DATA decoder accepts the emitted maximum"
+
+        Expect.isOk
+            (admit HumanDocumentCodecs.document (humanReply continuation))
+            "The HUMAN decoder accepts the emitted maximum"
+
+        let tooLong = continuation + "A"
+
+        let replace name value =
+            function
+            | JsonValue.Object fields ->
+                fields
+                |> List.map (fun (key, field) -> if name = key then key, value else key, field)
+                |> JsonValue.Object
+            | _ -> failtest "Expected an encoded object"
+
+        let overflow name value =
+            replace name (JsonValue.String tooLong) value
+
+        Expect.isError
+            (Api.peopleRequests.Input.Read "$" (request continuation |> overflow "cursor"))
+            "Request rejects one character over"
+
+        Expect.isError
+            (ResponseCodecs.accessRequestsPage.Read
+                "$"
+                (ResponseCodecs.accessRequestsPage.Write data |> overflow "nextCursor"))
+            "DATA rejects one character over"
+
+        Expect.isError
+            (HumanDocumentCodecs.document.Read
+                "$"
+                (HumanDocumentCodecs.document.Write(humanReply continuation)
+                 |> overflow "nextCursor"))
+            "HUMAN rejects one character over"
+
+        let mutable refused = false
+
+        try
+            let! _ = emit 24457
+            ()
+        with :? RecordCorruptException ->
+            refused <- true
+
+        Expect.isTrue
+            refused
+            "The first larger representable authenticated envelope is withheld before serialization"
+    }
+
 [<Tests>]
 let tests =
     testList
         "reporting with the published case selection"
         [
+            testCaseAsync
+                "report traversal measures an authorized hit and SQL fallback after cache eviction"
+                (async { do! cacheEvidence () |> Async.AwaitTask })
+            testCaseAsync
+                "actual maximum outer continuation fits HUMAN and DATA receivers and the request boundary"
+                (run maximumEnvelope)
             testCase "Europe/Riga business date crosses midnight before UTC" (fun () ->
                 let instant = DateTimeOffset(2026, 11, 30, 22, 30, 0, TimeSpan.Zero)
                 let calendar = InstallationCheck.calendar "Europe/Riga"

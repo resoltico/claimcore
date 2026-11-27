@@ -44,7 +44,7 @@ let everyMutation =
                     |> Result.defaultWith (fun () -> failtest "Journal read failed")
 
                 Expect.contains
-                    read
+                    read.Records
                     identity
                     "The declared task identity survives restart decoding"
         finally
@@ -112,7 +112,11 @@ let tests =
 
                         Expect.equal
                             (RecoveryJournal.list directory first.Scope)
-                            (Ok [ first; second ])
+                            (Ok
+                                {
+                                    Records = [ first; second ]
+                                    Damaged = 0
+                                })
                             "Restart listing finds both attempts"
 
                         Expect.isOk
@@ -121,7 +125,7 @@ let tests =
 
                         Expect.equal
                             (RecoveryJournal.list directory first.Scope)
-                            (Ok [ second ])
+                            (Ok { Records = [ second ]; Damaged = 0 })
                             "The other attempt survives"
 
                         Expect.equal
@@ -130,7 +134,7 @@ let tests =
                                 { first.Scope with
                                     ActorId = Guid.NewGuid()
                                 })
-                            (Ok [])
+                            (Ok { Records = []; Damaged = 0 })
                             "Another actor cannot list these records"
 
                         Expect.equal
@@ -139,7 +143,7 @@ let tests =
                                 { first.Scope with
                                     InstallationId = Guid.NewGuid()
                                 })
-                            (Ok [])
+                            (Ok { Records = []; Damaged = 0 })
                             "Another installation cannot list these records"
                     finally
                         root.Delete true)
@@ -210,7 +214,11 @@ let refusalKnowledge =
 
             Expect.equal
                 (RecoveryJournal.list root.FullName identity.Scope)
-                (Ok [ { identity with Refused = true } ])
+                (Ok
+                    {
+                        Records = [ { identity with Refused = true } ]
+                        Damaged = 0
+                    })
                 "Refused attempts remain, labelled"
 
             Expect.isOk
@@ -219,7 +227,7 @@ let refusalKnowledge =
 
             Expect.equal
                 (RecoveryJournal.list root.FullName identity.Scope)
-                (Ok [ identity ])
+                (Ok { Records = [ identity ]; Damaged = 0 })
                 "Do not carry old refusal knowledge over a new send"
 
             Expect.isOk
@@ -232,7 +240,7 @@ let refusalKnowledge =
 
             Expect.equal
                 (RecoveryJournal.list root.FullName identity.Scope)
-                (Ok [])
+                (Ok { Records = []; Damaged = 0 })
                 "Final cleanup"
         finally
             root.Delete true)
@@ -292,7 +300,7 @@ let processTermination =
 
                 Expect.equal
                     (RecoveryJournal.list directory expected.Scope)
-                    (Ok [ expected ])
+                    (Ok { Records = [ expected ]; Damaged = 0 })
                     "The replacement process reads complete identity after abrupt termination"
 
                 Expect.isEmpty
@@ -328,11 +336,59 @@ let strictFamilies =
                         let old = File.ReadAllText(path).Replace("\"format\":4", "\"format\":3")
                         File.WriteAllText(path, old)
 
-                        Expect.isError
+                        let healthy =
+                            { identity with
+                                AttemptId = Guid.NewGuid()
+                            }
+
+                        Expect.isOk
+                            (RecoveryJournal.save directory healthy)
+                            "A healthy attempt still publishes"
+
+                        Expect.equal
                             (RecoveryJournal.list directory identity.Scope)
-                            "Old grammar is an actionable strict error"
+                            (Ok { Records = [ healthy ]; Damaged = 1 })
+                            "Report the old record while still returning the healthy one"
+
+                        Expect.isError
+                            (RecoveryJournal.find directory identity.Scope identity.AttemptId)
+                            "Direct lookup refuses the old grammar"
+
+                        Expect.equal
+                            (RecoveryJournal.find directory identity.Scope healthy.AttemptId)
+                            (Ok(Some healthy))
+                            "The damaged record does not block an exact healthy lookup"
 
                         Expect.equal (File.ReadAllText path) old "No silent conversion or deletion"
                     finally
                         root.Delete true)
         ]
+
+[<Tests>]
+let settlementContract =
+    testCase "CLI recovery uses the authored shared settlement cases" (fun () ->
+        let root = ClaimCore.TestSupport.RepositoryRoot.find ()
+
+        use cases =
+            JsonDocument.Parse(
+                File.ReadAllBytes(
+                    Path.Combine(root, "tests", "fixtures", "operation-settlement.json")
+                )
+            )
+
+        Expect.equal (cases.RootElement.GetArrayLength()) 7 "The settlement control set is present"
+
+        for item in cases.RootElement.EnumerateArray() do
+            let token = item.GetProperty("observation").GetString() |> nonNull
+            let kind = Vocabulary.tryParse ReplyKind.vocabulary token |> Option.get
+            let settlement = OperationSettlement.ofReply kind
+
+            Expect.equal
+                (OperationSettlement.token settlement)
+                (item.GetProperty("settlement").GetString() |> nonNull)
+                token
+
+            Expect.equal
+                (OperationSettlement.isFinal settlement)
+                (item.GetProperty("final").GetBoolean())
+                token)

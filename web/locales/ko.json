@@ -363,8 +363,9 @@
     "source": "1dc1592f82ad"
   },
   "ui.recoveryDescription": {
-    "text": "이 변경이 기록되었는지 확인할 수 없습니다. ClaimCore가 자동으로 확인합니다. 각 답변은 {window} 이내에 확정됩니다.",
-    "source": "eff410b18411"
+    "text": "이 변경이 기록되었는지 확인할 수 없습니다. ClaimCore가 자동으로 확인합니다. 변경을 준비한 뒤 {window}이 지나면, 확인에 성공했을 때 현재 기록에 해당 변경이 없다는 사실을 확정할 수 있습니다. 복원 후 변경을 다시 시도하기 전에 운영자에게 복원된 기록이 이전 결과를 포함하는지 확인해 달라고 요청하세요.",
+    "source": "ce73c48c3904",
+    "machineMade": true
   },
   "ui.recoveryEmpty": {
     "text": "미확인 변경이 없습니다.",
@@ -373,6 +374,16 @@
   "ui.recoveryCoordinationUnavailable": {
     "text": "자동 복구가 일시 중지되었습니다. 저장된 작업을 수동으로 확인하거나 브라우저 저장소에 대한 액세스를 복원해 자동 확인을 재개하세요.",
     "source": "8a69c206fcd3",
+    "machineMade": true
+  },
+  "ui.recoveryEarlierFormat": {
+    "text": "이전 복구 기록은 보존됩니다. 해당 변경 사항을 확인하려면 이전 ClaimCore 버전과 해당 서비스를 사용하세요.",
+    "source": "822ed469aee8",
+    "machineMade": true
+  },
+  "ui.recoveryDamagedRecord": {
+    "text": "일부 복구 기록을 식별하거나 읽을 수 없었습니다. 해당 기록은 보존됩니다. 작업 ID를 알고 있다면 해당 작업을 직접 확인할 수 있습니다.",
+    "source": "b169f2312f6d",
     "machineMade": true
   },
   "ui.recoveryListingUnavailable": {

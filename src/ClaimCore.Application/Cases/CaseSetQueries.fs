@@ -365,8 +365,24 @@ module internal CaseSetQueries =
                                             let grouping = summary.Selection.GroupBy
                                             let date = CalendarDate.ofDate basis.BusinessDate
 
+                                            let encode =
+                                                Cursors.encodeCaseReport
+                                                    services.InstallationId
+                                                    selection.ActorId
+                                                    date
+                                                    selection.Filter
+                                                    grouping
+
+                                            let cacheScope =
+                                                Cursors.caseReportScope
+                                                    services.InstallationId
+                                                    selection.ActorId
+                                                    date
+                                                    selection.Filter
+                                                    grouping
+
                                             let scope =
-                                                ScopedTraversal.page
+                                                ScopedTraversal.report
                                                     tx
                                                     "case-report-traversal"
                                                     selection.ActorId
@@ -377,25 +393,23 @@ module internal CaseSetQueries =
                                                         date
                                                         selection.Filter
                                                         grouping)
-                                                    (Cursors.encodeCaseReport
-                                                        services.InstallationId
-                                                        selection.ActorId
-                                                        date
-                                                        selection.Filter
-                                                        grouping)
+                                                    encode
                                                     (fun () ->
                                                         CaseSummaryQuery.witness
                                                             tx.Connection
                                                             selection
                                                             grouping
                                                             token)
-                                                    (fun position ->
+                                                    (fun witness position ->
                                                         FamilyReads.caseSummary
                                                             tx
                                                             selection
                                                             grouping
                                                             position
-                                                            summary.Page.Limit)
+                                                            summary.Page.Limit
+                                                            (witness
+                                                             |> Option.map (fun digest ->
+                                                                 cacheScope, digest)))
                                                     (fun (_, _, next) -> next)
                                                     summary.Page.AfterCursor
 

@@ -12,6 +12,7 @@ open System
 open System.Threading
 open Npgsql
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 /// Operational expiry is independent of ledger order. Each locked candidate is rechecked before deletion.
 module internal Housekeeping =
@@ -61,7 +62,7 @@ module internal Housekeeping =
                              + " ORDER BY last_seen,issuer,principal_kind,subject LIMIT $2 FOR UPDATE SKIP LOCKED), deleted AS (DELETE FROM claimcore.access_request a USING candidates c WHERE (a.issuer,a.principal_kind,a.subject)=(c.issuer,c.principal_kind,c.subject) AND "
                              + AccessRequests.expiredPredicate "a."
                              + " RETURNING 1) SELECT count(*) FROM deleted")
-                            [| box instant; box limit |]
+                            [| box (AccessRequest.cutoff instant); box limit |]
                             token
 
                     let oldest = ReminderDigest.retainFrom (dateAt instant)

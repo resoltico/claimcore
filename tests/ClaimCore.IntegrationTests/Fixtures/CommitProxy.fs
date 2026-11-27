@@ -14,6 +14,7 @@ type internal Drop =
     | BeforeCommit
     | AfterCommit
     | AfterCommitFatal
+    | HoldAfterCommit
     | Never
 
 let private packet (stream: NetworkStream) token =
@@ -118,6 +119,9 @@ type internal Proxy
                     close ()
                 elif awaitFatal then
                     ()
+                elif committed && drop = Drop.HoldAfterCommit then
+                    intercepted.TrySetResult() |> ignore
+                    do! Task.Delay(Timeout.Infinite, cancellation.Token)
                 elif committed && drop = Drop.AfterCommit then
                     intercepted.TrySetResult() |> ignore
                     close ()

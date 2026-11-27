@@ -44,6 +44,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
         let! result =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = true
                     Work =
                         fun tx ->
                             task {

@@ -57,6 +57,7 @@ let configuration certificate =
         KeyRingDirectory = DirectoryInfo(Path.GetTempPath())
         Binding = WebBindings.create origin "127.0.0.1" 5443
         ConnectionString = "synthetic-not-opened"
+        WitnessConnectionString = "synthetic-not-opened"
         DataKeyFile = "synthetic-not-opened"
         Certificate =
             {
@@ -206,10 +207,16 @@ let publishedInventory directory (buildAssets: (string * byte array) list) =
 
     File.WriteAllBytes(Path.Combine(directory, "attachment-preview.viewer"), html)
 
+    let scripts = "assets/test-handshake.js"
+
+    let entry markup =
+        markup + $"<script src=\"/{scripts}\"></script>"
+
     let documents =
         [
-            "index.html", "<!doctype html><title>Synthetic ClaimCore</title>"
-            "auth-recovery.html", "<!doctype html><main>Synthetic recovery</main>"
+            "index.html", entry "<!doctype html><title>Synthetic ClaimCore</title>"
+            "auth-recovery.html", entry "<!doctype html><main>Synthetic recovery</main>"
+            scripts, $"globalThis.fixtureContract = \"{ContractIdentity.value}\";"
             "LICENSE.txt", "Synthetic license"
             "PROJECT-NOTICE.md", "# Synthetic project notice"
             "LICENSE-COMMERCIAL.md", "# Synthetic commercial notice"
@@ -261,10 +268,13 @@ let publishedInventory directory (buildAssets: (string * byte array) list) =
         Path.Combine(directory, "public-assets.json"),
         JsonSerializer.SerializeToUtf8Bytes
             {|
-                schema = 4
+                schema = 5
+                identityChunks = [ "/" + scripts ]
+                graph = Map.ofList [ "/" + scripts, Array.empty<string> ]
                 assets = assets
                 viewer =
                     {|
+                        resources = Array.empty<string>
                         sha256 = sha256 html |> Convert.ToHexStringLower
                         scriptSha256 =
                             script |> Encoding.UTF8.GetBytes |> sha256 |> Convert.ToBase64String
@@ -310,7 +320,7 @@ type Host
                  ClaimCore.Server.ApiRoutes.route
              else
                  facade.Handlers)
-            (fun principal action ->
+            (fun principal _ action ->
                 task {
                     if not facade.RuntimeAvailable then
                         return None

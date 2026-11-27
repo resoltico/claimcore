@@ -46,12 +46,12 @@ let private sessions (fixture: PublishedFixture.Fixture) =
 
     command.ExecuteScalar() |> unbox<int64>
 
-let private openFrame operationId reference =
+let private openFrameForDate operationId reference receivedDate =
     let registration =
         ClaimCore.TestSupport.DomainInputs.registrationWith
             [
                 BusinessField.IncidentDate, "2026-09-01"
-                BusinessField.ReceivedDate, "2026-09-02"
+                BusinessField.ReceivedDate, receivedDate
                 BusinessField.IncidentCountry, "LV"
                 BusinessField.PolicyNumber, "Restore claimant"
                 BusinessField.InsurerClaimReference, "Restore insurer"
@@ -68,6 +68,9 @@ let private openFrame operationId reference =
             0L
             "case.open"
             (ClaimCore.TestSupport.Submissions.fields (RegistrationInput.values registration)))
+
+let private openFrame operationId reference =
+    openFrameForDate operationId reference "2026-09-02"
 
 let private bearer
     (fixture: PublishedFixture.Fixture)
@@ -97,14 +100,136 @@ let private bearer
         return document.RootElement.GetProperty("outcome").Clone()
     }
 
+let private checkLookupCapacity
+    (fixture: PublishedFixture.Fixture)
+    (bearerToken: string)
+    installation
+    =
+    task {
+        use owner =
+            NpgsqlDataSource.Create(
+                File.ReadAllText(Path.Combine(fixture.Directory, "owner.connection"))
+            )
+
+        use runtime =
+            NpgsqlDataSource.Create(
+                File.ReadAllText(fixture.WebEnvironment["CLAIMCORE_CONNECTION_FILE"])
+            )
+
+        use! connection = owner.OpenConnectionAsync()
+        use! transaction = connection.BeginTransactionAsync()
+
+        use hold =
+            new NpgsqlCommand(
+                "SELECT count(*) FROM claimcore.lock_ledger_head()",
+                connection,
+                transaction
+            )
+
+        let! _ = hold.ExecuteScalarAsync()
+
+        let get id =
+            bearer
+                fixture
+                bearerToken
+                installation
+                "operation.get"
+                (JsonSerializer.Serialize {| operationId = id |})
+
+        let expired () =
+            Guid.CreateVersion7(DateTimeOffset.UtcNow.AddMinutes(-11.))
+
+        do!
+            task {
+                use witness =
+                    NpgsqlDataSource.Create(
+                        File.ReadAllText(
+                            Path.Combine(fixture.Directory, "witness-owner.connection")
+                        )
+                    )
+
+                use! blocking = witness.OpenConnectionAsync()
+                use! lockTransaction = blocking.BeginTransactionAsync()
+
+                use command =
+                    new NpgsqlCommand(
+                        "LOCK TABLE claimcore_witness.installations IN ACCESS EXCLUSIVE MODE",
+                        blocking,
+                        lockTransaction
+                    )
+
+                let! _ = command.ExecuteNonQueryAsync()
+                let! withdrawn = (get (expired ())).WaitAsync(TimeSpan.FromSeconds 3.)
+
+                Expect.equal
+                    (withdrawn.GetProperty("kind").GetString())
+                    "FAILED"
+                    "An expired published lookup with a stalled witness cannot claim final absence"
+
+                use! ready = fixture.Http.GetAsync(fixture.Origin + "/health/ready")
+
+                Expect.equal
+                    (int ready.StatusCode)
+                    200
+                    "The published local readiness route still works"
+
+                do! lockTransaction.RollbackAsync()
+            }
+
+        let confirmation = get (expired ())
+        use! observe = runtime.OpenConnectionAsync()
+
+        use waiting =
+            new NpgsqlCommand(
+                "SELECT EXISTS(SELECT FROM pg_stat_activity WHERE pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%lock_ledger_head%')",
+                observe
+            )
+
+        let deadline = Diagnostics.Stopwatch.StartNew()
+        let mutable queued = false
+
+        while not queued && deadline.Elapsed < TimeSpan.FromSeconds 3. do
+            let! value = waiting.ExecuteScalarAsync()
+            queued <- unbox<bool> value
+
+            if not queued then
+                do! Task.Delay 20
+
+        Expect.isTrue queued "The published request reaches a real PostgreSQL head waiter"
+        let! short = (get (Guid.CreateVersion7())).WaitAsync(TimeSpan.FromSeconds 2.)
+
+        Expect.equal
+            (short.GetProperty("kind").GetString())
+            "PENDING"
+            "The one read permit is available to an unrelated lookup"
+
+        do! transaction.CommitAsync()
+        let! final = confirmation
+
+        Expect.equal
+            (final.GetProperty("kind").GetString())
+            "NOT_ACCEPTED"
+            "The head waiter confirms absence after the lock releases"
+    }
+
 let private qualify () =
     task {
         use fixture = new PublishedFixture.Fixture()
         do! fixture.Start()
         setup fixture
+        do! stop fixture
+        fixture.WebEnvironment["CLAIMCORE_WEB_CORE_PERMITS"] <- "1"
+        do! fixture.RestartWeb()
         PublishedSessionTests.browserPhase fixture "login" "restore-login"
         Expect.equal (sessions fixture) 1L "Real login supplies a restorable server-side ticket"
         let! retainedBearer = fixture.ServiceToken()
+
+        let admittedInstallation =
+            (operator fixture [ "head" ] 0).GetProperty("installationId").GetString()
+            |> nonNull
+
+        do! checkLookupCapacity fixture retainedBearer admittedInstallation
+
 
         do! stop fixture
         let! missingHistoryBackup = fixture.BackupDatabase "before-accepted-operation"
@@ -158,6 +283,11 @@ let private qualify () =
 
         let installation = trusted.GetProperty("installationId").GetString() |> nonNull
         do! stop fixture
+
+        fixture.FenceRestore(
+            Guid.Parse installation,
+            Guid.Parse "10000000-0000-4000-8000-000000000199"
+        )
 
         do! fixture.RestoreDatabase missingHistoryBackup
 
@@ -327,6 +457,61 @@ let private qualify () =
             (frontier finalHead)
             (frontier trusted)
             "Later final reads never lower trusted expiry"
+
+        let laterCase =
+            openFrameForDate
+                (Guid.CreateVersion7().ToString("D"))
+                "RESTORE-CACHE-SECOND"
+                "2026-10-02"
+
+        run fixture fixture.Environment laterCase 0 |> require "ACCEPTED" |> ignore
+
+        let report (cursor: string option) =
+            let input: ClaimCore.Application.Contracts.CaseSummaryRequest =
+                {
+                    Selection =
+                        {
+                            Filter = CaseListFilter.empty<string>
+                            GroupBy = Some CaseGrouping.ReceivedMonth
+                        }
+                    Page = { AfterCursor = cursor; Limit = 1 }
+                }
+
+            let data =
+                Api.caseSummary.Input.Write input
+                |> ClaimCore.Json.CanonicalWriter.bytes
+                |> Encoding.UTF8.GetString
+
+            bearer fixture retainedBearer installation "case.summary" data
+
+        let! firstPage = report None
+
+        Expect.equal
+            (firstPage.GetProperty("kind").GetString())
+            "SUCCEEDED"
+            "Populate a report in the running server"
+
+        let cursor =
+            firstPage.GetProperty("data").GetProperty("nextCursor").GetString() |> nonNull
+
+        let! warm = report (Some cursor)
+
+        do! stop fixture
+        do! fixture.RestartWeb()
+
+        let! cold = report (Some cursor)
+
+        Expect.equal
+            (cold.GetProperty("kind").GetString())
+            "SUCCEEDED"
+            "The old continuation is still authorized by the fresh process"
+
+        Expect.isTrue
+            (JsonElement.DeepEquals(
+                warm.GetProperty("data").GetProperty("rows"),
+                cold.GetProperty("data").GetProperty("rows")
+            ))
+            "The fresh process reproduces the same report page through its cold-cache fallback"
 
         fixture.Complete()
     }

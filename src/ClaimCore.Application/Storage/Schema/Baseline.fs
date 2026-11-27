@@ -215,14 +215,66 @@ module internal Baseline =
             | _ -> return raise (OperatorFaultException OperatorFault.DataKeyInvalid)
         }
 
-    let loadCipher connection installationId masterKey token =
+    let keyGenerations connection token =
         task {
-            let! wrapped = wrappedKey false connection installationId token
-            return InstallationCipher.unwrap masterKey installationId wrapped
+            let! generations =
+                DatabaseSession.rows
+                    connection
+                    "SELECT generation,active FROM claimcore.encryption_generations"
+                    [||]
+                    token
+
+            match generations |> List.filter (DatabaseSession.value<bool> 1) with
+            | [ row ] ->
+                return
+                    DatabaseSession.value<Guid> 0 row,
+                    (generations |> List.map (DatabaseSession.value<Guid> 0) |> Set.ofList)
+            | _ -> return raise (OperatorFaultException OperatorFault.DataKeyInvalid)
         }
 
-    // The caller holds the ledger head lock. Recovery publications and key rotation use
-    // the same order, including when the wrapping key changes without changing the data key.
+    let loadCipher connection installationId masterKey token =
+        task {
+            let! active, admitted = keyGenerations connection token
+            let! wrapped = wrappedKey false connection installationId token
+            return InstallationCipher.unwrap masterKey installationId active admitted wrapped
+        }
+
+    let newEncryptionGeneration () = Guid.NewGuid()
+
+    /// Caller holds the common ledger head. Older generations stay admitted for decryption.
+    let rotateEncryptionGeneration connection generation token =
+        task {
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    "UPDATE claimcore.encryption_generations SET active=false WHERE active"
+                    [||]
+                    token
+
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.encryption_generations(generation,active) VALUES ($1,true)"
+                    [| box generation |]
+                    token
+
+            return ()
+        }
+
+    let currentEncryptionGeneration connection generation token =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT EXISTS(SELECT FROM claimcore.encryption_generations WHERE generation=$1 AND active)"
+                    [| box generation |]
+                    token
+
+            return DatabaseSession.value<bool> 0 (List.exactlyOne rows)
+        }
+
+    // The caller holds the ledger head lock. Recovery publications and both key rotations
+    // use the same lock order.
     let advanceRecoveryPublication connection token =
         task {
             let! changed =
@@ -255,8 +307,15 @@ module internal Baseline =
 
                     let! wrapped = wrappedKey true connection installation.InstallationId token
 
+                    let! active, admitted = keyGenerations connection token
+
                     use cipher =
-                        InstallationCipher.unwrap masterKey installation.InstallationId wrapped
+                        InstallationCipher.unwrap
+                            masterKey
+                            installation.InstallationId
+                            active
+                            admitted
+                            wrapped
 
                     let! _ =
                         DatabaseSession.execute
@@ -270,9 +329,23 @@ module internal Baseline =
                     return installation.InstallationId
                 })
 
-    let private install connection (installation: Installation) wrapped token =
+    let private install
+        connection
+        (installation: Installation)
+        (cipher: InstallationCipher)
+        wrapped
+        token
+        =
         task {
             do! apply connection token
+
+            let! _ =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.encryption_generations(generation,active,reserved) VALUES ($1,true,$2)"
+                    [| box cipher.Generation; box (InstallationCipher.operationAllowance) |]
+                    token
+
 
             let! _ =
                 DatabaseSession.execute
@@ -351,7 +424,15 @@ module internal Baseline =
                                     }
 
                                 use cipher = InstallationCipher.create installation.InstallationId
-                                do! install connection installation (cipher.Wrap masterKey) token
+
+                                do!
+                                    install
+                                        connection
+                                        installation
+                                        cipher
+                                        (cipher.Wrap masterKey)
+                                        token
+
                                 do! initializeOwner connection installation cipher
                                 do! DatabaseSession.commit transaction token
                                 return initialized installation

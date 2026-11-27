@@ -178,23 +178,37 @@ let private literalComposePaths directory (document: JsonDocument) =
 
     assertDataKeyMounts (configuration directory) document
     let services = document.RootElement.GetProperty("services")
+    let root = ClaimCore.TestSupport.RepositoryRoot.find ()
+
+    let repositoryBindings =
+        Map.ofList
+            [
+                "/etc/claimcore-postgres-roles.sh", "deployment/postgres-roles.sh"
+                "/etc/claimcore-postgres-hba.conf", "deployment/postgres-hba.conf"
+                "/etc/claimcore-restore-provider.sql", "db/restore-provider.sql"
+                "/docker-entrypoint-initdb.d/witness-roles.sh", "deployment/witness-roles.sh"
+                "/etc/claimcore-witness.sql", "db/witness.sql"
+            ]
 
     for service in services.EnumerateObject() do
         for volume in service.Value.GetProperty("volumes").EnumerateArray() do
             if volume.GetProperty("type").GetString() = "bind" then
                 let target = volume.GetProperty("target").GetString() |> nonNull
 
-                if
-                    target <> "/etc/claimcore-postgres-roles.sh"
-                    && target <> "/etc/claimcore-postgres-hba.conf"
-                then
-                    let source = volume.GetProperty("source").GetString() |> nonNull
+                let source = volume.GetProperty("source").GetString() |> nonNull
 
+                match Map.tryFind target repositoryBindings with
+                | Some path ->
+                    Expect.equal
+                        source
+                        (Path.Combine(root, path))
+                        "Compose binds the exact checked-out provider files"
+                | None ->
                     Expect.isTrue
                         (source
                             .Replace("$$", "$")
                             .StartsWith(configuration directory + "/", StringComparison.Ordinal))
-                        "Compose rendering preserves each exact host path"
+                        ("Compose rendering preserves each exact configuration path for " + target)
 
 let private docker arguments =
     let start = ProcessStartInfo("docker", UseShellExecute = false)
@@ -298,11 +312,15 @@ let private composePaths directory =
         let project = "claimcore-config-" + Guid.NewGuid().ToString("N")
         let file = Path.Combine(root, "deployment/compose.yaml")
 
-        let! code, output, _ =
+        let! code, output, errors =
             compose directory file project [ "config"; "--format"; "json" ]
             |> Async.AwaitTask
 
-        Expect.equal code 0 "Compose admits generated paths without syntax reinterpretation"
+        Expect.equal
+            code
+            0
+            ("Compose admits generated paths without syntax reinterpretation: " + errors)
+
         use document = JsonDocument.Parse(output)
         literalComposePaths directory document
         assertPostgresBaseline document
@@ -424,6 +442,16 @@ let private checkoutMount directory =
 
         let role = Path.Combine(checkout, "postgres-roles.sh")
         File.Copy(Path.Combine(root, "deployment/postgres-roles.sh"), role)
+
+        let sql = Directory.CreateDirectory(Path.Combine(checkout, "../db")).FullName
+
+        for file in [ "restore-provider.sql"; "witness.sql" ] do
+            File.Copy(Path.Combine(root, "db", file), Path.Combine(sql, file))
+
+        File.Copy(
+            Path.Combine(root, "deployment/witness-roles.sh"),
+            Path.Combine(checkout, "witness-roles.sh")
+        )
 
         File.Copy(
             Path.Combine(root, "deployment/postgres-hba.conf"),

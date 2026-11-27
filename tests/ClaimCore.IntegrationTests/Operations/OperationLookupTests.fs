@@ -709,3 +709,94 @@ let tests =
                     }
             }
         ]
+
+[<Tests>]
+let lookupCapacity =
+    testTask
+        "a queued absence confirmation releases PostgreSQL read capacity before waiting for the head" {
+        return!
+            task {
+                let! database = PostgresFixture.create ()
+
+                use _owned =
+                    { new IDisposable with
+                        member _.Dispose() = database.Fixture.Dispose()
+                    }
+
+                let! service = owner database.Fixture
+                let principal = database.Fixture.Owner
+                let token = CancellationToken.None
+                use admission = new ClaimCore.Server.PrincipalAdmission(1, 2)
+
+                let acquire workload token =
+                    task {
+                        let! admitted = admission.Acquire(principal, workload, token)
+
+                        return
+                            admitted
+                            |> Option.defaultWith (fun () -> failtest "Unexpected capacity denial")
+                    }
+
+                let other =
+                    PrincipalKey.human "https://issuer.example/" "confirmation-queue-blocker"
+                    |> Result.defaultWith (string >> failtest)
+
+                let! blocker =
+                    admission.Acquire(other, ClaimCore.Server.RequestWorkload.Write, token)
+
+                use writePermit =
+                    blocker
+                    |> Option.defaultWith (fun () ->
+                        failtest "Writer should hold the process permit")
+
+                use! connection = database.OwnerSource.OpenConnectionAsync()
+                use! transaction = connection.BeginTransactionAsync()
+                let! _ = Transactions.head connection token
+
+                let writing =
+                    TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+                let phased =
+                    service
+                    |> Service.withReadAdmission (acquire ClaimCore.Server.RequestWorkload.Read)
+                    |> Service.withWriteAdmission (fun token ->
+                        let pending = acquire ClaimCore.Server.RequestWorkload.Write token
+                        writing.TrySetResult() |> ignore
+                        pending)
+
+                let pending =
+                    lookup phased (OperationIds.at (DateTimeOffset.UtcNow.AddMinutes(-11.)))
+
+                do! writing.Task.WaitAsync(TimeSpan.FromSeconds 5.)
+
+                Expect.equal
+                    admission.QueuedWriters
+                    1L
+                    "Confirmation waits on the process write queue"
+
+                Expect.equal admission.ActiveReads 0L "The provider read and lease both completed"
+
+                let! unrelated =
+                    (lookup phased (OperationIds.fresh ())).WaitAsync(TimeSpan.FromSeconds 3.)
+
+                match unrelated with
+                | Outcome.Succeeded(OperationLookupResult.Pending _) -> ()
+                | _ -> failtest "A short lookup must progress while confirmation is queued"
+
+                writePermit.Dispose()
+                do! headWaiter database
+
+                Expect.equal
+                    admission.ActiveReads
+                    0L
+                    "The real head waiter still owns no read lease"
+
+                do! transaction.CommitAsync()
+                let! outcome = pending
+
+                Expect.equal
+                    outcome
+                    (Outcome.Succeeded OperationLookupResult.NotAccepted)
+                    "Confirmation completes under the head"
+            }
+    }

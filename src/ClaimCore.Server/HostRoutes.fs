@@ -193,6 +193,24 @@ module HostRoutes =
             | _ -> do! next.Invoke context
         }
 
+    let recoveryHealth
+        (readiness: System.Threading.CancellationToken -> Task<bool>)
+        (context: HttpContext)
+        (next: RequestDelegate)
+        : Task =
+        task {
+            if context.Request.Path.Value <> "/health/recovery" then
+                do! next.Invoke context
+            elif HttpMethods.IsGet context.Request.Method then
+                HttpHeaders.noStore context
+                let! ready = readiness context.RequestAborted
+                context.Response.StatusCode <- if ready then 200 else 503
+            else
+                do!
+                    (RouteSupport.hostFailure context HostFailureReason.MethodRejected).ExecuteAsync
+                        context
+        }
+
     let identityHealth (context: HttpContext) (next: RequestDelegate) : Task =
         task {
             if context.Request.Path.Value <> "/health/identity" then

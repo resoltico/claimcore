@@ -13,6 +13,12 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql
       - type: bind
+        source: ../db/restore-provider.sql
+        target: /etc/claimcore-restore-provider.sql
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
         source: ${CLAIMCORE_CONFIG_DIR:?}/postgres
         target: /etc/claimcore-postgres
         read_only: true
@@ -47,6 +53,47 @@ services:
       test: [CMD, /bin/bash, /etc/claimcore-postgres-roles.sh, ready]
       interval: 2s
       timeout: 8s
+      retries: 30
+    restart: unless-stopped
+
+  witness:
+    image: postgres:19.0@sha256:aaa10f7ba7328b4a221a6c3184d83eef885bd16bf1f6de864757863156b0a4d1
+    environment:
+      POSTGRES_DB: witness
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /etc/claimcore-witness/superuser.password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8
+    command: [postgres, -c, ssl=on, -c, ssl_cert_file=/etc/claimcore-witness/server.pem, -c, ssl_key_file=/etc/claimcore-witness/server.key]
+    volumes:
+      - witness-data:/var/lib/postgresql
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/witness
+        target: /etc/claimcore-witness
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./witness-roles.sh
+        target: /docker-entrypoint-initdb.d/witness-roles.sh
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../db/witness.sql
+        target: /etc/claimcore-witness.sql
+        read_only: true
+        bind:
+          create_host_path: false
+    tmpfs:
+      - /var/run/postgresql:rw,noexec,nosuid,nodev,size=16m
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 256
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -d, witness]
+      interval: 2s
+      timeout: 5s
       retries: 30
     restart: unless-stopped
 
@@ -131,6 +178,7 @@ services:
       - DATA_STEWARD
     environment:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/owner.connection
+      CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE: /etc/claimcore/witness.connection
       CLAIMCORE_DATA_KEY_FILE: /run/claimcore/data.key
     volumes:
       - type: bind
@@ -151,6 +199,8 @@ services:
     pids_limit: 256
     depends_on:
       postgres:
+        condition: service_healthy
+      witness:
         condition: service_healthy
     restart: "no"
 
@@ -201,6 +251,7 @@ services:
 
 volumes:
   postgres-data:
+  witness-data:
   identity-data:
   web-key-ring:
     driver: local

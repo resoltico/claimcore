@@ -34,17 +34,63 @@ type IRuntime =
     abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
 
 type private RuntimeResource
-    (source: NpgsqlDataSource, installation: Installation, cipher: InstallationCipher) =
+    (
+        source: NpgsqlDataSource,
+        installation: Installation,
+        cipher: InstallationCipher,
+        witness: (RecoveryWitness * WitnessPrimary) option
+    ) =
 
     member _.Store =
-        LedgerStore(source, installation, cipher, Transactions.timeouts) :> IStore
+        LedgerStore(source, installation, cipher, Transactions.timeouts, ?witness = witness)
+        :> IStore
+
+    member _.RecoveryReady token =
+        match witness with
+        | Some(store, primary) -> store.IsActive(primary, token)
+        | None -> Task.FromResult true
 
     interface IRuntime with
         member _.Housekeep(dateAt, token) =
             Housekeeping.prune source installation Housekeeping.DefaultBatch dateAt token
 
         member _.RunDigests(basis, send, record, token) =
-            DigestDispatch.run source installation basis send record token
+            let admit ct =
+                task {
+                    let! openForDispatch =
+                        DatabaseSession.read source ct (fun connection ->
+                            task {
+                                let! maintenance = RegisterMaintenanceStore.read connection ct
+                                return not maintenance.Active
+                            })
+
+                    match witness with
+                    | Some(store, primary) when openForDispatch ->
+                        return! store.AdmitDispatch(primary, basis.BusinessDate, ct)
+                    | Some _ -> return false
+                    | None -> return openForDispatch
+                }
+
+            task {
+                let! admitted = admit token
+
+                if admitted then
+                    let guardedSend recipient counts ct =
+                        task {
+                            let! admitted = admit ct
+
+                            if admitted then
+                                return! send recipient counts ct
+                            else
+                                return DigestRelayResult.Refused
+                        }
+
+                    return! DigestDispatch.run source installation basis guardedSend record token
+                else
+                    // Fencing dispatch cannot erase what is already known about intake by the relay.
+                    do! DigestStorage.reconcile source installation token
+                    return! DigestStorage.summary source installation token
+            }
 
         member _.Sessions = SessionStore(source, installation) :> ISessionStore
         member _.Installation = installation
@@ -59,7 +105,12 @@ type private RuntimeResource
                                     Transactions.configure connection Transactions.timeouts token
 
                                 do! Baseline.requireExpected installation connection token
-                                return true
+
+                                return!
+                                    Baseline.currentEncryptionGeneration
+                                        connection
+                                        cipher.Generation
+                                        token
                             })
                 with _ ->
                     return false
@@ -73,7 +124,10 @@ type private RuntimeResource
                     FailureDiagnostics.reportAt FailurePhase.Cleanup error
                     reraise ()
             finally
-                (cipher :> IDisposable).Dispose()
+                try
+                    (cipher :> IDisposable).Dispose()
+                finally
+                    witness |> Option.iter (fun (store, _) -> (store :> IDisposable).Dispose())
 
 module Runtime =
     let correlate correlation =
@@ -88,6 +142,9 @@ module Runtime =
 
     let internal store (runtime: IRuntime) = (runtime :?> RuntimeResource).Store
 
+    let recoveryReady (runtime: IRuntime) token =
+        (runtime :?> RuntimeResource).RecoveryReady token
+
     let service (runtime: IRuntime) productVersion calendar principal =
         Service.create
             productVersion
@@ -96,7 +153,12 @@ module Runtime =
             calendar
             principal
 
-    let openConnection (connectionString: string) masterKey cancellationToken =
+    let private openConfigured
+        (connectionString: string)
+        (witnessConnection: string option)
+        masterKey
+        cancellationToken
+        =
         task {
             let mutable owned: NpgsqlDataSource option = None
 
@@ -107,7 +169,35 @@ module Runtime =
                 let! installation, cipher =
                     InstallationCheck.openRuntime source masterKey cancellationToken
 
-                return Ok(new RuntimeResource(source, installation, cipher) :> IRuntime)
+                try
+                    let! witness =
+                        task {
+                            match witnessConnection with
+                            | None -> return None
+                            | Some connection ->
+                                let settings = NpgsqlConnectionStringBuilder connection
+                                InstallationCheck.transport settings
+
+                                settings.CancellationTimeout <- 500
+
+                                let! primary =
+                                    DatabaseSession.read source cancellationToken (fun conn ->
+                                        WitnessPrimary.read conn cancellationToken)
+
+                                let witness =
+                                    new RecoveryWitness(
+                                        InstallationCheck.dataSource settings.ConnectionString,
+                                        installation.InstallationId
+                                    )
+
+                                return Some(witness, primary)
+                        }
+
+                    return
+                        Ok(new RuntimeResource(source, installation, cipher, witness) :> IRuntime)
+                with error ->
+                    (cipher :> IDisposable).Dispose()
+                    return raise error
             with error ->
                 match owned with
                 | Some source -> do! FailureDiagnostics.cleanup source.DisposeAsync
@@ -138,3 +228,9 @@ module Runtime =
                         | _ -> RuntimeOpenFault.Unavailable
                     )
         }
+
+    let openConnection connection masterKey token =
+        openConfigured connection None masterKey token
+
+    let openWitnessedConnection connection witness masterKey token =
+        openConfigured connection (Some witness) masterKey token

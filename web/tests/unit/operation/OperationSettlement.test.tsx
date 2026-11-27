@@ -31,7 +31,7 @@ it.each([false, true])(
     const operationId = "10000000-0000-4000-8000-000000000001";
     const attempt: RecoveryRecord = {
       ...scope,
-      format: 2,
+      format: 3,
       attemptId: "00000000-0000-4000-8000-000000000004",
       operationId,
       subject: "CASE",

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+- Start a [fresh format-12 installation](docs/operating.md#install-a-fresh-register). Settle old attempts or retain their IDs, database, keys, browser profile and matching build.
+- Provision an independent PostgreSQL recovery witness with separate owner and runtime credentials. Configure both connections before initializing the register.
+- Fence the witness and isolate old hosts and SMTP before restore. Retain WAL and timeline history, or record an explicit disclosure gap before admission seals the decision.
+- If a prepared restore target is permanently lost, the witness owner can [supersede its pending attempt](docs/operating.md#backups-and-restore) without reopening traffic.
+- Preserve the last admitted ledger prefix and operation-expiry cutoff across restores, including restores with a disclosure gap.
+- Restored installations suppress digests through the later of reopening and the last authorized dispatch date. Existing same-day claims remain durable.
+- Ship matching server and Web artifacts. Startup and publish check compiled handshake identity, HTML references, dependency closure, viewer resources and asset bytes.
+- Recover healthy operations even when another local record is damaged. CLI JSON listings report the count of unreadable records.
+- Restart cursor traversals after encryption generation rotation. Keep older wrapping keys for retained same-format backups.
+- Scoped continuations reuse unchanged authorized evidence and bounded reports. An operation lookup releases read capacity before queued confirmation.
+
 ## [0.23.0] - 2026-11-26
 
 - Start a [fresh installation](docs/operating.md#install-a-fresh-register) for format 11. Keep previous databases and backups with their matching builds.

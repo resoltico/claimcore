@@ -519,6 +519,13 @@ module OpenApi =
         object
             [
                 "openapi", text "3.1.0"
+                "x-claimcore-operation-settlement",
+                object (
+                    Vocabulary.all ReplyKind.vocabulary
+                    |> List.map (fun kind ->
+                        ReplyKind.token kind,
+                        kind |> OperationSettlement.ofReply |> OperationSettlement.token |> text)
+                )
                 "jsonSchemaDialect", text "https://json-schema.org/draft/2020-12/schema"
                 "info", object [ "title", text "ClaimCore"; "version", text "1" ]
                 "paths",

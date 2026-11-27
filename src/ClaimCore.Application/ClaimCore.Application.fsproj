@@ -44,6 +44,8 @@
     <Compile Include="Storage/AccessRequests.fs" />
     <Compile Include="Reads/PeopleStateStorage.fs" />
     <Compile Include="Storage/Ledger/Transactions.fs" />
+    <Compile Include="Storage/RecoveryWitness.fs" />
+    <Compile Include="Storage/EncryptionBudget.fs" />
     <Compile Include="Storage/RegisterMaintenanceStore.fs" />
     <Compile Include="Storage/SessionStore.fs" />
     <Compile Include="Reads/AssigneeSelectionSql.fs" />

@@ -1,13 +1,16 @@
+import { operationSettlement } from "@contracts/client";
+import settlements from "../../../../tests/fixtures/operation-settlement.json" with { type: "json" };
 import { expect, it, vi } from "vitest";
 import {
   journalBeforeSend,
+  recoveryTask,
   isRecoveryRecord,
   type JournalPublication,
   type RecoveryJournal,
   type RecoveryRecord,
 } from "../../../src/protocol/recoveryJournal";
 const record: RecoveryRecord = {
-  format: 2,
+  format: 3,
   serviceOrigin: "https://service.example",
   installationId: "10000000-0000-4000-8000-000000000001",
   actorId: "10000000-0000-4000-8000-000000000002",
@@ -65,14 +68,14 @@ it("refuses storage failure and stale completion without a transport call", asyn
   expect(send).not.toHaveBeenCalled();
 });
 
-it("admits only the current identity grammar and declared family-local work actions", () => {
+it("admits recovers identity independently of current task captions", () => {
   expect(isRecoveryRecord({ ...record, subject: "WORK", act: "work.update" })).toBe(true);
   expect(
     isRecoveryRecord({ ...record, subject: "REMINDER", act: "reminder.completeAndPlanNext" }),
   ).toBe(true);
   expect(isRecoveryRecord({ ...record, format: 1 })).toBe(false);
-  expect(isRecoveryRecord({ ...record, subject: "WORK", act: "case.open" })).toBe(false);
-  expect(isRecoveryRecord({ ...record, subject: "REMINDER", act: "case.erase" })).toBe(false);
+  expect(recoveryTask({ ...record, subject: "WORK" })).toBeUndefined();
+  expect(isRecoveryRecord({ ...record, act: "case.retired" })).toBe(true);
   for (const privateValue of [
     { action: "private" },
     { dueDate: "2026-11-10" },
@@ -81,5 +84,15 @@ it("admits only the current identity grammar and declared family-local work acti
     { body: "private" },
   ]) {
     expect(isRecoveryRecord({ ...record, ...privateValue })).toBe(false);
+  }
+});
+
+it("admits the authored shared operation settlement cases", () => {
+  expect(settlements).toHaveLength(7);
+  for (const expected of settlements) {
+    const settlement =
+      operationSettlement[expected.observation as keyof typeof operationSettlement];
+    expect(settlement).toBe(expected.settlement);
+    expect(settlement === "RECORDED" || settlement === "NOT_RECORDED").toBe(expected.final);
   }
 });

@@ -42,7 +42,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 11),
+    installation_format smallint NOT NULL CHECK (installation_format = 12),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -52,8 +52,58 @@ CREATE TABLE claimcore.installation (
         AND business_time_zone !~ '[[:cntrl:]]'
     ),
     case_reference_policy text NOT NULL,
-    wrapped_data_key bytea NOT NULL CHECK (octet_length(wrapped_data_key)=60),
+    wrapped_data_key bytea NOT NULL CHECK (octet_length(wrapped_data_key)=92),
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
+
+CREATE TABLE claimcore.encryption_generations (
+    generation uuid PRIMARY KEY CHECK (generation <> '00000000-0000-0000-0000-000000000000'),
+    active boolean NOT NULL,
+    reserved bigint NOT NULL DEFAULT 0 CHECK (reserved BETWEEN 0 AND 16777216)
+);
+CREATE UNIQUE INDEX one_active_encryption_generation ON claimcore.encryption_generations(active) WHERE active;
+
+-- The application supplies a conservative count before any business transaction.
+CREATE FUNCTION claimcore.reserve_encryptions(p_generation uuid,p_count bigint)
+RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$
+    WITH spent AS (
+        UPDATE claimcore.encryption_generations
+        SET reserved=reserved+p_count
+        WHERE generation=p_generation AND active AND p_count>0 AND reserved<=16777216-p_count
+        RETURNING 1
+    )
+    SELECT EXISTS(SELECT FROM spent)
+$$;
+-- Recovery admission compares this local identity with the independently durable witness.
+CREATE TABLE claimcore.recovery_generation (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    generation uuid NOT NULL UNIQUE CHECK (generation <> '00000000-0000-0000-0000-000000000000'),
+    primary_id uuid NOT NULL UNIQUE CHECK (primary_id <> '00000000-0000-0000-0000-000000000000'),
+    reopen_pending boolean NOT NULL DEFAULT false
+);
+INSERT INTO claimcore.recovery_generation(generation,primary_id) VALUES (gen_random_uuid(),gen_random_uuid());
+
+-- Allocate a candidate identity before the witness seals the approved target.
+CREATE TABLE claimcore.restore_targets (
+    generation uuid PRIMARY KEY,
+    primary_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    UNIQUE (generation,primary_id)
+);
+
+-- Exact approval and the result committed with a witnessed target. The local record
+-- carries the checkpoint; only its commitment is shared with the witness.
+CREATE TABLE claimcore.restore_preparations (
+    generation uuid PRIMARY KEY REFERENCES claimcore.encryption_generations(generation),
+    primary_id uuid NOT NULL UNIQUE,
+    system_id bigint NOT NULL,
+    timeline text NOT NULL CHECK (timeline ~ '^[0-9A-F]{8}$'),
+    fence_digest bytea NOT NULL CHECK (octet_length(fence_digest)=32),
+    history_digest bytea CHECK (octet_length(history_digest)=32),
+    approved_checkpoint bytea NOT NULL CHECK (octet_length(approved_checkpoint) BETWEEN 1 AND 4096),
+    admitted_checkpoint bytea NOT NULL CHECK (octet_length(admitted_checkpoint) BETWEEN 1 AND 4096),
+    invalidated_sessions bigint NOT NULL CHECK (invalidated_sessions>=0),
+    publication_generation bigint NOT NULL CHECK (publication_generation>0),
+    FOREIGN KEY (generation,primary_id) REFERENCES claimcore.restore_targets(generation,primary_id)
 );
 
 -- Operational mode is owner-controlled and survives process restarts. It is not a ledger projection.
@@ -83,7 +133,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=11),
+    installation_format smallint NOT NULL CHECK (installation_format=12),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
@@ -128,8 +178,8 @@ CREATE TABLE claimcore.ledger_compartments (
     UNIQUE(operation_sequence,owner_kind,owner_id),
     CHECK ((nonce IS NULL AND nonce_fingerprint IS NULL AND payload IS NULL)
         OR (nonce IS NOT NULL AND nonce_fingerprint IS NOT NULL AND payload IS NOT NULL
-            AND octet_length(nonce)=60 AND octet_length(nonce_fingerprint)=32
-            AND octet_length(payload) BETWEEN 29 AND 32796))
+            AND octet_length(nonce)=76 AND octet_length(nonce_fingerprint)=32
+            AND octet_length(payload) BETWEEN 45 AND 32812))
 );
 ALTER TABLE claimcore.ledger_effects ADD CONSTRAINT effect_compartment
     FOREIGN KEY(operation_sequence,compartment) REFERENCES claimcore.ledger_compartments(operation_sequence,ordinal) DEFERRABLE INITIALLY DEFERRED;
@@ -150,7 +200,7 @@ CREATE TABLE claimcore.attachment_blobs (
     FOREIGN KEY(operation_sequence,effect_index) REFERENCES claimcore.ledger_effects(operation_sequence,effect_index),
     CHECK ((length IS NULL AND digest IS NULL AND payload IS NULL)
         OR (length IS NOT NULL AND digest IS NOT NULL AND payload IS NOT NULL
-            AND length>=0 AND octet_length(payload)::bigint-28=length
+            AND length>=0 AND octet_length(payload)::bigint-44=length
             AND octet_length(digest)=32))
 );
 CREATE UNIQUE INDEX attachment_family_digest ON claimcore.attachment_blobs(case_id,digest) WHERE digest IS NOT NULL;
@@ -265,7 +315,7 @@ BEGIN
     END IF;
     IF TG_TABLE_NAME='attachment_blobs' THEN
         IF NEW.payload IS NULL OR NEW.length IS NULL OR NEW.length<0
-           OR octet_length(NEW.payload)::bigint-28<>NEW.length THEN
+           OR octet_length(NEW.payload)::bigint-44<>NEW.length THEN
             RAISE EXCEPTION 'attachment ciphertext does not match its declared length' USING ERRCODE='CC004';
         END IF;
     ELSIF NEW.blob_id IS NULL THEN
@@ -507,7 +557,7 @@ DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>11
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>12
        OR NOT claimcore.json_shape(p_structure,ARRAY['binding','retained']) OR jsonb_typeof(p_structure->'binding') IS DISTINCT FROM 'object' OR jsonb_typeof(p_structure->'retained') IS DISTINCT FROM 'object'
        OR jsonb_typeof(p_effects) IS DISTINCT FROM 'array' OR jsonb_typeof(p_compartments) IS DISTINCT FROM 'array'
        OR jsonb_array_length(p_effects) NOT BETWEEN 1 AND 50 OR jsonb_array_length(p_compartments)>2 THEN
@@ -533,9 +583,9 @@ BEGIN
         IF NOT claimcore.json_shape(item,ARRAY['ordinal','owner','commitment','nonce','nonceFingerprint','payload']) OR NOT claimcore.json_shape(item->'owner',ARRAY['kind','id'])
            OR jsonb_typeof(item->'ordinal') IS DISTINCT FROM 'number' OR item->>'ordinal' !~ $integer$\A[0-9]+\Z$integer$
            OR jsonb_typeof(item->'commitment') IS DISTINCT FROM 'string' OR item->>'commitment' !~ $hash$\A[0-9a-f]{64}\Z$hash$
-           OR jsonb_typeof(item->'nonce') IS DISTINCT FROM 'string' OR item->>'nonce' !~ $salt$\A[0-9a-f]{120}\Z$salt$
+           OR jsonb_typeof(item->'nonce') IS DISTINCT FROM 'string' OR item->>'nonce' !~ $salt$\A[0-9a-f]{152}\Z$salt$
            OR jsonb_typeof(item->'nonceFingerprint') IS DISTINCT FROM 'string' OR item->>'nonceFingerprint' !~ $hash$\A[0-9a-f]{64}\Z$hash$
-           OR jsonb_typeof(item->'payload') IS DISTINCT FROM 'string' OR length(item->>'payload') NOT BETWEEN 58 AND 65592 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]' THEN
+           OR jsonb_typeof(item->'payload') IS DISTINCT FROM 'string' OR length(item->>'payload') NOT BETWEEN 90 AND 65624 OR length(item->>'payload')%2<>0 OR item->>'payload' ~ '[^0-9a-f]' THEN
             RAISE EXCEPTION 'invalid owner compartment' USING ERRCODE='CC004';
         END IF;
         IF item->'owner'->>'kind'='FAMILY' AND EXISTS(SELECT 1 FROM claimcore.ledger_effects e WHERE e.erases_kind=item->'owner'->>'kind' AND e.erases_id=(item->'owner'->>'id')::uuid AND e.operation_sequence<p_sequence) THEN
@@ -768,6 +818,23 @@ CREATE TABLE claimcore.access_request (
     email_verified boolean NOT NULL DEFAULT false CHECK (email IS NOT NULL OR NOT email_verified)
 );
 CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,principal_key);
+
+-- A transactionally changed observation of independently written inbox rows.
+CREATE TABLE claimcore.access_request_generation (
+    singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
+    generation bigint NOT NULL DEFAULT 0 CHECK (generation >= 0)
+);
+INSERT INTO claimcore.access_request_generation DEFAULT VALUES;
+
+CREATE FUNCTION claimcore.advance_access_request_generation()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+    UPDATE claimcore.access_request_generation SET generation=generation+1 WHERE singleton;
+    RETURN NULL;
+END;
+$$;
+CREATE TRIGGER access_request_generation AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE
+ON claimcore.access_request FOR EACH STATEMENT EXECUTE FUNCTION claimcore.advance_access_request_generation();
 
 -- The owner installation transaction supplies the Core retention period. A pruning caller cannot
 -- shorten it; the runtime has read-only access to this installation value.
@@ -1112,7 +1179,7 @@ REVOKE ALL ON ALL TABLES IN SCHEMA claimcore FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore FROM PUBLIC;
 
 GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
-GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
+GRANT SELECT ON claimcore.encryption_generations, claimcore.recovery_generation, claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT ON claimcore.ledger,claimcore.ledger_effects,claimcore.ledger_compartments,claimcore.attachment_blobs,claimcore.attachment_references,claimcore.case_attachments TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.append_operation(uuid,bigint,bytea,bytea,smallint,uuid,uuid,timestamptz,date,text,text,jsonb,jsonb,jsonb,bytea) TO claimcore_runtime;
@@ -1120,6 +1187,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON claimcore.case_payment_totals TO claimco
 GRANT SELECT, INSERT, UPDATE ON claimcore.case_payments, claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.notes, claimcore.case_parties, claimcore.case_links, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request, claimcore.digest_runs TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.reserve_encryptions(uuid,bigint) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;
@@ -1128,7 +1196,7 @@ GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runti
 GRANT EXECUTE ON FUNCTION claimcore.attachment_repair_active() TO claimcore_runtime;
 
 
-GRANT SELECT ON claimcore.disclosure_retention TO claimcore_runtime;
+GRANT SELECT ON claimcore.access_request_generation, claimcore.disclosure_retention TO claimcore_runtime;
 GRANT INSERT(actor_id,kind,case_id,attachment_id,outcome,export_query,export_selection,export_row_count)
     ON claimcore.disclosure_trail TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.read_disclosure_trail(uuid,uuid,text,timestamptz,timestamptz,timestamptz,bigint,integer) TO claimcore_runtime;

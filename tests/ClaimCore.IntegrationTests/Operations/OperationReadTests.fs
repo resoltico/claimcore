@@ -354,6 +354,7 @@ let private profileReplayBeforeAdmission () =
         let acceptedRoot =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = true
                     Work =
                         fun tx ->
                             task {

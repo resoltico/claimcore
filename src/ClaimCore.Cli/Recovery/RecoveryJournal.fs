@@ -3,6 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.IO
 open System.Security.Cryptography
+open System.Runtime.InteropServices
+open System.Text.RegularExpressions
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -34,6 +36,35 @@ type internal RecoveryIdentity =
             InstallationId = this.InstallationId
             ActorId = this.ActorId
         }
+
+[<NoComparison>]
+type internal RecoveryListing =
+    {
+        Records: RecoveryIdentity list
+        Damaged: int
+    }
+
+module private RecoveryFileSync =
+    [<DllImport("libc", EntryPoint = "open", SetLastError = true)>]
+    extern int openDirectory(string path, int flags)
+
+    [<DllImport("libc", SetLastError = true)>]
+    extern int fsync(int descriptor)
+
+    [<DllImport("libc")>]
+    extern int close(int descriptor)
+
+    let directory path =
+        let descriptor = openDirectory (path, 0)
+
+        if descriptor < 0 then
+            raise (IOException("Cannot open the recovery directory for durable publication."))
+
+        try
+            if fsync descriptor <> 0 then
+                raise (IOException("Cannot sync the recovery directory."))
+        finally
+            close descriptor |> ignore
 
 /// Private identity and delivery knowledge. Each attempt publishes independently; unresolved files never expire.
 module internal RecoveryJournal =
@@ -79,8 +110,11 @@ module internal RecoveryJournal =
         && origin.AbsolutePath = "/"
         && [ record.InstallationId; record.ActorId; record.AttemptId; record.OperationId ]
            |> List.forall ((<>) Guid.Empty)
-        && (TaskDeclarations.find record.Task
-            |> Option.exists (fun declaration -> declaration.Kind = ClientTaskKind.Operation))
+        && Regex.IsMatch(
+            record.Task,
+            "^[A-Za-z][A-Za-z0-9.]{0,39}\\z",
+            RegexOptions.CultureInvariant
+        )
 
 
 
@@ -117,18 +151,26 @@ module internal RecoveryJournal =
         + record.ActorId.ToString("D")
         + "-"
 
+    let private attemptPath directory scope (attemptId: Guid) =
+        Path.Combine(directory, prefix scope + attemptId.ToString("D") + ".json")
+
     let private path directory (record: RecoveryIdentity) =
-        Path.Combine(directory, prefix record.Scope + record.AttemptId.ToString("D") + ".json")
+        attemptPath directory record.Scope record.AttemptId
 
     let private privateDirectory directory =
-        if Directory.Exists directory then
-            let info = DirectoryInfo directory
-            info.LinkTarget = null && File.GetUnixFileMode directory = directoryMode
-        elif File.Exists directory then
+        let rec create (path: string) =
+            if not (Directory.Exists path) then
+                let parent = (Directory.GetParent(path) |> nonNull).FullName
+                create parent
+                Directory.CreateDirectory(path, directoryMode) |> ignore
+                RecoveryFileSync.directory parent
+
+        if File.Exists directory then
             false
         else
-            Directory.CreateDirectory(directory, directoryMode) |> ignore
-            File.GetUnixFileMode directory = directoryMode
+            create directory
+            let info = DirectoryInfo directory
+            info.LinkTarget = null && File.GetUnixFileMode directory = directoryMode
 
     let private readRecord file =
         if (FileInfo file).LinkTarget <> null || File.GetUnixFileMode file <> fileMode then
@@ -170,9 +212,14 @@ module internal RecoveryJournal =
                     stream.Flush(true)
                     stream.Dispose()
 
-                    if File.Exists destination then
+                    let mutable published = false
+
+                    try
+                        File.Move(temporary, destination, false)
+                        published <- true
+                    with :? IOException when File.Exists destination ->
                         match readRecord destination with
-                        | Ok current when current = record -> Ok()
+                        | Ok current when current = record -> published <- true
                         | Ok current when
                             { current with
                                 Refused = record.Refused
@@ -181,11 +228,14 @@ module internal RecoveryJournal =
                                 record
                             ->
                             File.Move(temporary, destination, true)
-                            Ok()
-                        | _ -> Error()
-                    else
-                        File.Move(temporary, destination, false)
+                            published <- true
+                        | _ -> ()
+
+                    if published then
+                        RecoveryFileSync.directory directory
                         Ok()
+                    else
+                        Error()
             with
             | :? IOException
             | :? UnauthorizedAccessException
@@ -230,31 +280,64 @@ module internal RecoveryJournal =
         | :? ArgumentException
         | :? NotSupportedException -> Error()
 
+    let private readOwned directory scope file =
+        readRecord file
+        |> Result.bind (fun record ->
+            if record.Scope = scope && path directory record = file then
+                Ok record
+            else
+                Error())
+
+    let find directory scope attempt =
+        try
+            let target = attemptPath directory scope attempt
+
+            if not (File.Exists target) && isNull ((FileInfo target).LinkTarget) then
+                Ok None
+            elif not (privateDirectory directory) then
+                Error()
+            else
+                readOwned directory scope target |> Result.map Some
+        with
+        | :? IOException
+        | :? UnauthorizedAccessException
+        | :? ArgumentException
+        | :? NotSupportedException -> Error()
+
     let list directory scope =
+        let empty = { Records = []; Damaged = 0 }
+
         try
             if not (Directory.Exists directory) then
-                Ok []
+                Ok empty
             elif not (privateDirectory directory) then
                 Error()
             else
                 Directory.EnumerateFiles(directory, prefix scope + "*.json")
                 |> Seq.fold
-                    (fun result file ->
-                        result
-                        |> Result.bind (fun records ->
-                            readRecord file
-                            |> Result.bind (fun record ->
-                                if
-                                    record.ServiceOrigin = scope.ServiceOrigin
-                                    && record.InstallationId = scope.InstallationId
-                                    && record.ActorId = scope.ActorId
-                                    && path directory record = file
-                                then
-                                    Ok(record :: records)
-                                else
-                                    Error())))
-                    (Ok [])
-                |> Result.map (List.sortBy _.AttemptId)
+                    (fun listing file ->
+                        let record =
+                            try
+                                readOwned directory scope file
+                            with
+                            | :? IOException
+                            | :? UnauthorizedAccessException -> Error()
+
+                        match record with
+                        | Ok record ->
+                            { listing with
+                                Records = record :: listing.Records
+                            }
+                        | Error() ->
+                            { listing with
+                                Damaged = listing.Damaged + 1
+                            })
+                    empty
+                |> fun listing ->
+                    Ok
+                        { listing with
+                            Records = List.sortBy _.AttemptId listing.Records
+                        }
         with
         | :? IOException
         | :? UnauthorizedAccessException

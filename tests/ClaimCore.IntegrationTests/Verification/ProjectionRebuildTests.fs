@@ -261,6 +261,7 @@ let private erasedIdentity database =
                     "postgres"
                     "-d"
                     "postgres"
+                    "--exclude-schema=claimcore_restore_provider"
                     "-f"
                     "/tmp/foundation-erased.sql"
                 |]

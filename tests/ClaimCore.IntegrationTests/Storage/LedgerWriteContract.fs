@@ -26,6 +26,7 @@ let internal genesis fixture =
         let! result =
             fixture.Store.Write(
                 {
+                    WriteOperation.RequiresEncryption = true
                     WriteOperation.Work =
                         (fun tx ->
                             task {
@@ -182,6 +183,7 @@ let internal lockedView fixture =
         let! result =
             fixture.Store.Write(
                 {
+                    WriteOperation.RequiresEncryption = false
                     WriteOperation.Work =
                         (fun tx ->
                             task {
@@ -286,6 +288,7 @@ let internal operatorFamilyRefusal fixture =
         let! result =
             fixture.Store.Write
                 {
+                    WriteOperation.RequiresEncryption = true
                     Work =
                         fun tx ->
                             task {

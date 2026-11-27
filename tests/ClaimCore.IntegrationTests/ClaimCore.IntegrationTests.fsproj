@@ -59,8 +59,9 @@
     <Compile Include="History/StewardshipReasonConsumerTests.fs" />
     <Compile Include="Cases/NotesPostgresTests.fs" />
     <Compile Include="Attachments/AttachmentPostgresTests.fs" />
-    <Compile Include="Attachments/AttachmentPhysicalRecoveryTests.fs" />
+    <Compile Include="Fixtures/CommitProxy.fs" />
     <Compile Include="Administration/AdministrationProcess.fs" />
+    <Compile Include="Attachments/AttachmentPhysicalRecoveryTests.fs" />
     <Compile Include="Attachments/AttachmentVerificationTests.fs" />
     <Compile Include="Cases/PartiesPostgresTests.fs" />
     <Compile Include="Work/HandoverPostgresTests.fs" />
@@ -130,7 +131,6 @@
     <Compile Include="Storage/DatabaseScenarios.fs" />
     <Compile Include="Administration/OwnerOperationsTests.fs" />
     <Compile Include="Administration/CheckpointCommandTests.fs" />
-    <Compile Include="Fixtures/CommitProxy.fs" />
     <Compile Include="Sessions/SessionTerminationTests.fs" />
     <Compile Include="Administration/OperatorFaultProcessTests.fs" />
     <Compile Include="Administration/AdministrationSignalTests.fs" />

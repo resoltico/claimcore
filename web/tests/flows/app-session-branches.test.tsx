@@ -33,7 +33,7 @@ it("renders a recoverable session failure and invokes its refresh action", async
 });
 
 it("offers OIDC sign-in after explicit sign-out without collecting a credential", () => {
-  markSignedOut(window.sessionStorage);
+  markSignedOut();
   useSession.mockReturnValue({
     state: { kind: "anonymous", token: null, message: null, epoch: 2 },
     ...actions(),

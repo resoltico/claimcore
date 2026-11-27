@@ -1226,7 +1226,7 @@ test("settles a lost upload acknowledgement with an identity-only recovery recor
     sends += 1;
     const pending = await recoveryRecords(page);
     expect(pending).toHaveLength(1);
-    expect(pending[0]).toMatchObject({ format: 2, act: "attachment.add", subject: "ATTACHMENT" });
+    expect(pending[0]).toMatchObject({ format: 3, act: "attachment.add", subject: "ATTACHMENT" });
     const record = pending[0]!;
     expect(Object.keys(record).sort()).toEqual([
       "act",

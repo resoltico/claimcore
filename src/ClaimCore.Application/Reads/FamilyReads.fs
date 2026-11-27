@@ -66,7 +66,8 @@ module internal FamilyReads =
             return DatabaseSession.value<bool> 0 rows.Head
         }
 
-    let caseSummary (tx: ReadTx) query groupBy after limit =
+    let caseSummary (tx: ReadTx) query groupBy after limit cacheKey =
         let connection = tx.Connection
         let token = tx.CancellationToken
-        CaseSummaryQuery.read connection query groupBy after limit token
+        let cacheKey = if tx.ExportSnapshot then None else cacheKey
+        CaseSummaryQuery.read connection query groupBy after limit cacheKey tx.ObservedAt token

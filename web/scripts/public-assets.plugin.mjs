@@ -3,7 +3,11 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { writeAttachmentViewer } from "./attachment-viewer.mjs";
 import { messageShapes } from "../../contracts/messages.ts";
-import { presentationLanguages, presentationPseudolanguage } from "../../contracts/client.ts";
+import {
+  consumerContractIdentity,
+  presentationLanguages,
+  presentationPseudolanguage,
+} from "../../contracts/client.ts";
 import { chromeShapes } from "../src/presentation/chromeMessages.ts";
 import { admitCatalog } from "../src/presentation/catalogAdmission.ts";
 import { writeLegalAssets } from "./generate-third-party-notices.mjs";
@@ -113,10 +117,46 @@ export default function publicAssets() {
         }),
       );
       assets.sort((left, right) => left.path.localeCompare(right.path));
+      const chunks = Object.values(bundle).flatMap((entry) =>
+        entry.type === "chunk" ? [entry] : [],
+      );
+      // Rolldown may inline this export into more than one chunk. Record every copy
+      // that actually appears in emitted code.
+      const handshake = chunks.filter((entry) => entry.code.includes(consumerContractIdentity));
+      if (handshake.length === 0) {
+        throw new Error("The emitted browser code contains no contract identity.");
+      }
+      /** @param {string} fileName */
+      const pathOf = (fileName) => `/${fileName}`;
+      const graph = Object.fromEntries(
+        chunks.map((chunk) => [
+          pathOf(chunk.fileName),
+          [
+            ...new Set([
+              ...chunk.imports,
+              ...chunk.dynamicImports,
+              ...(chunk.viteMetadata?.importedCss ?? []),
+              ...(chunk.viteMetadata?.importedAssets ?? []),
+            ]),
+          ]
+            .sort()
+            .map(pathOf),
+        ]),
+      );
       const viewer = await writeAttachmentViewer(directory);
+      const viewerResources = Object.keys(bundle)
+        .filter((path) => /^assets\/pdf-.*\.(?:wasm|bcmap)$/u.test(path))
+        .sort()
+        .map(pathOf);
       await writeFile(
         resolve(directory, "public-assets.json"),
-        JSON.stringify({ schema: 4, assets, viewer }),
+        JSON.stringify({
+          schema: 5,
+          identityChunks: handshake.map((chunk) => pathOf(chunk.fileName)).sort(),
+          graph,
+          assets,
+          viewer: { ...viewer, resources: viewerResources },
+        }),
       );
     },
   };

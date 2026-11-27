@@ -53,11 +53,19 @@ module CliSchemas =
         Schema.OneOf(frame Schema.Null failures :: endpoints, None)
 
     let internal recoveryList =
-        Codec.record id
+        Codec.record (fun records damaged ->
+            {
+                Records = records
+                Damaged = int damaged
+            })
         |> Codec.field
             "recovery"
-            id
+            _.Records
             (Codec.list System.Int32.MaxValue RecoveryJournal.identityCodec)
+        |> Codec.field
+            "damaged"
+            (fun listing -> int64 listing.Damaged)
+            (Codec.integer 0L (int64 System.Int32.MaxValue))
         |> Codec.build
         |> Codec.named "RecoveryList"
 

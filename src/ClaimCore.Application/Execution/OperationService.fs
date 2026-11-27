@@ -363,6 +363,7 @@ module internal OperationService =
                             | Ok(selected, operation, input, verified) ->
                                 services.Store.Write
                                     {
+                                        WriteOperation.RequiresEncryption = true
                                         CancellationToken = ct
                                         Work =
                                             fun tx ->
@@ -383,7 +384,13 @@ module internal OperationService =
                         | Ok verdict, Some event ->
                             match! DisclosureReads.record services ct event with
                             | Ok() -> return mutationResult verdict
-                            | Error fault -> return ExecuteResult.Failed fault
+                            | Error fault ->
+                                // A privacy failure after a known acceptance cannot prove non-execution.
+                                match verdict with
+                                | Verdict.Proceed _
+                                | Verdict.Replay _ -> return ExecuteResult.OutcomeUnknown
+                                | Verdict.Refuse _
+                                | Verdict.Fail _ -> return ExecuteResult.Failed fault
                         | Ok verdict, None -> return mutationResult verdict
                         | Error failure, _ -> return mutationFailure failure
                 }
@@ -519,6 +526,7 @@ module internal OperationService =
     let internal provisionOwner services operationId profile roles policy token =
         services.Store.Write
             {
+                WriteOperation.RequiresEncryption = true
                 CancellationToken = token
                 Work =
                     fun tx ->

@@ -282,6 +282,8 @@ module internal ProjectionRebuild =
                 match prepared with
                 | Error finding -> return Error finding
                 | Ok(publication, at, descriptor) ->
+                    let! reserved = EncryptionBudget.reserveActive source 1L token
+
                     return!
                         RegisterMaintenanceStore.publish
                             source
@@ -290,10 +292,15 @@ module internal ProjectionRebuild =
                             token
                             (fun connection cipher ->
                                 task {
+                                    if cipher.Generation <> reserved then
+                                        refused ()
+
+                                    use encrypting = cipher.ForEncryption 1L
+
                                     let! repaired =
                                         AttachmentStorage.repair
                                             connection
-                                            cipher
+                                            encrypting
                                             key
                                             at
                                             descriptor

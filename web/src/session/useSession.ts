@@ -58,8 +58,12 @@ export const useSession = () => {
   const epoch = useRef(0);
   const requestSerial = useRef(0);
   const read = useRef<AbortController | null>(null);
+  const signingOut = useRef(false);
 
   const refresh = useCallback(async (): Promise<void> => {
+    if (signingOut.current) {
+      return;
+    }
     const requestId = ++requestSerial.current;
     read.current?.abort();
     const controller = new AbortController();
@@ -70,10 +74,10 @@ export const useSession = () => {
     }
     const value = snapshot(result);
     const next = stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch));
-    if (next.kind === "authenticated") {
-      resetSignIn(window.sessionStorage);
-    }
     setState(next);
+    if (next.kind === "authenticated") {
+      resetSignIn();
+    }
   }, []);
 
   useEffect(() => {
@@ -85,12 +89,15 @@ export const useSession = () => {
   }, [refresh]);
 
   const logout = async (): Promise<void> => {
-    if (state.kind !== "authenticated") {
+    if (state.kind !== "authenticated" || signingOut.current) {
       return;
     }
+    signingOut.current = true;
     const requestId = ++requestSerial.current;
     read.current?.abort();
-    const result = await service.logout(state.token);
+    const result = await service.logout(state.token).finally(() => {
+      signingOut.current = false;
+    });
     if (requestSerial.current !== requestId) {
       return;
     }
@@ -103,7 +110,6 @@ export const useSession = () => {
       setState(stateFor(null, resultNotice(result), logoutEpoch));
       return;
     }
-    markSignedOut(window.sessionStorage);
     const message =
       data.kind === "LOCAL_ONLY" && data.reason !== "NO_PROVIDER_SESSION"
         ? {
@@ -112,6 +118,7 @@ export const useSession = () => {
           }
         : null;
     setState({ kind: "anonymous", token: null, message, epoch: logoutEpoch });
+    markSignedOut();
     if (data.kind === "PROVIDER") {
       window.location.replace(data.location);
     }
@@ -123,7 +130,6 @@ export const useSession = () => {
     }
     requestSerial.current += 1;
     read.current?.abort();
-    markSignedOut(window.sessionStorage);
     setState(
       stateFor(
         {
@@ -135,6 +141,7 @@ export const useSession = () => {
         nextEpoch(epoch),
       ),
     );
+    markSignedOut();
   };
   return { state, logout, refresh, endedBrowserSessions };
 };

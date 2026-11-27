@@ -25,7 +25,7 @@ BEGIN
  compartments:='[]'::jsonb;
  IF private_content THEN
   effect:=effect||jsonb_build_object('compartment',0);
-  compartments:=jsonb_build_array(jsonb_build_object('ordinal',0,'owner',jsonb_build_object('kind',CASE a WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END,'id',aggregate_id),'commitment',repeat('11',32),'nonce',lpad(to_hex(n),120,'0'),'nonceFingerprint',lpad(to_hex(n),64,'0'),'payload',repeat('a5',30)));
+  compartments:=jsonb_build_array(jsonb_build_object('ordinal',0,'owner',jsonb_build_object('kind',CASE a WHEN 'FAMILY' THEN 'FAMILY' ELSE 'PROFILE' END,'id',aggregate_id),'commitment',repeat('11',32),'nonce',lpad(to_hex(n),152,'0'),'nonceFingerprint',lpad(to_hex(n),64,'0'),'payload',repeat('a5',46)));
  END IF;
  PERFORM claimcore.append_operation(i,n,h.entry_hash,decode(lpad(to_hex(n),64,'0'),'hex'),p_format,gen_random_uuid(),'00000000-0000-4000-8000-000000000001',clock_timestamp(),CASE a WHEN 'PERSON' THEN NULL ELSE DATE '2026-11-16' END,a,'sample.change',jsonb_build_object('binding','{}'::jsonb,'retained','{}'::jsonb),jsonb_build_array(effect),compartments);
 END;

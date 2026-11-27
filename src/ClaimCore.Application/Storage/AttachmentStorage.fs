@@ -591,8 +591,8 @@ module internal AttachmentStorage =
                         connection
                         """SELECT payload FROM claimcore.attachment_blobs
                            WHERE (case_id,blob_id,operation_sequence,effect_index,length,digest)=($1,$2,$3,$4,$5,$6)
-                             AND octet_length(payload)::bigint=$5+28"""
-                        args[..5]
+                             AND octet_length(payload)::bigint=$5+$7"""
+                        (Array.append args[..5] [| box InstallationCipher.envelopeOverhead |])
                         token
 
                 match rows with

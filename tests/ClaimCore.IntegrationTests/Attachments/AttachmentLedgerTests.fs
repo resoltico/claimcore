@@ -14,7 +14,7 @@ let private id number =
     Guid.Parse(sprintf "00000000-0000-4000-8000-%012d" number)
 
 let private keyedDigest = String.replicate 32 "37"
-let private ciphertext = Array.create 31 0xabuy
+let private ciphertext = Array.create 47 0xabuy
 
 let private nullable value =
     value |> Option.map box |> Option.defaultValue (box DBNull.Value)
@@ -55,8 +55,8 @@ let private append
                     'FAMILY','sample.change','{"binding":{},"retained":{}}'::jsonb,jsonb_build_array(effect.value),
                     CASE WHEN $8::jsonb IS NULL THEN '[]'::jsonb ELSE jsonb_build_array(jsonb_build_object(
                         'ordinal',0,'owner',jsonb_build_object('kind','FAMILY','id',$2::uuid),
-                        'commitment',repeat('11',32),'nonce',lpad(to_hex(next),120,'0'),
-                        'nonceFingerprint',lpad(to_hex(next),64,'0'),'payload',repeat('a5',30))) END,
+                        'commitment',repeat('11',32),'nonce',lpad(to_hex(next),152,'0'),
+                        'nonceFingerprint',lpad(to_hex(next),64,'0'),'payload',repeat('a5',46))) END,
                     $9::bytea)
                 FROM current_head CROSS JOIN effect
                 """
@@ -188,8 +188,8 @@ let private exercise (database: PostgresFixture.Database) =
                         """
                         INSERT INTO claimcore.ledger_compartments
                           (operation_sequence,ordinal,owner_kind,owner_id,commitment,nonce,nonce_fingerprint,payload)
-                        VALUES(1,0,'FAMILY',$1,decode(repeat('11',32),'hex'),decode(repeat('12',60),'hex'),
-                            decode(repeat('13',32),'hex'),decode(repeat('a5',30),'hex'))
+                        VALUES(1,0,'FAMILY',$1,decode(repeat('11',32),'hex'),decode(repeat('12',76),'hex'),
+                            decode(repeat('13',32),'hex'),decode(repeat('a5',46),'hex'))
                         """
                         [| box firstCase |]
                         token

@@ -125,89 +125,117 @@ module internal LedgerAdministration =
         =
         let refuse fault = raise (OperatorFaultException fault)
 
-        DatabaseSession.transaction
-            source
-            Data.IsolationLevel.ReadCommitted
-            token
-            (fun connection transaction ->
-                task {
-                    do! OwnerAdmission.require connection token
-                    let! installation = Baseline.require connection token
+        task {
+            let! reserved =
+                EncryptionBudget.reserveActive source InstallationCipher.operationAllowance token
 
-                    use! cipher =
-                        Baseline.loadCipher connection installation.InstallationId masterKey token
+            return!
+                DatabaseSession.transaction
+                    source
+                    Data.IsolationLevel.ReadCommitted
+                    token
+                    (fun connection transaction ->
+                        task {
+                            do! OwnerAdmission.require connection token
+                            let! installation = Baseline.require connection token
 
-                    let! _ = Transactions.configure connection Transactions.timeouts token
-                    let! head, observed = Transactions.head connection token
+                            use! cipher =
+                                Baseline.loadCipher
+                                    connection
+                                    installation.InstallationId
+                                    masterKey
+                                    token
 
-                    let tx =
-                        LedgerStore.InTransaction(
-                            connection,
-                            installation,
-                            cipher,
-                            head,
-                            observed,
-                            token
-                        )
+                            let! _ = Transactions.configure connection Transactions.timeouts token
+                            let! head, observed = Transactions.head connection token
 
-                    let! actorId =
-                        match input.ActorId with
-                        | Some _ -> System.Threading.Tasks.Task.FromResult input.ActorId
-                        | None -> PersonAcquisition.principalOwner tx input.Principal
+                            let! current =
+                                Baseline.currentEncryptionGeneration connection reserved token
 
-                    let! target =
-                        match actorId with
-                        | Some id -> PersonAcquisition.person tx id
-                        | None -> System.Threading.Tasks.Task.FromResult None
+                            if cipher.Generation <> reserved || not current then
+                                refuse OperatorFault.DataKeyInvalid
 
-                    let binding =
-                        match actorId, target with
-                        | Some id, Some person -> Binding.People(id, person.Revision)
-                        | None, None -> Binding.PeopleNew Revision.zero
-                        | _ -> refuse OperatorFault.OwnerRecoveryRefused
+                            use encrypting =
+                                cipher.ForEncryption InstallationCipher.operationAllowance
 
-                    let store =
-                        LedgerStore(source, installation, cipher, Transactions.timeouts) :> IStore
+                            let tx =
+                                LedgerStore.InTransaction(
+                                    connection,
+                                    installation,
+                                    encrypting,
+                                    head,
+                                    observed,
+                                    token
+                                )
 
-                    let services =
-                        Service.create
-                            productVersion
-                            installation.InstallationId
-                            store
-                            (InstallationCheck.calendar installation.BusinessTimeZone)
-                            input.Principal
+                            let! actorId =
+                                match input.ActorId with
+                                | Some _ -> System.Threading.Tasks.Task.FromResult input.ActorId
+                                | None -> PersonAcquisition.principalOwner tx input.Principal
 
-                    let operation =
-                        Transactions.operationId observed |> OperationId.create |> Option.get
+                            let! target =
+                                match actorId with
+                                | Some id -> PersonAcquisition.person tx id
+                                | None -> System.Threading.Tasks.Task.FromResult None
 
-                    let! result =
-                        OperationService.recoverOwnerInTransaction
-                            services
-                            tx
-                            operation
-                            binding
-                            input.Name
+                            let binding =
+                                match actorId, target with
+                                | Some id, Some person -> Binding.People(id, person.Revision)
+                                | None, None -> Binding.PeopleNew Revision.zero
+                                | _ -> refuse OperatorFault.OwnerRecoveryRefused
 
-                    match result with
-                    | Verdict.Proceed _ ->
-                        let owner =
-                            actorId |> Option.defaultValue (ActorId.ofOperationId operation)
+                            let store =
+                                LedgerStore(source, installation, cipher, Transactions.timeouts)
+                                :> IStore
 
-                        do! DatabaseSession.commit transaction token
-                        return OwnerRecoveryResult.Recovered(owner, operation)
-                    | Verdict.Refuse(Refusal.People PeopleRefusal.NoChanges) when actorId.IsSome ->
-                        return OwnerRecoveryResult.Unchanged actorId.Value
-                    | Verdict.Refuse(Refusal.People PeopleRefusal.IdentityReserved) ->
-                        return refuse OperatorFault.OwnerRecoveryIdentityReserved
-                    | Verdict.Refuse(Refusal.InvalidInput _) when
-                        input.Name.IsNone && target.IsNone
-                        ->
-                        return refuse OperatorFault.OwnerRecoveryNameRequired
-                    | Verdict.Refuse _ -> return refuse OperatorFault.OwnerRecoveryRefused
-                    | Verdict.Fail _
-                    | Verdict.Replay _ ->
-                        return raise (RecordCorruptException "Owner recovery recording failed.")
-                })
+                            let services =
+                                Service.create
+                                    productVersion
+                                    installation.InstallationId
+                                    store
+                                    (InstallationCheck.calendar installation.BusinessTimeZone)
+                                    input.Principal
+
+                            let operation =
+                                Transactions.operationId observed
+                                |> OperationId.create
+                                |> Option.get
+
+                            let! result =
+                                OperationService.recoverOwnerInTransaction
+                                    services
+                                    tx
+                                    operation
+                                    binding
+                                    input.Name
+
+                            match result with
+                            | Verdict.Proceed _ ->
+                                let owner =
+                                    actorId
+                                    |> Option.defaultValue (ActorId.ofOperationId operation)
+
+                                do! DatabaseSession.commit transaction token
+                                return OwnerRecoveryResult.Recovered(owner, operation)
+                            | Verdict.Refuse(Refusal.People PeopleRefusal.NoChanges) when
+                                actorId.IsSome
+                                ->
+                                return OwnerRecoveryResult.Unchanged actorId.Value
+                            | Verdict.Refuse(Refusal.People PeopleRefusal.IdentityReserved) ->
+                                return refuse OperatorFault.OwnerRecoveryIdentityReserved
+                            | Verdict.Refuse(Refusal.InvalidInput _) when
+                                input.Name.IsNone && target.IsNone
+                                ->
+                                return refuse OperatorFault.OwnerRecoveryNameRequired
+                            | Verdict.Refuse _ -> return refuse OperatorFault.OwnerRecoveryRefused
+                            | Verdict.Fail _
+                            | Verdict.Replay _ ->
+                                return
+                                    raise (
+                                        RecordCorruptException "Owner recovery recording failed."
+                                    )
+                        })
+        }
 
 module internal AdministrationFailures =
     let private installation =
@@ -284,6 +312,27 @@ type Administration(connectionString: string, productVersion: string, masterKey:
 
     static member ClassifyFailure error = AdministrationFailures.classify error
 
+    member _.EnrollWitness(connection: string, installation: Installation, token) =
+        task {
+            let settings = NpgsqlConnectionStringBuilder connection
+            InstallationCheck.transport settings
+            let register = NpgsqlConnectionStringBuilder connectionString
+
+            if settings.Host = register.Host && settings.Port = register.Port then
+                raise (OperatorFaultException OperatorFault.ConnectionFileInvalid)
+
+            use target = InstallationCheck.dataSource connection
+
+            let! primary =
+                WitnessEnrollment.enroll source target installation.InstallationId token
+            // Enrollment is idempotent for the exact already admitted primary.
+            let witness = new RecoveryWitness(target, installation.InstallationId)
+            let! active = witness.IsActive(primary, token)
+
+            if not active then
+                raise (OperatorFaultException OperatorFault.ConnectionFileInvalid)
+        }
+
     member _.Initialize(timeZone, owner, requestedPolicy, cancellationToken) =
         LedgerAdministration.initialize
             source
@@ -342,11 +391,69 @@ type Administration(connectionString: string, productVersion: string, masterKey:
     member _.AdmitRestoredInstallation(checkpoint, handle, cancellationToken) =
         RestoreAdmission.admit source masterKey checkpoint handle cancellationToken
 
+    member _.AdmitWitnessedRestore
+        (checkpoint, handle, witnessConnection: string, transition, history, token)
+        =
+        task {
+            let settings = NpgsqlConnectionStringBuilder witnessConnection
+            InstallationCheck.transport settings
+            let register = NpgsqlConnectionStringBuilder connectionString
+
+            if settings.Host = register.Host && settings.Port = register.Port then
+                raise (OperatorFaultException OperatorFault.ConnectionFileInvalid)
+
+            use witness = InstallationCheck.dataSource witnessConnection
+
+            return!
+                RestoreAdmission.admitWitnessed
+                    source
+                    masterKey
+                    checkpoint
+                    handle
+                    witness
+                    transition
+                    history
+                    token
+        }
+
+    member _.RotateEncryptionGeneration(handle, token) =
+        let newGeneration = Baseline.newEncryptionGeneration ()
+
+        DatabaseSession.transaction
+            source
+            Data.IsolationLevel.ReadCommitted
+            token
+            (fun connection transaction ->
+                task {
+                    do! OwnerAdmission.require connection token
+                    let! _ = Transactions.configure connection Transactions.timeouts token
+                    let! _ = Transactions.head connection token
+                    do! RegisterMaintenanceStore.requireActive handle connection token
+                    let! installation = Baseline.require connection token
+
+                    use! _admitted =
+                        Baseline.loadCipher connection installation.InstallationId masterKey token
+
+                    do! Baseline.rotateEncryptionGeneration connection newGeneration token
+                    do! Baseline.advanceRecoveryPublication connection token
+                    do! DatabaseSession.commit transaction token
+                    return newGeneration
+                })
+
     member _.Status(cancellationToken) =
         InstallationStatus.read source masterKey cancellationToken
 
     member _.Maintenance(change, cancellationToken) =
         RegisterMaintenanceStore.change source masterKey change cancellationToken
+
+    member _.ResumeWithWitness(handle, witnessConnection: string, token) =
+        let settings = NpgsqlConnectionStringBuilder witnessConnection
+        InstallationCheck.transport settings
+
+        task {
+            use witness = InstallationCheck.dataSource witnessConnection
+            return! RestoreAdmission.resume source masterKey witness handle token
+        }
 
     member _.Head(cancellationToken) =
         LedgerAdministration.head source masterKey cancellationToken

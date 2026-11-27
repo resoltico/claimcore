@@ -39,6 +39,7 @@ let internal ledgerHead fixture =
         let! result: Result<Verdict<unit>, StoreFailure> =
             fixture.Store.Write(
                 {
+                    WriteOperation.RequiresEncryption = false
                     WriteOperation.Work =
                         (fun tx ->
                             task {

@@ -71,6 +71,7 @@ let tests =
 
                             member _.Write
                                 ({
+                                     WriteOperation.RequiresEncryption = needsEncryption
                                      WriteOperation.Work = work
                                      CancellationToken = ct
                                  })
@@ -79,6 +80,7 @@ let tests =
                                     let! result =
                                         inner.Write(
                                             {
+                                                WriteOperation.RequiresEncryption = needsEncryption
                                                 WriteOperation.Work = work
                                                 CancellationToken = ct
                                             }

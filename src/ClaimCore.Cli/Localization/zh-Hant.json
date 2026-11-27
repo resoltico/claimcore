@@ -24,8 +24,9 @@
     "source": "400400a0cc9b"
   },
   "cli.delivery.unresolved": {
-    "text": "更改尚未確認。請使用 {retryCommand} 重送完全相同的請求，或使用 {statusCommand} 檢查。更改的允許時間結束後，回答將確定。",
-    "source": "0c2a0dcdff67"
+    "text": "變更尚未確認。請使用 {statusCommand} 查詢，或在同一份歷程記錄保持完整時使用 {retryCommand} 重送完全相同的要求。 從備份還原後，請先由維運人員確認還原後的歷程記錄涵蓋先前的結果，再重複這項變更。",
+    "source": "a69195907cbf",
+    "machineMade": true
   },
   "cli.failure.AUTHENTICATION_FAILED": {
     "text": "身分驗證失敗。",
@@ -148,8 +149,9 @@
     "source": "2a54539e2577"
   },
   "cli.help.delivery": {
-    "text": "傳送未確認時，退出碼 4 會輸出可重新發送的準確請求。\n重新發送不會重復記錄。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 檢查；回答將在 {window} 內確定。",
-    "source": "d798be5ae516"
+    "text": "傳送未確認時，結束碼 4 會原樣輸出要求。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 查詢原始操作。 變更準備滿 {window} 後，成功的查詢可以最終確認目前的歷程記錄中沒有這項變更。\n只要同一份歷程記錄保持完整，重新傳送完全相同的要求就不會重複記錄這項變更。 從備份還原後，請先由維運人員確認還原後的歷程記錄涵蓋先前的結果，再重複這項變更。",
+    "source": "d6d090205306",
+    "machineMade": true
   },
   "cli.help.examples": {
     "text": "離線準備請求，檢查結構定義，然後傳送通過准入檢查的幀。",

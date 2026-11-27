@@ -363,8 +363,9 @@
     "source": "1dc1592f82ad"
   },
   "ui.recoveryDescription": {
-    "text": "无法确认这些更改是否已记录。ClaimCore 会为您检查。每项回答将在 {window} 内确定。",
-    "source": "eff410b18411"
+    "text": "无法确认这些更改是否已记录。ClaimCore 会为您检查。 更改准备满 {window} 后，成功的查询可以最终确认当前历史记录中没有这项更改。 从备份还原后，请先让运维人员确认还原后的历史记录涵盖先前的结果，再重复这项更改。",
+    "source": "ce73c48c3904",
+    "machineMade": true
   },
   "ui.recoveryEmpty": {
     "text": "没有未确认的更改。",
@@ -373,6 +374,16 @@
   "ui.recoveryCoordinationUnavailable": {
     "text": "自动恢复已暂停。请手动检查已保存的操作，或恢复对浏览器存储的访问以继续自动检查。",
     "source": "8a69c206fcd3",
+    "machineMade": true
+  },
+  "ui.recoveryEarlierFormat": {
+    "text": "先前的恢复记录已保留。请使用之前的 ClaimCore 版本及其对应的服务检查这些更改。",
+    "source": "822ed469aee8",
+    "machineMade": true
+  },
+  "ui.recoveryDamagedRecord": {
+    "text": "部分恢复记录无法识别或读取。这些记录已保留。如果知道操作 ID，可以直接检查该操作。",
+    "source": "b169f2312f6d",
     "machineMade": true
   },
   "ui.recoveryListingUnavailable": {

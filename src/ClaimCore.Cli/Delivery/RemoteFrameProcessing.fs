@@ -54,11 +54,7 @@ module private FrameInvocation =
     let private definitive (reply: CliReply) =
         match reply.Frame.Result with
         | FrameResult.Reply value ->
-            match Frames.outcome value.Wire with
-            | Some "ACCEPTED"
-            | Some "ALREADY_ACCEPTED"
-            | Some "NOT_ACCEPTED" -> true
-            | _ -> false
+            value.Class |> OperationSettlement.ofReply |> OperationSettlement.isFinal
         | _ -> false
 
     let rec prepared
@@ -226,7 +222,9 @@ module private FrameInvocation =
                         else
                             let refused =
                                 match reply.Frame.Result with
-                                | FrameResult.Reply value -> value.Class = ReplyKind.Rejected
+                                | FrameResult.Reply value ->
+                                    OperationSettlement.ofReply value.Class =
+                                        OperationSettlement.Refused
                                 | FrameResult.HostFailure failure ->
                                     failure.Phase = Some ExecutionPhase.NotStarted
                                 | FrameResult.LocalFailure _ -> false

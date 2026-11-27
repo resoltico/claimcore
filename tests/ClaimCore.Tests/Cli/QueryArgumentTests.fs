@@ -91,6 +91,14 @@ let tests =
                     (prepare [ "reminder"; "list"; "--state"; "voided" ])
                     "Case lifecycle is not a reminder state")
             testCase
+                "Access Requests continuation admits the maximum and refuses one over"
+                (fun () ->
+                    let prepareCursor length =
+                        prepare [ "people"; "requests"; "--cursor"; String.replicate length "A" ]
+
+                    Expect.isOk (prepareCursor 32768) "The CLI accepts the published outer limit"
+                    Expect.isError (prepareCursor 32769) "The CLI refuses one character over")
+            testCase
                 "invalid cursor and numeric bounds are usage failures before transport encoding"
                 (fun () ->
                     for args in

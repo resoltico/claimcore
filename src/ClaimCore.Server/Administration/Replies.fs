@@ -18,6 +18,7 @@ type DatabaseSuccess =
     | InitializationSkipped of Guid * CaseReferencePolicy
     | OwnerRecovery of OwnerRecoveryResult
     | MasterKeyRotated of installationId: Guid
+    | EncryptionGenerationRotated of generation: Guid
     | Rebuilt of ProjectionRebuildReport
     | ProjectionsCurrent of LedgerPosition
     | AttachmentRepaired of AttachmentRepairReport
@@ -217,6 +218,15 @@ module Replies =
                 (record id |> field "installationId" id uuid)
 
             variant
+                "ENCRYPTION_GENERATION_ROTATED"
+                (DatabaseSuccess.EncryptionGenerationRotated >> Reply.Succeeded)
+                (function
+                | Reply.Succeeded(DatabaseSuccess.EncryptionGenerationRotated generation) ->
+                    Some generation
+                | _ -> None)
+                (record id |> field "generation" id uuid)
+
+            variant
                 "STATUS"
                 (DatabaseSuccess.Status >> Reply.Succeeded)
                 (function
@@ -412,6 +422,10 @@ module Replies =
 
     let encode reply =
         Codec.encode codec reply, ExitCode.value (exitCode reply)
+
+    let encryptionGenerationRotated generation =
+        Reply.Succeeded(DatabaseSuccess.EncryptionGenerationRotated generation)
+        |> encode
 
     let masterKeyRotated installation =
         Reply.Succeeded(DatabaseSuccess.MasterKeyRotated installation) |> encode

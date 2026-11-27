@@ -74,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../ClaimCore.Presentation/Messages/Localization/*.json" Exclude="../ClaimCore.Presentation/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename).core%(Extension)" />
+    <PackageReference Include="Acornima" />
     <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />

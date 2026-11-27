@@ -639,6 +639,7 @@ let internal atomicWrites fixture =
             let! failed =
                 fixture.Store.Write
                     {
+                        WriteOperation.RequiresEncryption = true
                         CancellationToken = token
                         Work =
                             fun tx ->

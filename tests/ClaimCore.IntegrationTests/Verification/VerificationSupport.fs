@@ -293,6 +293,7 @@ let rewrite
         let! original = row database sequence
         let changed = mutate original
         use! connection = database.OwnerSource.OpenConnectionAsync()
+        use! cipher = PostgresFixture.reserveCipher database token
         let mutable refused = false
 
         try
@@ -300,7 +301,7 @@ let rewrite
                 DatabaseSession.execute
                     connection
                     updateRoot
-                    (OperationStorage.parameters database.Cipher changed |> rootParameters)
+                    (OperationStorage.parameters cipher changed |> rootParameters)
                     token
 
             ()
@@ -324,6 +325,8 @@ let rewrite
             let! value = OperationStorage.find connection database.Cipher identity token
 
             originals.Add(Option.get value)
+
+        use! rewriteCipher = PostgresFixture.reserveCipherFor database originals.Count token
 
         // Only the deliberate trigger bypass uses the superuser.
         use! corruptor = database.SuperuserSource.OpenConnectionAsync()
@@ -359,7 +362,7 @@ let rewrite
                     root.Structure.Effects
                     root.Structure.Compartments
 
-            do! replaceRoot corruptor database.Cipher rewritten
+            do! replaceRoot corruptor rewriteCipher rewritten
             previous <- Some rewritten.Hash
 
         let! _ =

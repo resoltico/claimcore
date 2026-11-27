@@ -486,8 +486,10 @@ let private causalText database =
         let coordinates = List.exactlyOne coordinates
         let bytes = System.Text.Encoding.UTF8.GetBytes "\"Different valid text\""
 
+        use corrupting = database.Cipher.ForEncryption 1L
+
         let ciphertext =
-            database.Cipher.EncryptCompartment(
+            corrupting.EncryptCompartment(
                 DatabaseSession.value<int64> 0 coordinates,
                 DatabaseSession.value<int> 1 coordinates,
                 DatabaseSession.value<string> 2 coordinates,

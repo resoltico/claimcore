@@ -38,7 +38,7 @@ it("renders loading and refreshable session failures", async () => {
 });
 
 it("renders signed-out, rejected and authenticated dashboard paths", async () => {
-  markSignedOut(window.sessionStorage);
+  markSignedOut();
   const anonymous = await renderState({ kind: "anonymous", token: null, message: null, epoch: 2 });
   expect(await screen.findByRole("link", { name: "Sign in again" })).toHaveAttribute(
     "href",

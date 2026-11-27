@@ -51,7 +51,7 @@ for (const reload of [false, true]) {
     const saved = await recoveryRecords(page);
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({
-      format: 2,
+      format: 3,
       operationId,
       subject: "CASE",
       act: "case.close",

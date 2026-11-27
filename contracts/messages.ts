@@ -1282,7 +1282,9 @@ export type MessageArgs = {
   "ui.recovery": Readonly<Record<string, never>>;
   "ui.recoveryCleanupUnavailable": Readonly<Record<string, never>>;
   "ui.recoveryCoordinationUnavailable": Readonly<Record<string, never>>;
+  "ui.recoveryDamagedRecord": Readonly<Record<string, never>>;
   "ui.recoveryDescription": { readonly "window": string };
+  "ui.recoveryEarlierFormat": Readonly<Record<string, never>>;
   "ui.recoveryEmpty": Readonly<Record<string, never>>;
   "ui.recoveryIdentityOnly": Readonly<Record<string, never>>;
   "ui.recoveryListingUnavailable": Readonly<Record<string, never>>;

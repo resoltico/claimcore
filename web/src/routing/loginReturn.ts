@@ -23,7 +23,7 @@ export const rememberLoginReturn = (): void => {
 };
 export const restoreLoginReturn = (): void => {
   try {
-    resetSignIn(window.sessionStorage);
+    resetSignIn();
     const path = sessionStorage.getItem(key);
     sessionStorage.removeItem(key);
     if (path !== null && sameOriginPath(path)) {

@@ -74,20 +74,65 @@ module private CipherEnvelope =
         String.concat "\u001f" ("claimcore" :: label :: installationId.ToString("D") :: fields)
         |> Encoding.UTF8.GetBytes
 
-/// One admitted installation key and its independent equality keys. Ciphertext never enters RecordFormat.
+/// Independent HKDF keys bind ciphertext to a purpose and an admitted generation.
 [<Sealed>]
-type internal InstallationCipher(installationId: Guid, key: byte array) =
-    let derive label =
+type internal InstallationCipher
+    (installationId: Guid, key: byte array, active: Guid, admitted: Set<Guid>, allowance: int64) =
+    let identityBytes = 16
+
+    let derive label salt =
         HKDF.DeriveKey(
             HashAlgorithmName.SHA256,
             key,
             MasterKey.Size,
-            Array.empty,
+            salt,
             Encoding.UTF8.GetBytes("claimcore/" + label)
         )
 
-    let attachmentKey = derive "attachment-digest"
-    let saltKey = derive "compartment-salt-fingerprint"
+    // Equality keys deliberately survive an encryption rotation; the comparison data remains erasable.
+    let attachmentKey = derive "attachment-digest" Array.empty
+    let saltKey = derive "compartment-salt-fingerprint" Array.empty
+
+    let mutable remaining = allowance
+
+    let identity (generation: Guid) = generation.ToByteArray(true)
+
+    let seal purpose salt aad plain =
+        let generation = identity active
+        let useKey = derive purpose (Array.append generation salt)
+
+        try
+            CipherEnvelope.seal useKey (Array.append generation aad) plain
+            |> Array.append (Array.append generation salt)
+        finally
+            CryptographicOperations.ZeroMemory useKey
+
+    let durableSeal purpose aad plain =
+        if System.Threading.Interlocked.Decrement(&remaining) < 0L then
+            invalidOp "Durable encryption requires an unused reservation."
+
+        seal purpose Array.empty aad plain
+
+    let openSealed purpose saltLength aad (envelope: byte array) activeOnly =
+        if envelope.Length < CipherEnvelope.overhead + identityBytes + saltLength then
+            raise (CryptographicException "Invalid data envelope size.")
+
+        let generation = Guid(ReadOnlySpan<byte>(envelope, 0, identityBytes), true)
+
+        if not (admitted.Contains generation) || (activeOnly && generation <> active) then
+            raise (CryptographicException "The encryption generation is unavailable.")
+
+        let generationBytes = identity generation
+        let headerLength = identityBytes + saltLength
+        let useKey = derive purpose envelope[0 .. headerLength - 1]
+
+        try
+            CipherEnvelope.openEnvelope
+                useKey
+                (Array.append generationBytes aad)
+                envelope[headerLength..]
+        finally
+            CryptographicOperations.ZeroMemory useKey
 
     let blob label (caseId: Guid) (blobId: Guid) =
         CipherEnvelope.associatedData
@@ -106,19 +151,23 @@ type internal InstallationCipher(installationId: Guid, key: byte array) =
                 ownerId.ToString("D")
             ]
 
-    let decrypt aad payload =
+    let decrypt purpose aad payload =
         try
-            CipherEnvelope.openEnvelope key aad payload
+            openSealed purpose 0 aad payload false
         with :? CryptographicException ->
             raise (RecordCorruptException "Stored data authentication failed.")
 
     member _.InstallationId = installationId
+    member _.Generation = active
+
+    member _.ForEncryption(count) =
+        new InstallationCipher(installationId, Array.copy key, active, admitted, count)
 
     member _.SealCursor(purpose, requester: Guid, plain: byte array) =
         let aad =
             CipherEnvelope.associatedData purpose installationId [ requester.ToString("D") ]
 
-        CipherEnvelope.seal key aad plain
+        seal "cursor" (RandomNumberGenerator.GetBytes 32) aad plain
         |> System.Buffers.Text.Base64Url.EncodeToString
 
     member _.OpenCursor(purpose, requester: Guid, token: string) =
@@ -132,43 +181,53 @@ type internal InstallationCipher(installationId: Guid, key: byte array) =
                 let aad =
                     CipherEnvelope.associatedData purpose installationId [ requester.ToString("D") ]
 
-                Some(CipherEnvelope.openEnvelope key aad envelope)
+                Some(openSealed "cursor" 32 aad envelope true)
         with
         | :? FormatException
         | :? CryptographicException -> None
 
     member _.Wrap(master: MasterKey) =
-        CipherEnvelope.seal
-            master.Bytes
-            (CipherEnvelope.associatedData "data-key" installationId [])
-            key
+        let salt = RandomNumberGenerator.GetBytes 32
+        let aad = CipherEnvelope.associatedData "data-key" installationId []
+
+        // Each wrapping operation uses its own HKDF key and a fresh GCM IV.
+        let wrappingKey =
+            HKDF.DeriveKey(HashAlgorithmName.SHA256, master.Bytes, MasterKey.Size, salt, aad)
+
+        try
+            CipherEnvelope.seal wrappingKey aad key |> Array.append salt
+        finally
+            CryptographicOperations.ZeroMemory wrappingKey
 
     member _.EncryptBlob(caseId, blobId, payload) =
-        CipherEnvelope.seal key (blob "attachment" caseId blobId) payload
+        durableSeal "attachment" (blob "attachment" caseId blobId) payload
 
     member _.DecryptBlob(caseId, blobId, payload) =
-        decrypt (blob "attachment" caseId blobId) payload
+        decrypt "attachment" (blob "attachment" caseId blobId) payload
 
     member _.AttachmentDigest(payload: byte array) =
         HMACSHA256.HashData(attachmentKey, payload)
 
     member _.EncryptCompartment(sequence, ordinal, ownerKind, ownerId, payload) =
-        CipherEnvelope.seal
-            key
+        durableSeal
+            "compartment"
             (compartment "compartment" sequence ordinal ownerKind ownerId)
             payload
 
     member _.DecryptCompartment(sequence, ordinal, ownerKind, ownerId, payload) =
-        decrypt (compartment "compartment" sequence ordinal ownerKind ownerId) payload
+        decrypt "compartment" (compartment "compartment" sequence ordinal ownerKind ownerId) payload
 
     member _.EncryptCompartmentSalt(sequence, ordinal, ownerKind, ownerId, salt) =
-        CipherEnvelope.seal
-            key
+        durableSeal
+            "compartment-salt"
             (compartment "compartment-salt" sequence ordinal ownerKind ownerId)
             salt
 
     member _.DecryptCompartmentSalt(sequence, ordinal, ownerKind, ownerId, payload) =
-        decrypt (compartment "compartment-salt" sequence ordinal ownerKind ownerId) payload
+        decrypt
+            "compartment-salt"
+            (compartment "compartment-salt" sequence ordinal ownerKind ownerId)
+            payload
 
     member _.SaltFingerprint(salt: byte array) = HMACSHA256.HashData(saltKey, salt)
 
@@ -179,22 +238,52 @@ type internal InstallationCipher(installationId: Guid, key: byte array) =
             CryptographicOperations.ZeroMemory saltKey
 
 module internal InstallationCipher =
-    let envelopeOverhead = CipherEnvelope.overhead
+    // Two values per retained compartment and at most one attachment per operation.
+    let operationAllowance =
+        int64 (2 * ClaimCore.RecordFormat.OperationStructure.MaximumCompartments + 1)
+
+    let envelopeOverhead = 16 + CipherEnvelope.overhead
+    let wrappedKeyBytes = 32 + MasterKey.Size + CipherEnvelope.overhead
 
     let create installationId =
-        new InstallationCipher(installationId, RandomNumberGenerator.GetBytes MasterKey.Size)
+        let active = Guid.NewGuid()
 
-    let unwrap (master: MasterKey) installationId (wrapped: byte array) =
-        if wrapped.Length <> MasterKey.Size + CipherEnvelope.overhead then
+        new InstallationCipher(
+            installationId,
+            RandomNumberGenerator.GetBytes MasterKey.Size,
+            active,
+            Set.singleton active,
+            operationAllowance
+        )
+
+    let unwrap
+        (master: MasterKey)
+        installationId
+        active
+        (admitted: Set<Guid>)
+        (wrapped: byte array)
+        =
+        if wrapped.Length <> wrappedKeyBytes || not (admitted.Contains active) then
             raise (OperatorFaultException OperatorFault.DataKeyInvalid)
+
+        let aad = CipherEnvelope.associatedData "data-key" installationId []
+
+        let wrappingKey =
+            HKDF.DeriveKey(
+                HashAlgorithmName.SHA256,
+                master.Bytes,
+                MasterKey.Size,
+                wrapped[0..31],
+                aad
+            )
 
         let key =
             try
-                CipherEnvelope.openEnvelope
-                    master.Bytes
-                    (CipherEnvelope.associatedData "data-key" installationId [])
-                    wrapped
-            with :? CryptographicException ->
-                raise (OperatorFaultException OperatorFault.DataKeyInvalid)
+                try
+                    CipherEnvelope.openEnvelope wrappingKey aad wrapped[32..]
+                with :? CryptographicException ->
+                    raise (OperatorFaultException OperatorFault.DataKeyInvalid)
+            finally
+                CryptographicOperations.ZeroMemory wrappingKey
 
-        new InstallationCipher(installationId, key)
+        new InstallationCipher(installationId, key, active, admitted, 0L)

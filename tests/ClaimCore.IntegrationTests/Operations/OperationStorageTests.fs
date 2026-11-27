@@ -143,9 +143,10 @@ let private storage () =
             |> _.Root
 
         let write root after =
+            use cipher = PostgresFixture.reserveCipher database token |> sync
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()
-            OperationStorage.append connection database.Cipher root token |> sync |> ignore
+            OperationStorage.append connection cipher root token |> sync |> ignore
             after connection
             transaction.Commit()
             sequence <- root.Header.Sequence
@@ -288,8 +289,10 @@ let private storage () =
                 |> valid
                 |> _.Root
 
+            use cipher = PostgresFixture.reserveCipher database token |> sync
+
             if date = DateOnly.MinValue then
-                let parameters = OperationStorage.parameters database.Cipher root
+                let parameters = OperationStorage.parameters cipher root
                 parameters[6] <- DBNull.Value
 
                 expectFailureMatching
@@ -301,7 +304,7 @@ let private storage () =
 
             use connection = database.RuntimeSource.OpenConnection()
             use transaction = connection.BeginTransaction()
-            OperationStorage.append connection database.Cipher root token |> sync |> ignore
+            OperationStorage.append connection cipher root token |> sync |> ignore
 
             let loaded =
                 OperationStorage.find connection database.Cipher owner token
@@ -467,14 +470,13 @@ let private storage () =
         let appendSql =
             "SELECT claimcore.append_operation($1,$2,$3,$4,$5,$6,$7,$8,$9::text::date,$10,$11,$12::jsonb,$13::jsonb,$14::jsonb)"
 
-        let parameters () =
-            OperationStorage.parameters database.Cipher control
+        let parametersFor root =
+            use cipher = PostgresFixture.reserveCipher database token |> sync
+            OperationStorage.parameters cipher root
 
-        expectFailure
-            "23505"
-            database.RuntimeSource
-            appendSql
-            (OperationStorage.parameters database.Cipher duplicate)
+        let parameters () = parametersFor control
+
+        expectFailure "23505" database.RuntimeSource appendSql (parametersFor duplicate)
 
         let changed index value =
             let values = parameters () in

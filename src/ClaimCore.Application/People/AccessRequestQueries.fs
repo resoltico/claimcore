@@ -44,6 +44,7 @@ module internal AccessRequestQueries =
                                             ScopedTraversal.pageWithBasis
                                                 tx
                                                 "access-request-traversal"
+                                                Paging.MaximumAccessRequestCursorCharacters
                                                 requester
                                                 None
                                                 (Cursors.decodeAccessRequests
@@ -52,11 +53,35 @@ module internal AccessRequestQueries =
                                                 (Cursors.encodeAccessRequests
                                                     services.InstallationId)
                                                 (fun () ->
+                                                    task {
+                                                        let! generation, expires =
+                                                            AccessRequests.traversalBasis
+                                                                tx.Connection
+                                                                tx.ObservedAt
+                                                                token
+
+                                                        return
+                                                            {
+                                                                Generation =
+                                                                    generation.ToString(
+                                                                        System.Globalization
+                                                                            .CultureInfo
+                                                                            .InvariantCulture
+                                                                    )
+                                                                ValidUntil =
+                                                                    defaultArg
+                                                                        expires
+                                                                        System.DateTimeOffset
+                                                                            .MaxValue
+                                                            }
+                                                            : ScopedTraversal.Basis
+                                                    })
+                                                (fun () ->
                                                     AccessRequests.witness
                                                         tx.Connection
                                                         tx.ObservedAt
                                                         token)
-                                                (fun after ->
+                                                (fun _ after ->
                                                     PeopleReads.accessRequestPage
                                                         tx
                                                         {
@@ -64,6 +89,7 @@ module internal AccessRequestQueries =
                                                             ObservedAt = tx.ObservedAt
                                                             Limit = request.Limit
                                                         })
+                                                false
                                                 _.Next
                                                 request.AfterCursor
 
@@ -94,6 +120,7 @@ module internal AccessRequestQueries =
             let! result =
                 services.Store.Write
                     {
+                        WriteOperation.RequiresEncryption = false
                         CancellationToken = token
                         Work =
                             fun tx ->

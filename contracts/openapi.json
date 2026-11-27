@@ -1,5 +1,16 @@
 {
   "openapi": "3.1.0",
+  "x-claimcore-operation-settlement": {
+    "SUCCEEDED": "UNRESOLVED",
+    "REVIEWED": "UNRESOLVED",
+    "ACCEPTED": "RECORDED",
+    "ALREADY_ACCEPTED": "RECORDED",
+    "NOT_ACCEPTED": "NOT_RECORDED",
+    "PENDING": "PENDING",
+    "REJECTED": "REFUSED",
+    "FAILED": "UNRESOLVED",
+    "OUTCOME_UNKNOWN": "UNRESOLVED"
+  },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "info": {
     "title": "ClaimCore",

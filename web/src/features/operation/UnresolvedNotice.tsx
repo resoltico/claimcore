@@ -1,6 +1,6 @@
 import { TechnicalDetails } from "../../ui/TechnicalDetails";
 import type { Screen } from "@contracts/client";
-import type { RecoveryRecord } from "../../protocol/recoveryJournal";
+import { recoveryTask, type RecoveryRecord } from "../../protocol/recoveryJournal";
 import { casePath } from "../../routing/routes";
 import { followLink } from "../../routing/followLink";
 import { navigate } from "../../routing/navigation";
@@ -9,7 +9,6 @@ import { CopyValue } from "../../components/CopyValue";
 import { useRecovery, type RecoveryFinalAnswer } from "../../recovery/RecoveryContext";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { NoticeView } from "../../presentation/Message";
-import { taskForAct } from "../../protocol/taskCatalog";
 import { renderCatalogKey } from "../../presentation/messages";
 import { usePresentation } from "../../presentation/context";
 import { ScreenView } from "../../ui/ScreenView";
@@ -124,6 +123,7 @@ const RecoveryCard = ({
 }) => {
   const p = usePresentation();
   const requester = useRequesterContext();
+  const task = recoveryTask(record);
   const state = answer?.outcome.kind ?? "CHECKING";
   const view = answer?.outcome.view ?? pending;
   const zone =
@@ -136,8 +136,8 @@ const RecoveryCard = ({
         <span className="recovery-state" data-state={state}>
           {p.text(stateLabels[state])}
         </span>
-        {state === "RECORDED" ? null : (
-          <strong>{renderCatalogKey(p, taskForAct(record.subject, record.act).labelId)}</strong>
+        {state === "RECORDED" || task === undefined ? null : (
+          <strong>{renderCatalogKey(p, task.labelId)}</strong>
         )}
       </div>
       <RecoveryContent view={view} timeZone={zone} notRecorded={state === "NOT_RECORDED"} />
@@ -148,9 +148,16 @@ const RecoveryCard = ({
   );
 };
 
+const journalMessage = {
+  earlierFormat: "ui.recoveryEarlierFormat",
+  unavailable: "ui.recoveryListingUnavailable",
+  damaged: "ui.recoveryDamagedRecord",
+  unscoped: "ui.recoveryDamagedRecord",
+} as const;
+
 export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean }) => {
   const p = usePresentation();
-  const { operations, presentations, finals, busy, notice, check } = useRecovery();
+  const { operations, presentations, finals, busy, notice, journalIssues, check } = useRecovery();
   const records = [
     ...operations,
     ...Object.values(finals)
@@ -159,14 +166,19 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
       )
       .map((answer) => answer.record),
   ];
-  if (!showEmpty && records.length === 0 && notice === null) {
+  if (!showEmpty && records.length === 0 && notice === null && journalIssues.length === 0) {
     return null;
   }
   return (
     <section className="unconfirmed-list" role="status" aria-busy={busy !== null}>
-      {showEmpty && records.length === 0 && notice === null ? (
+      {showEmpty && records.length === 0 && notice === null && journalIssues.length === 0 ? (
         <p>{p.text("ui.recoveryEmpty")}</p>
       ) : null}
+      {journalIssues.map((issue) => (
+        <p role="alert" key={issue}>
+          {p.text(journalMessage[issue])}
+        </p>
+      ))}
       <ul>
         {records.map((record) => (
           <RecoveryCard

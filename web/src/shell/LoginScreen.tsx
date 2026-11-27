@@ -3,7 +3,7 @@ import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { PageTitle } from "../ui/Page";
 import { useEffect, useRef, useState } from "react";
 import { AboutPanel } from "../features/settings/AboutPanel";
-import { recordAutomaticSignIn, resetSignIn, signedOut } from "../routing/signInAttempt";
+import { recordAutomaticSignIn, resetSignIn, signInBookkeeping } from "../routing/signInAttempt";
 import { Dialog } from "../ui/Dialog";
 import { Button } from "../ui/Button";
 import { presentationLanguageOptions, presentationPseudolanguage } from "@contracts/client";
@@ -26,13 +26,14 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
   const [about, setAbout] = useState(false);
   const [loopStopped, setLoopStopped] = useState(false);
   const redirecting = useRef(false);
-  const hasSignedOut = signedOut(window.sessionStorage);
+  const bookkeeping = signInBookkeeping();
+  const hasSignedOut = bookkeeping === "signedOut";
 
   useEffect(() => {
-    if (message !== null || hasSignedOut || redirecting.current) {
+    if (message !== null || bookkeeping !== "ready" || redirecting.current) {
       return;
     }
-    if (!recordAutomaticSignIn(window.sessionStorage, Date.now())) {
+    if (!recordAutomaticSignIn(Date.now())) {
       queueMicrotask(() => {
         setLoopStopped(true);
       });
@@ -41,8 +42,8 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
     redirecting.current = true;
     rememberLoginReturn();
     window.location.replace(loginPath(p.language));
-  }, [message, hasSignedOut, p.language]);
-  if (!hasSignedOut && message === null && !loopStopped) {
+  }, [message, bookkeeping, p.language]);
+  if (bookkeeping === "ready" && message === null && !loopStopped) {
     return (
       <main className="loading" role="status">
         {p.text("ui.loadingSession")}
@@ -69,7 +70,7 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
           className="login-link"
           href={loginPath(p.language)}
           onClick={() => {
-            resetSignIn(window.sessionStorage);
+            resetSignIn();
             rememberLoginReturn();
           }}
         >

@@ -1,3 +1,4 @@
+import { operationSettlement } from "@contracts/client";
 import { recoveryLookup, type RecoveryReply } from "../recovery/recoveryLookup";
 import {
   apiEndpoints,
@@ -36,7 +37,10 @@ const completion = (
 ): OperationAction => {
   if (result.kind === "outcome") {
     const { outcome } = result.value;
-    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
+    if (
+      (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") &&
+      operationSettlement[outcome.kind] === "RECORDED"
+    ) {
       return {
         type: "RECORD",
         receipt: outcome.document,
@@ -292,20 +296,6 @@ const executeOwnedAttempt = async (
   const { journal, scope, current } = context;
   const { operationId } = effect.source.prepared.input;
   const executing = effect;
-  const saved = await journal.list(scope).catch(() => null);
-  if (saved === null) {
-    return {
-      type: "REFUSE",
-      identity: effect.identity,
-      notice: {
-        kind: "local",
-        reason: "recoveryUnavailable",
-      },
-      target: null,
-      uncertain: false,
-      disclosure: false,
-    };
-  }
   if (!current()) {
     return {
       type: "REFUSE",

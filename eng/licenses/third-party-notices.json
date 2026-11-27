@@ -56,6 +56,11 @@
       "file": "MimeKit-MIT.txt",
       "sha256": "c613af70a219d1cafd732f2cefd4fca9f1462ac5696f8461108a7d643513f3bf",
       "source": "https://raw.githubusercontent.com/jstedfast/MimeKit/d3884a84ef98fa203d7ffd29f0c90ce16ec7e713/LICENSE"
+    },
+    {
+      "file": "Acornima-BSD-3-Clause.txt",
+      "sha256": "4182d3e7ce42f69b01f35c6ed27d075d26794a3c2f0b0182aa475be6ca565bab",
+      "source": "https://raw.githubusercontent.com/adams85/acornima/b4508e06c520493d798064dc172ad472e44968ce/LICENSE"
     }
   ],
   "packages": [
@@ -298,6 +303,19 @@
       ],
       "packageRevision": "d3884a84ef98fa203d7ffd29f0c90ce16ec7e713",
       "licenseRevision": "d3884a84ef98fa203d7ffd29f0c90ce16ec7e713"
+    },
+    {
+      "id": "Acornima",
+      "version": "1.8.0",
+      "repository": "https://github.com/adams85/acornima",
+      "texts": [
+        "Acornima-BSD-3-Clause.txt"
+      ],
+      "assets": [
+        "runtime:Acornima.dll"
+      ],
+      "packageRevision": "b4508e06c520493d798064dc172ad472e44968ce",
+      "licenseRevision": "b4508e06c520493d798064dc172ad472e44968ce"
     }
   ],
   "host": {

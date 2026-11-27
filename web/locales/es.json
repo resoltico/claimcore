@@ -363,8 +363,9 @@
     "source": "1dc1592f82ad"
   },
   "ui.recoveryDescription": {
-    "text": "No pudimos confirmar si estos cambios se registraron. ClaimCore los comprueba por ti. Cada respuesta será definitiva en {window}.",
-    "source": "eff410b18411"
+    "text": "No pudimos confirmar si estos cambios se registraron. ClaimCore los comprueba por ti. Una vez transcurrido {window} desde que se preparó el cambio, una comprobación satisfactoria puede confirmar de forma definitiva que no consta en el historial actual. Después de una restauración, pide al operador que confirme que el historial restaurado abarca el resultado anterior antes de repetir el cambio.",
+    "source": "ce73c48c3904",
+    "machineMade": true
   },
   "ui.recoveryEmpty": {
     "text": "No hay cambios sin confirmar.",
@@ -373,6 +374,16 @@
   "ui.recoveryCoordinationUnavailable": {
     "text": "La recuperación automática está en pausa. Compruebe manualmente una operación guardada o restablezca el acceso al almacenamiento del navegador para reanudar las comprobaciones automáticas.",
     "source": "8a69c206fcd3",
+    "machineMade": true
+  },
+  "ui.recoveryEarlierFormat": {
+    "text": "Se conservan tus registros de recuperación anteriores. Usa la versión anterior de ClaimCore y su servicio para comprobar esos cambios.",
+    "source": "822ed469aee8",
+    "machineMade": true
+  },
+  "ui.recoveryDamagedRecord": {
+    "text": "No se han podido identificar o leer algunos registros de recuperación. Se conservan. Si conoces el ID de una operación, puedes comprobarla directamente.",
+    "source": "b169f2312f6d",
     "machineMade": true
   },
   "ui.recoveryListingUnavailable": {

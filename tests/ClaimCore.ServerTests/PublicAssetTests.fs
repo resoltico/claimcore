@@ -293,7 +293,11 @@ let private serveDocuments () =
             use! response = host.Client.GetAsync path
             Expect.equal response.StatusCode HttpStatusCode.OK path
             let! actual = response.Content.ReadAsStringAsync()
-            Expect.equal actual "<!doctype html><title>Synthetic ClaimCore</title>" path
+
+            Expect.equal
+                actual
+                "<!doctype html><title>Synthetic ClaimCore</title><script src=\"/assets/test-handshake.js\"></script>"
+                path
     }
 
 let private rejectsUnlistedFiles () =
@@ -337,6 +341,44 @@ let private missingDocument () =
             refused <- true
 
         Expect.isTrue refused "A required legal document omitted from the manifest refuses startup"
+    finally
+        directory.Delete true
+
+let private compiledImportMissing importer =
+    let directory = Directory.CreateTempSubdirectory("claimcore-missing-module-")
+
+    try
+        publishedInventory directory.FullName []
+        let entry = "assets/test-handshake.js"
+        let source = File.ReadAllText(Path.Combine(directory.FullName, entry)) + importer
+        let bytes = Encoding.UTF8.GetBytes source
+        File.WriteAllBytes(Path.Combine(directory.FullName, entry), bytes)
+        let manifest = Path.Combine(directory.FullName, "public-assets.json")
+        let root = JsonNode.Parse(File.ReadAllText manifest) |> nonNull
+
+        let listed =
+            (nonNull root["assets"]).AsArray()
+            |> Seq.map nonNull
+            |> Seq.find (fun item -> (nonNull item["path"]).GetValue<string>() = "/" + entry)
+
+        listed["sha256"] <-
+            JsonValue.Create(
+                Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData bytes)
+            )
+
+        File.WriteAllText(manifest, root.ToJsonString())
+
+        // The missing file and its declarations are absent. Only the executable importer names it.
+        let mutable refused = false
+
+        try
+            PublicAssets.Inventory directory.FullName |> ignore
+        with WebStartupException WebStartupProblem.AssetsMissing ->
+            refused <- true
+
+        Expect.isTrue
+            refused
+            "Admission must follow the compiled dependency even with no manifest evidence."
     finally
         directory.Delete true
 
@@ -452,6 +494,13 @@ let tests =
             testCase
                 "refuses omission of a required root document from the inventory"
                 missingDocument
+            testCase "refuses a wholly omitted static dependency" (fun () ->
+                compiledImportMissing """;import "./missing-static.js";""")
+            testCase "refuses a wholly omitted lazy dependency" (fun () ->
+                compiledImportMissing ";void import(`./missing-lazy.js`);")
+            testCase "refuses a wholly omitted worker entry" (fun () ->
+                compiledImportMissing """;new Worker("./missing-worker.js");""")
+
             testCaseAsync
                 "serves the exact inventoried documents, metadata, and fallback bytes"
                 (async { do! serveDocuments () |> Async.AwaitTask })

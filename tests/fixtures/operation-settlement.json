@@ -1,0 +1,9 @@
+[
+  { "observation": "ACCEPTED", "settlement": "RECORDED", "final": true },
+  { "observation": "ALREADY_ACCEPTED", "settlement": "RECORDED", "final": true },
+  { "observation": "NOT_ACCEPTED", "settlement": "NOT_RECORDED", "final": true },
+  { "observation": "PENDING", "settlement": "PENDING", "final": false },
+  { "observation": "REJECTED", "settlement": "REFUSED", "final": false },
+  { "observation": "FAILED", "settlement": "UNRESOLVED", "final": false },
+  { "observation": "OUTCOME_UNKNOWN", "settlement": "UNRESOLVED", "final": false }
+]

@@ -42,7 +42,7 @@ project="claimcore-$(openssl rand -hex 8)"
 mkdir -m 700 "${configuration}"
 mkdir -m 700 "${configuration}/key-ring"
 openssl rand -out "${configuration}/data.key" 32
-for directory in postgres identity identity/realm web administration; do mkdir -m 755 "${configuration}/${directory}"; done
+for directory in postgres witness identity identity/realm web administration; do mkdir -m 755 "${configuration}/${directory}"; done
 openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 365 -subj '/CN=ClaimCore local evaluation CA' \
   -addext 'basicConstraints=critical,CA:TRUE' -addext 'keyUsage=critical,keyCertSign,cRLSign' \
   -keyout "${configuration}/ca.key" -out "${configuration}/ca.pem" >/dev/null 2>&1
@@ -57,6 +57,7 @@ leaf() {
   rm "${configuration}/${directory}/server.csr"
 }
 leaf postgres 'DNS:postgres'
+leaf witness 'DNS:witness'
 leaf identity 'DNS:identity.localhost'
 leaf web 'DNS:localhost'
 openssl pkcs12 -export -in "${configuration}/web/server.pem" -inkey "${configuration}/web/server.key" \
@@ -64,6 +65,9 @@ openssl pkcs12 -export -in "${configuration}/web/server.pem" -inkey "${configura
 superuser_password="$(openssl rand -hex 32)"
 owner_password="$(openssl rand -hex 32)"
 runtime_password="$(openssl rand -hex 32)"
+witness_superuser="$(openssl rand -hex 32)"
+witness_owner="$(openssl rand -hex 32)"
+witness_runtime="$(openssl rand -hex 32)"
 web_secret="$(openssl rand -hex 32)"
 service_secret="$(openssl rand -hex 32)"
 owner_login="$(openssl rand -hex 32)"
@@ -75,6 +79,11 @@ printf '%s' "${web_secret}" >"${configuration}/web/client.secret"
 printf '%s\n' "${owner_login}" >"${configuration}/owner-login.password"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_owner;Password=${owner_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/ca.pem" >"${configuration}/administration/owner.connection"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_runtime;Password=${runtime_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/runtime/ca.pem" >"${configuration}/web/runtime.connection"
+printf '%s' "${witness_superuser}" >"${configuration}/witness/superuser.password"
+printf '%s' "${witness_owner}" >"${configuration}/witness/owner.password"
+printf '%s' "${witness_runtime}" >"${configuration}/witness/runtime.password"
+printf '%s\n' "Host=witness;Database=witness;Username=claimcore_witness_owner;Password=${witness_owner};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/ca.pem" >"${configuration}/administration/witness.connection"
+printf '%s\n' "Host=witness;Database=witness;Username=claimcore_witness_runtime;Password=${witness_runtime};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/runtime/ca.pem;Timeout=3;Command Timeout=5" >"${configuration}/web/witness.connection"
 cp "${configuration}/ca.pem" "${configuration}/web/ca.pem"
 cp "${configuration}/ca.pem" "${configuration}/administration/ca.pem"
 cat >"${configuration}/identity/realm/claimcore.json" <<JSON
@@ -86,6 +95,7 @@ cat >"${configuration}/identity/realm/claimcore.json" <<JSON
 JSON
 cat >"${configuration}/web.env" <<ENV
 CLAIMCORE_CONNECTION_FILE=/etc/claimcore/runtime/runtime.connection
+CLAIMCORE_WITNESS_CONNECTION_FILE=/etc/claimcore/runtime/witness.connection
 CLAIMCORE_DATA_KEY_FILE=/run/claimcore/data.key
 CLAIMCORE_WEB_CERTIFICATE_PATH=/etc/claimcore/runtime/server.pfx
 CLAIMCORE_WEB_KEY_RING_DIRECTORY=/var/lib/claimcore/key-ring
@@ -149,8 +159,8 @@ mount_configuration="${configuration//\"/\"\"}"
 docker run --rm --name "${project}-permissions" --label claimcore.configuration="${project}" \
   --network none --read-only --mount "type=bind,\"source=${mount_configuration}\",target=/config" \
   --user 0 --entrypoint /bin/sh "${postgres_image}" \
-  -c 'set -eu; chown -R 999:999 /config/postgres; chown -R 1000:1000 /config/identity'
-unset superuser_password owner_password runtime_password web_secret service_secret owner_login
+  -c 'set -eu; chown -R 999:999 /config/postgres /config/witness; chown -R 1000:1000 /config/identity'
+unset superuser_password owner_password runtime_password witness_superuser witness_owner witness_runtime web_secret service_secret owner_login
 printf 'Created fresh local configuration. Username: owner. Password: %s/owner-login.password\n' "${configuration}"
 printf 'Use the isolated browser profile and public CA. Leaf certificates expire after 30 days.\n'
 printf 'CLI setup in Bash: export XDG_CONFIG_HOME=%q; claimcore configure --show\n' "${configuration}/cli"

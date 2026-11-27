@@ -6,7 +6,8 @@ open System.Text.Json
 open Expecto
 open ClaimCore.TestSupport.TestServerFixture
 
-let private page = "<!doctype html><title>Synthetic ClaimCore</title>"
+let private page =
+    "<!doctype html><title>Synthetic ClaimCore</title><script src=\"/assets/test-handshake.js\"></script>"
 
 let private deepLinks () =
     task {

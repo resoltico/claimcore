@@ -12,18 +12,22 @@ build_source="${work}/source"
 
 compose=(docker compose --env-file "${config}/compose.env" -f "${build_source}/deployment/compose.yaml")
 production=()
+qualification_network=""
 
 cleanup() {
+  if (( ${#production[@]} )); then
+    "${production[@]}" down --volumes --timeout 20 > /dev/null 2>&1 || true
+  fi
   if [[ -f "${config}/compose.env" ]]; then
     "${compose[@]}" down --volumes --timeout 20 > /dev/null 2>&1 || true
   fi
-  if (( ${#production[@]} )); then
-    "${production[@]}" down --volumes --timeout 20 > /dev/null 2>&1 || true
+  if [[ -n "${qualification_network}" ]]; then
+    docker network rm "${qualification_network}" > /dev/null 2>&1 || true
   fi
   # On Linux, configuration hands the PostgreSQL and Keycloak folders to their container users;
   # remove them with the same pinned image that configuration used.
   local image
-  image="$(sed -nE 's/^[[:space:]]+image: (postgres:[^[:space:]]+)$/\1/p' "${root}/deployment/compose.yaml")"
+  image="$(sed -nE 's/^[[:space:]]+image: (postgres:[^[:space:]]+)$/\1/p' "${root}/deployment/compose.yaml" | sort -u)"
   if [[ -n "${image}" && -d "${config}" ]]; then
     docker run --rm --network none --user 0 --entrypoint /bin/rm \
       --mount "type=bind,source=${work},target=/work" "${image}" -rf /work/config > /dev/null 2>&1 || true
@@ -214,19 +218,21 @@ database_secret() {
 }
 
 wait_postgres() {
-  local expected="$1" cid="$2" diagnostic="${3:-must contain 64 lowercase hexadecimal characters}" state
+  local expected="$1" cid="$2" diagnostic="${3:-must contain 64 lowercase hexadecimal characters}" state output
   for _ in $(seq 1 45); do
     state="$(docker inspect --format '{{.State.Health.Status}}' "${cid}")"
-    if [[ "${expected}" == healthy && "${state}" == healthy ]]; then
-      return 0
-    fi
-    if [[ "${expected}" == refused ]]; then
-      if [[ "${state}" == healthy ]]; then
-        echo 'Invalid provisioning was announced as healthy.' >&2
-        return 1
-      fi
-      if docker inspect --format '{{range .State.Health.Log}}{{println .Output}}{{end}}' "${cid}" |
-        grep -Fq "${diagnostic}"; then
+    # Health status and recorded probe output can outlive a docker restart. Require
+    # a live socket and run the role witness against this listener before trusting it.
+    if docker exec "${cid}" pg_isready -q -h /var/run/postgresql -U postgres -d claimcore; then
+      if output="$(docker exec "${cid}" /bin/bash /etc/claimcore-postgres-roles.sh ready 2>&1)"; then
+        if [[ "${expected}" == refused ]]; then
+          echo 'Invalid provisioning was announced as healthy.' >&2
+          return 1
+        fi
+        if [[ "${state}" == healthy ]]; then
+          return 0
+        fi
+      elif [[ "${expected}" == refused && "${output}" == *"${diagnostic}"* ]]; then
         return 0
       fi
     fi
@@ -356,9 +362,11 @@ chmod 0600 "${build_source}/web/locales/ar.json"
 bash "${build_source}/eng/source-archive.sh" "${build_source}/SOURCE.tar.gz"
 bash "${build_source}/deployment/configure-local.sh" "${config}" "Smoke owner" Etc/UTC "${web_port}" "${identity_port}"
 
-postgres_image="$(sed -nE 's/^[[:space:]]+image: (postgres:[^[:space:]]+)$/\1/p' "${root}/deployment/compose.yaml")"
-# Only PostgreSQL starts in the production-template witness; no release image is pulled.
+postgres_image="$(sed -nE 's/^[[:space:]]+image: (postgres:[^[:space:]]+)$/\1/p' "${root}/deployment/compose.yaml" | sort -u)"
+# Preflight the production database provisioning before building the candidate runtime image.
 export CLAIMCORE_SERVER_SHA256=0000000000000000000000000000000000000000000000000000000000000000
+export CLAIMCORE_BIND_ADDRESS=127.0.0.1
+export CLAIMCORE_PRODUCTION_SMOKE_ORIGIN="https://localhost:${web_port}"
 production=(docker compose --project-name "claimcore-smoke-$(basename "${work}" | tr '[:upper:]_.' '[:lower:]--')" \
   --env-file "${config}/compose.env" --env-file "${config}/web.env" -f "${build_source}/deployment/production/compose.yaml")
 verify_interrupted_bootstrap "${production[@]}"
@@ -409,3 +417,84 @@ require_log '"kind":"INITIALIZATION_SKIPPED"'
 require_log '"caseReferencePolicy":"SYSTEM_ASSIGNED_ONLY"'
 
 echo "Compose restart smoke passed: the installation survived down and up."
+
+# Start the production template with this checkout's exact final image and the disposable
+# identity and witness on the evaluation network. No registry image is fetched or published.
+evaluation_project="$(sed -n 's/^CLAIMCORE_COMPOSE_PROJECT=//p' "${config}/compose.env")"
+[[ "${evaluation_project}" =~ ^claimcore-[a-f0-9]{16}$ ]]
+"${compose[@]}" stop web
+qualification_network="${evaluation_project}-qualification-dependencies"
+docker network create "${qualification_network}" > /dev/null
+qualification_witness="$("${compose[@]}" ps --quiet witness)"
+qualification_identity="$("${compose[@]}" ps --quiet identity)"
+docker network connect --alias witness "${qualification_network}" "${qualification_witness}"
+docker network connect --alias identity.localhost "${qualification_network}" "${qualification_identity}"
+web_image="${evaluation_project}-runtime"
+production_override="${work}/production.override.yaml"
+cat >"${production_override}" <<YAML
+services:
+  administration:
+    image: ${web_image}
+    pull_policy: never
+    volumes:
+      - "${config}/ca.pem:/etc/claimcore/ca.pem:ro"
+    networks: [database, evaluation]
+  web:
+    image: ${web_image}
+    pull_policy: never
+    environment:
+      CLAIMCORE_WEB_PROBE_CA_CERT_FILE: /etc/claimcore/runtime/ca.pem
+      CLAIMCORE_OIDC_CA_CERT_FILE: /etc/claimcore/runtime/ca.pem
+    networks: [default, database, evaluation]
+networks:
+  evaluation:
+    external: true
+    name: ${qualification_network}
+YAML
+production+=(-f "${production_override}")
+"${production[@]}" up --wait --wait-timeout 120 -d postgres
+owner_subject="$(sed -n 's/^CLAIMCORE_OWNER_SUBJECT=//p' "${config}/compose.env")"
+"${production[@]}" --profile administration run --rm administration initialize Etc/UTC \
+  --owner-issuer "https://identity.localhost:${identity_port}/realms/claimcore" \
+  --owner-subject "${owner_subject}" --owner-name 'Synthetic production-template owner' \
+  --owner-role CASE_HANDLER --owner-role PAYMENT_RECORDER --owner-role DATA_STEWARD
+"${production[@]}" up --wait --wait-timeout 180 -d web
+curl --fail --silent --show-error --max-time 15 --cacert "${config}/ca.pem" \
+  "${CLAIMCORE_PRODUCTION_SMOKE_ORIGIN}/health/recovery"
+# Test the complete omission against the evaluator's exact packaged executable.
+production_web="$("${production[@]}" ps --quiet web)"
+missing_lazy="${work}/missing-lazy"
+mkdir -m 755 "${missing_lazy}"
+docker cp "${production_web}:/app/wwwroot/." "${missing_lazy}/"
+python3 - "${missing_lazy}" <<'PYTHON'
+import json
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+manifest = root / "public-assets.json"
+inventory = json.loads(manifest.read_bytes())
+html = (root / "index.html").read_text()
+lazy, = (path for path in inventory["graph"] if "/assets/workspace~RecoveryPanel-" in path)
+assert lazy not in html
+assert any(lazy in dependencies for dependencies in inventory["graph"].values())
+(root / lazy.lstrip("/")).unlink()
+del inventory["graph"][lazy]
+for dependencies in inventory["graph"].values():
+    if lazy in dependencies:
+        dependencies.remove(lazy)
+inventory["assets"] = [asset for asset in inventory["assets"] if asset["path"] != lazy]
+manifest.write_text(json.dumps(inventory))
+PYTHON
+if docker run --rm --network none --entrypoint dotnet \
+    --mount "type=bind,source=${missing_lazy},target=/qa,readonly" "${web_image}" \
+    /app/claimcore-server.dll validate-browser-assets /qa > "${work}/missing-lazy.json" 2>&1; then
+  echo "The packaged server admitted a wholly omitted lazy module." >&2
+  exit 1
+fi
+grep -Fq '"code":"ASSETSMISSING"' "${work}/missing-lazy.json"
+echo "The packaged server refused a wholly omitted lazy module."
+(cd "${build_source}/web" && npm ci && npm exec -- playwright install chromium)
+node "${build_source}/web/e2e/production-image-smoke.mjs" \
+  "${CLAIMCORE_PRODUCTION_SMOKE_ORIGIN}" "${config}/owner-login.password"
+echo "Production template boot, session handshake, lazy entry and viewer checks passed."

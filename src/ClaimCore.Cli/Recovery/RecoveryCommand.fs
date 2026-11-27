@@ -35,13 +35,13 @@ module internal RecoveryCommand =
     let private failure options reason =
         reply options false (CliReply.local reason)
 
-    let private listing (options: RecoveryInvocation) records =
+    let private listing (options: RecoveryInvocation) (listing: RecoveryListing) =
         let bytes =
             if not options.Text then
-                Array.append (Codec.encode CliSchemas.recoveryList records) [| byte '\n' |]
+                Array.append (Codec.encode CliSchemas.recoveryList listing) [| byte '\n' |]
             else
                 let rows =
-                    match records with
+                    match listing.Records with
                     | [] -> [ MessageCatalogs.renderCli options.Language CliMessage.RecoveryEmpty ]
                     | records ->
                         records
@@ -54,15 +54,25 @@ module internal RecoveryCommand =
                                       CliMessage.RecoveryAttempt) (
                                     record.AttemptId.ToString("D"),
                                     TerminalText.data (
-                                        ActSubject.token
-                                            (TaskRouting.operationDeclaration (
-                                                TaskId.ofLiteral record.Task
-                                            ))
-                                                .Target
+                                        TaskDeclarations.find record.Task
+                                        |> Option.bind _.Subject
+                                        |> Option.map ActSubject.token
+                                        |> Option.defaultValue "?"
                                     ),
                                     TerminalText.data record.Task,
                                     record.OperationId.ToString("D")
                                 )))
+
+                let rows =
+                    if listing.Damaged = 0 then
+                        rows
+                    else
+                        rows
+                        @ [
+                            MessageCatalogs.renderCli
+                                options.Language
+                                (CliMessage.Failure ClientFailure.RecoveryUnavailable)
+                        ]
 
                 Encoding.UTF8.GetBytes(String.concat "\n" rows + "\n")
 
@@ -103,80 +113,78 @@ module internal RecoveryCommand =
                 with
                 | Error problem -> return failure options problem
                 | Ok directory ->
-                    match RecoveryJournal.list directory scope with
-                    | Error() -> return failure options ClientFailure.RecoveryUnavailable
-                    | Ok records ->
-                        match options.Action with
-                        | RecoveryAction.List -> return listing options records
-                        | RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt) ->
-                            match
-                                records |> List.tryFind (fun record -> record.AttemptId = attempt)
-                            with
-                            | None -> return failure options ClientFailure.InvalidFrame
-                            | Some record ->
+                    match options.Action with
+                    | RecoveryAction.List ->
+                        match RecoveryJournal.list directory scope with
+                        | Error() -> return failure options ClientFailure.RecoveryUnavailable
+                        | Ok records -> return listing options records
+                    | RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt) ->
+                        match RecoveryJournal.find directory scope attempt with
+                        | Error() -> return failure options ClientFailure.RecoveryUnavailable
+                        | Ok None -> return failure options ClientFailure.InvalidFrame
+                        | Ok(Some record) ->
+                            let frame =
+                                Frames.create
+                                    Api.operationGet
+                                    {
+                                        OperationLookup.OperationId = record.OperationId
+                                    }
+
+                            match frame with
+                            | Error _ -> return failure options ClientFailure.InvalidFrame
+                            | Ok frame ->
                                 let frame =
-                                    Frames.create
-                                        Api.operationGet
-                                        {
-                                            OperationLookup.OperationId = record.OperationId
-                                        }
+                                    if options.Text then
+                                        Frames.withRepresentation Representation.Human frame
+                                    else
+                                        frame
 
-                                match frame with
-                                | Error _ -> return failure options ClientFailure.InvalidFrame
-                                | Ok frame ->
-                                    let frame =
-                                        if options.Text then
-                                            Frames.withRepresentation Representation.Human frame
-                                        else
+                                let mutable completed = None
+
+                                while completed.IsNone do
+                                    let! response =
+                                        RemoteServiceCall.send
+                                            access.Client
+                                            { target with
+                                                InstallationId = Some context.InstallationId
+                                            }
                                             frame
+                                            (fun () ->
+                                                cancelled.ThrowIfCancellationRequested()
 
-                                    let mutable completed = None
+                                                if not (access.IsCurrent token) then
+                                                    raise (OperationCanceledException()))
+                                            cancelled
 
-                                    while completed.IsNone do
-                                        let! response =
-                                            RemoteServiceCall.send
-                                                access.Client
-                                                { target with
-                                                    InstallationId = Some context.InstallationId
-                                                }
-                                                frame
-                                                (fun () ->
-                                                    cancelled.ThrowIfCancellationRequested()
+                                    let outcome =
+                                        match response.Frame.Result with
+                                        | FrameResult.Reply value ->
+                                            Some(OperationSettlement.ofReply value.Class)
+                                        | _ -> None
 
-                                                    if not (access.IsCurrent token) then
-                                                        raise (OperationCanceledException()))
-                                                cancelled
+                                    match outcome with
+                                    | Some OperationSettlement.Pending when
+                                        console.IsInteractive
+                                        && access.Configuration.Mode = RemoteClientMode.Interactive
+                                        ->
+                                        console.Write (reply options false response).Bytes
+                                        do! System.Threading.Tasks.Task.Delay(1000, cancelled)
+                                    | Some settlement when OperationSettlement.isFinal settlement ->
+                                        if access.IsCurrent token then
+                                            match RecoveryJournal.remove directory record with
+                                            | Ok() -> ()
+                                            | Error() ->
+                                                MessageCatalogs.renderCli
+                                                    options.Language
+                                                    CliMessage.RecoveryCleanupUnavailable
+                                                |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
+                                                |> console.Write
 
-                                        let outcome =
-                                            match response.Frame.Result with
-                                            | FrameResult.Reply value -> Some value.Class
-                                            | _ -> None
+                                        completed <- Some response
+                                    | _ -> completed <- Some response
 
-                                        match outcome with
-                                        | Some ReplyKind.Pending when
-                                            console.IsInteractive
-                                            && access.Configuration.Mode =
-                                                RemoteClientMode.Interactive
-                                            ->
-                                            console.Write (reply options false response).Bytes
-                                            do! System.Threading.Tasks.Task.Delay(1000, cancelled)
-                                        | Some(ReplyKind.Accepted | ReplyKind.NotAccepted) ->
-                                            if access.IsCurrent token then
-                                                match RecoveryJournal.remove directory record with
-                                                | Ok() -> ()
-                                                | Error() ->
-                                                    MessageCatalogs.renderCli
-                                                        options.Language
-                                                        CliMessage.RecoveryCleanupUnavailable
-                                                    |> fun text ->
-                                                        Encoding.UTF8.GetBytes(text + "\n")
-                                                    |> console.Write
-
-                                            completed <- Some response
-                                        | _ -> completed <- Some response
-
-                                    let response = completed |> Option.get
-                                    return reply options false response
+                                let response = completed |> Option.get
+                                return reply options false response
         }
 
     let run options console cancelled =
