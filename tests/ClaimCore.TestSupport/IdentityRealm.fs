@@ -27,6 +27,10 @@ type ClientSecrets =
         Unscoped: string
     }
 
+// Give the fixture's whole-second issuer time to clear the bootstrap cutoff and clock allowance.
+let waitForFreshProviderProof () =
+    System.Threading.Tasks.Task.Delay(System.TimeSpan.FromSeconds 3.)
+
 let ownerSubject = "11111111-1111-4111-8111-111111111111"
 let stewardSubject = "22222222-2222-4222-8222-222222222222"
 let readerSubject = "33333333-3333-4333-8333-333333333333"

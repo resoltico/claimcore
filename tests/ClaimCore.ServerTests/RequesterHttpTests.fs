@@ -26,8 +26,10 @@ let private claimsReachContext () =
 
         let installation = database.Fixture.InstallationId
 
+        let observed = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+
         let storage =
-            HandlerStub.ScriptedStore(DateTimeOffset.UtcNow, None, reads = database.Fixture.Store)
+            HandlerStub.ScriptedStore(observed, None, reads = database.Fixture.Store)
 
         let calendar =
             { new IBusinessCalendar with
