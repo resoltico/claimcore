@@ -59,7 +59,7 @@ const human = async <K extends "case.get" | "case.summary" | "operation.preview"
   return reply.payload as ResponseFor<K, "HUMAN">;
 };
 
-test("renders both related directions together and retains self-rebind review notices", async ({
+test("renders both related directions and requires a distinct Owner for Owner rebinding", async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -138,8 +138,16 @@ test("renders both related directions together and retains self-rebind review no
         "input:principal.subject": `preview-${randomUUID()}`,
       },
     });
+    if (self) {
+      expect(preview.outcome).toMatchObject({
+        kind: "REJECTED",
+        rejection: { advice: { message: { messageId: "diagnostic.DISTINCT_OWNER_REQUIRED" } } },
+      });
+      expect(await reviewedPeopleBinding(page, actor)).toEqual(binding);
+      continue;
+    }
     if (preview.outcome.kind !== "REVIEWED") {
-      throw new Error("The eligible rebind must be reviewable");
+      throw new Error(`Expected a non-Owner rebind preview, received ${preview.outcome.kind}`);
     }
     const notices = preview.outcome.review.document.screen?.regions.filter(
       (item) => item.role === "NOTICE",
@@ -147,10 +155,7 @@ test("renders both related directions together and retains self-rebind review no
     expect(notices).toHaveLength(1);
     expect(notices?.[0]?.content).toEqual({
       kind: "NOTICE",
-      notices: [
-        { messageId: "task.people.changeSignInIdentity.meaning", tone: "INFO" },
-        ...(self ? [{ messageId: "notice.changesOwnSignInIdentity", tone: "WARNING" }] : []),
-      ],
+      notices: [{ messageId: "task.people.changeSignInIdentity.meaning", tone: "INFO" }],
     });
     expect(await reviewedPeopleBinding(page, actor)).toEqual(binding);
   }

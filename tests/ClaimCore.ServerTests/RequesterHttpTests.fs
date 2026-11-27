@@ -59,7 +59,13 @@ let private claimsReachContext () =
 
         let! token = host.Token()
         let! status, payload = host.Call("context", Encoding.UTF8.GetBytes "{}", token)
-        Expect.equal status 200 "Authenticated own context is available before registration"
+
+        if status <> 200 then
+            failtestf
+                "Expected authenticated context before registration, received HTTP %d. Synthetic host log follows.\n%s"
+                status
+                host.Log
+
         use doc = JsonDocument.Parse payload
 
         let requester =
