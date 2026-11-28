@@ -8,11 +8,23 @@ type CaseSelector =
 
 /// Reviewed target and concurrency facts. Authored task values belong to InputMap.
 [<RequireQualifiedAccess>]
+type ErasureReview =
+    | Token of string
+    | Accepted of familySequence: Sequence * tokenCommitment: string
+
+module ErasureReview =
+    [<Literal>]
+    let MaximumTokenCharacters = 155
+
+    [<Literal>]
+    let CommitmentCharacters = 64
+
+[<RequireQualifiedAccess>]
 type Binding =
     | CaseNew of Revision
     | Case of CaseSelector * Revision
     | CasePayment of CaseSelector * Revision * OperationId
-    | CaseErase of CaseSelector * Revision * Sequence
+    | CaseErase of CaseSelector * Revision * ErasureReview
     | Work of CaseSelector * Revision
     | ReminderNew of CaseSelector
     | Reminder of CaseSelector * ReminderId * Revision

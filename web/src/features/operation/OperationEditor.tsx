@@ -1,5 +1,6 @@
 import { documentActions } from "../../operation/affordances";
 import { isCaseAct } from "../../operation/metadata";
+import { operationTask } from "../../protocol/taskCatalog";
 import { linkedCaseReceipt } from "../../protocol/types";
 
 import { captureAmountEntry, normalizeAmountValues } from "../../presentation/amountEntry";
@@ -16,7 +17,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
   const credential = useCredential();
   const p = usePresentation();
   const model = useOperation({
-    subject: "CASE",
+    subject: operationTask(props.initialAct).subject,
     ...(props.affordance === undefined ? {} : { affordance: props.affordance }),
     kind: props.initialAct,
     current: props.current,
@@ -70,16 +71,23 @@ const useCaseOperation = (props: OperationEditorProps) => {
   return { model, navigation, commit };
 };
 const caseOffers = (
-  _props: OperationEditorProps,
+  props: OperationEditorProps,
   current: OperationEditorProps["current"],
   requester: ReturnType<typeof useRequesterContext>,
-) =>
-  [
-    ...(_props.affordance === undefined ? [] : [_props.affordance]),
+) => {
+  const { subject } = operationTask(props.initialAct);
+  return [
+    ...(props.affordance === undefined ? [] : [props.affordance]),
     ...(current === null ? (requester?.actions ?? []) : documentActions(current)),
   ]
-    .filter((action) => isCaseAct(action.task) && action.blocked === null)
+    .filter(
+      (action) =>
+        isCaseAct(action.task) &&
+        operationTask(action.task).subject === subject &&
+        action.blocked === null,
+    )
     .map((action) => action.task);
+};
 export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
   const requester = useRequesterContext();

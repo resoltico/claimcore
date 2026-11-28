@@ -22,8 +22,8 @@ module internal ConflictReads =
         (conflict: RevisionConflictInfo)
         =
         task {
-            match parent, actor.Actor, entity with
-            | Some parent, Some requester, Some entity when
+            match parent, actor.Actor with
+            | Some parent, Some requester when
                 Access.can
                     services.Principal
                     actor
@@ -89,8 +89,9 @@ module internal ConflictReads =
                             let cursor =
                                 page.Next
                                 |> Option.map (
-                                    Cursors.encodeTimeline
-                                        services.InstallationId
+                                    TimelineHistory.sealCursor
+                                        tx
+                                        requester.ActorId
                                         scope
                                         (Some range)
                                 )

@@ -310,7 +310,7 @@ let tests =
                             (Binding.CaseErase(
                                 CaseSelector.Id family.Id,
                                 family.Case.Revision,
-                                family.Sequence
+                                ErasureReview.Accepted(family.Sequence, String.replicate 64 "0")
                             ))
                             InputMap.empty
 

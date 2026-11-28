@@ -14,7 +14,7 @@ let private declaration name =
 let private identifier = Guid.Parse "10000000-0000-7000-8000-000000000001"
 let private selector = CaseSelector.Id(CaseId.create identifier |> Option.get)
 let private revision = Revision.create 3L |> Option.get
-let private family = Sequence.create 4L |> Option.get
+let private token = "synthetic-review"
 
 [<Tests>]
 let tests =
@@ -34,7 +34,8 @@ let tests =
                                 revision,
                                 OperationId.create identifier |> Option.get
                             )
-                            "case.erase", Binding.CaseErase(selector, revision, family)
+                            "case.erase",
+                            Binding.CaseErase(selector, revision, ErasureReview.Token token)
                             "work.update", Binding.Work(selector, revision)
                             "note.add", Binding.NoteNew selector
                             "note.remove",
@@ -58,7 +59,7 @@ let tests =
                                 (Some selector)
                                 (Some revision)
                                 (Some identifier)
-                                (Some family))
+                                (Some token))
                             expected
                             "No refreshed or implicit basis")
             testCase
@@ -75,7 +76,6 @@ let tests =
                             1L,
                             Revision.Maximum
                             "work.update", InputTarget.ExpectedWorkRevision, 0L, Revision.Maximum
-                            "case.erase", InputTarget.ExpectedFamilySequence, 1L, Sequence.Maximum
                         ] do
                         Expect.equal
                             (SubmissionDeclarations.integerBounds

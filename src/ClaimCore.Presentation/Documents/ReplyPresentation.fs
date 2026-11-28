@@ -10,6 +10,7 @@ type RecommendedAction =
     | StopAndInvestigate
     | AskForAccess
     | ReviewLatest
+    | RefreshPrecondition
     | NoneRequired
 
 module Refusals =
@@ -21,7 +22,7 @@ module Refusals =
         | CaseRefusal.DuplicateLink
         | CaseRefusal.LinkLimitReached
         | CaseRefusal.CorrectionRequiresExistingValue -> RecommendedAction.CorrectInput
-        | CaseRefusal.FamilyChanged
+        | CaseRefusal.FamilyChanged -> RecommendedAction.RefreshPrecondition
         | CaseRefusal.PaymentNotFound
         | CaseRefusal.PartyLimit -> RecommendedAction.ReviewLatest
         | CaseRefusal.AssigneeUnavailable
@@ -47,9 +48,10 @@ module Refusals =
         | Refusal.People PeopleRefusal.NoChanges -> RecommendedAction.NoneRequired
         | Refusal.People(PeopleRefusal.HumanPrincipalRequired | PeopleRefusal.RoleScopeNotApplicable | PeopleRefusal.IdentityReserved) ->
             RecommendedAction.CorrectInput
+        | Refusal.People PeopleRefusal.ActorChanged -> RecommendedAction.RefreshPrecondition
         | Refusal.RevisionConflict _
         | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)
-        | Refusal.People(PeopleRefusal.ActorChanged | PeopleRefusal.LastOwner | PeopleRefusal.DistinctOwnerRequired | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
+        | Refusal.People(PeopleRefusal.LastOwner | PeopleRefusal.DistinctOwnerRequired | PeopleRefusal.ActorAlreadyRegistered | PeopleRefusal.ActorUnknown) ->
             RecommendedAction.ReviewLatest
 
     let actualRevision =

@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+- Start a [fresh format-13 installation](docs/operating.md#install-a-fresh-register). Keep the prior matching build and installation material for old backups or accepted attempts.
+- Deploy matching server, Web and CLI builds and regenerate API clients. Case erasure now uses an opaque review token and the explicit case revision.
+- Replace saved Web party and payment edit links with links from the current case workspace. New links use one partyId or paymentId query parameter.
+- A payment chosen for correction or removal stays selected when you reload the Web editor. The action must be reviewed again.
+- Review erasure again if owned contents or covered relationships change. Confirmation checks current permission and leaves newly changed private data intact when refused.
+- Add, update and remove parties in the Web case workspace. Party edit links require a selected party. Revision conflicts show authorized changes for that party.
+- Reinstating a previously closed case keeps it closed. Pending reminders keep their original dates and return to active queues on reopening.
+
 ## [0.24.0] - 2026-11-28
 
 - Start a [fresh format-12 installation](docs/operating.md#install-a-fresh-register). Settle pending attempts or keep their IDs, database, witness, keys, client state and matching build.

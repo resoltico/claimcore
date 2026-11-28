@@ -132,7 +132,7 @@ let private structure () =
             "Technical shape and cursor length are closed"
 
     let raw =
-        """{"operationId":"00000000-0000-0000-0000-000000000000","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"expectedFamilySequence":1},"inputs":{}}"""
+        """{"operationId":"00000000-0000-0000-0000-000000000000","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CASE"},"expectedRevision":1,"erasureReviewToken":"synthetic-review"},"inputs":{}}"""
 
     Expect.isOk
         (admit

@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "重新允許處理此已作廢的案件。其打開或關閉狀態不變。",
-    "source": "c48d44c1b7c1"
+    "text": "將案件恢復為作廢前的開啟或關閉狀態。",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "取消提醒",
@@ -2828,20 +2828,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "此案件或其工作、備註、提醒、付款在抹除審閱後發生了變化。請重新審閱完整案件。",
-    "source": "14a2c7cc75ea"
+    "text": "刪除覆核已過期。請讀取目前的案件並重新覆核刪除。",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "抹除前請審閱案件及其全部工作、備註、提醒和付款。",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "請重新讀取案件以取得新的權杖。",
+    "source": "3295efe5f5f4"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "已審閱的完整案件版本",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "刪除覆核權杖",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "請使用 case.get 為你審閱並準備抹除的案件提供的系列序號。",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "請使用讀取目前案件時傳回的刪除覆核權杖。",
+    "source": "3bd321be769e"
   },
   "change.CASE.recorded": {
     "text": "已記錄案件事實",
@@ -2959,9 +2959,9 @@
     "text": "查找並繼續處理需要關注的案件工作。",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "此案件已更改",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "此記錄已變更",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "沒有待處理的存取申請。",

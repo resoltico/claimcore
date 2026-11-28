@@ -165,7 +165,7 @@ it.each([
               kind: "CASE",
               target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
               expectedRevision: 1,
-              ...(act === "case.erase" ? { expectedFamilySequence: 1 } : {}),
+              ...(act === "case.erase" ? { erasureReviewToken: "synthetic-review-1" } : {}),
             }),
           ],
         }),

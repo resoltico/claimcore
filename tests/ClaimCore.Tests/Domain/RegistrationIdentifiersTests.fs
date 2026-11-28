@@ -43,7 +43,7 @@ let private run number revision task members previous =
             Binding.CaseErase(
                 CaseSelector.Id id,
                 Revision.create revision |> Option.get,
-                previous.Value.Sequence
+                ErasureReview.Accepted(previous.Value.Sequence, String.replicate 64 "0")
             )
         else
             Binding.Case(CaseSelector.Id id, Revision.create revision |> Option.get)

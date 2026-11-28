@@ -171,7 +171,11 @@ let erasedCase () =
         "case.erase"
         2
         state
-        (Binding.CaseErase(Tasks.target state, state.Case.Revision, state.Sequence))
+        (Binding.CaseErase(
+            Tasks.target state,
+            state.Case.Revision,
+            ErasureReview.Accepted(state.Sequence, String.replicate 64 "0")
+        ))
         InputMap.empty
 
 let disabledPerson () =

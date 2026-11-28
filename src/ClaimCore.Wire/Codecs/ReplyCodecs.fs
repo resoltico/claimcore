@@ -133,7 +133,7 @@ module ReplyCodecs =
         |> field "task" _.Task TaskVocabulary.codec
         |> field "target" _.Target target
         |> field "references" _.References PartDescriptionCodecs.references
-        |> field "binding" _.Binding ClaimCore.RecordFormat.BindingCodecs.binding
+        |> field "binding" _.Binding ClaimCore.RecordFormat.BindingCodecs.reviewBinding
         |> field "changes" _.Changes (list 50 PartDescriptionCodecs.part)
         |> optionalField "opening" _.Opening PartDescriptionCodecs.opening
         |> field "context" _.Context ResponseCodecs.runtimeContext

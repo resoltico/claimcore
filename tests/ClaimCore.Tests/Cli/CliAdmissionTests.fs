@@ -80,7 +80,7 @@ let tests =
                             "CC-55KW-SSJ4-8HMS-G1BH-73"
                             "--expected-revision"
                             "7"
-                            "--expected-family-sequence"
+                            "--erasure-review-token"
                             "12"
                         ],
                         "CC-55KW-SSJ4-8HMS-G1BH-73"
@@ -428,7 +428,7 @@ let tests =
                              | _ -> false))
                         "The entire compound token remains visible in usage errors"
                 | Ok _ -> failtest "Unknown roles must be refused")
-            testCase "dry-run rejects invalid reviewed People and family revisions" (fun () ->
+            testCase "dry-run rejects invalid reviewed People and erasure tokens" (fun () ->
                 for words in
                     [
                         [
@@ -437,8 +437,8 @@ let tests =
                             "CC-55KW-SSJ4-8HMS-G1BH-73"
                             "--expected-revision"
                             "1"
-                            "--expected-family-sequence"
-                            "0"
+                            "--erasure-review-token"
+                            ""
                             "--dry-run"
                         ]
                         [

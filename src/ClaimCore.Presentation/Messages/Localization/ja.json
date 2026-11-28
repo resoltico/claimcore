@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "この無効化された案件の作業を再び許可します。進行中または終了の状態は変わりません。",
-    "source": "c48d44c1b7c1"
+    "text": "無効化前の案件の状態（進行中または完了）に戻します。",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "リマインダーを取消",
@@ -2828,20 +2828,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "消去の確認後に、この案件またはその作業、メモ、リマインダー、支払が変更されました。案件全体を再確認してください。",
-    "source": "14a2c7cc75ea"
+    "text": "消去レビューの内容が最新ではありません。現在の案件を読み込み、消去を再レビューしてください。",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "消去する前に、案件とそのすべての作業、メモ、リマインダー、支払を確認してください。",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "新しいトークンを取得するには、案件を再度読み込んでください。",
+    "source": "3295efe5f5f4"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "確認済みの案件全体のバージョン",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "消去レビュートークン",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "消去対象として確認した案件について、case.get が返したファミリーシーケンスを使用してください。",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "現在の案件の読み込みで取得した消去レビュートークンを使用してください。",
+    "source": "3bd321be769e"
   },
   "change.CASE.recorded": {
     "text": "案件の事実を記録",
@@ -2959,9 +2959,9 @@
     "text": "対応が必要な案件の業務を探して再開します。",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "この案件は変更されています",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "この記録は変更されました",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "承認待ちのアクセス申請はありません。",

@@ -98,7 +98,11 @@ module internal TaskArguments =
                     && input.Required
                     && input.Argument = CommandArgument.Named
                     && not clear
-                    && not (incomplete && input.Declaration.Source = InputSource.ExpectedRevision)
+                    && not (
+                        incomplete
+                        && (input.Declaration.Source = InputSource.ExpectedRevision
+                            || input.Name = target InputTarget.ErasureReviewToken)
+                    )
                 then
                     problems.Add(UsageError.MissingOption(flag input.Name))
 
@@ -181,6 +185,7 @@ module internal TaskArguments =
                 (selection ())
                 revision
                 (fun input -> uuid input)
+                text
 
         let authored =
             declarations
@@ -374,8 +379,7 @@ module internal TaskArguments =
                 :: (version revision
                     @ id "paymentId" payment
                     @ (family
-                       |> Option.map (fun value ->
-                           "expectedFamilySequence", JsonValue.Integer value)
+                       |> Option.map (fun value -> "erasureReviewToken", JsonValue.String value)
                        |> Option.toList))
             | OperationBinding.Work(target, revision) -> selected target :: version revision
             | OperationBinding.Note(target, note) -> selected target :: id "noteId" note

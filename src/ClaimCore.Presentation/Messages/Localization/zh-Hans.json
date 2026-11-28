@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "重新允许处理此已作废的案件。其打开或关闭状态不变。",
-    "source": "c48d44c1b7c1"
+    "text": "将案件恢复为作废前的开放或关闭状态。",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "取消提醒",
@@ -2828,20 +2828,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "此案件或其工作、备注、提醒、付款在擦除审阅后发生了变化。请重新审阅完整案件。",
-    "source": "14a2c7cc75ea"
+    "text": "删除复核已过期。请读取当前案件并重新复核删除。",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "擦除前请审阅案件及其全部工作、备注、提醒和付款。",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "请重新读取案件以获取新令牌。",
+    "source": "3295efe5f5f4"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "已审阅的完整案件版本",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "删除复核令牌",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "请使用 case.get 为你审阅并准备擦除的案件提供的系列序号。",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "请使用读取当前案件时返回的删除复核令牌。",
+    "source": "3bd321be769e"
   },
   "change.CASE.recorded": {
     "text": "已记录案件事实",
@@ -2959,9 +2959,9 @@
     "text": "查找并继续处理需要关注的案件工作。",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "此案件已更改",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "此记录已更改",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "没有待处理的访问申请。",

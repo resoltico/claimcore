@@ -216,12 +216,17 @@ it("refreshes both erasure preconditions from the supplied current action after 
   const old = prepareRequest("operation.execute", {
     operationId: secondId,
     task: "case.erase",
-    binding: { kind: "CASE", target, expectedRevision: 4, expectedFamilySequence: 12 },
+    binding: {
+      kind: "CASE",
+      target,
+      expectedRevision: 4,
+      erasureReviewToken: "synthetic-review-12",
+    },
     inputs: {},
   });
   const fresh = operationAffordance(
     "case.erase",
-    { kind: "CASE", target, expectedRevision: 8, expectedFamilySequence: 25 },
+    { kind: "CASE", target, expectedRevision: 8, erasureReviewToken: "synthetic-review-25" },
     {},
     [],
   );
@@ -229,9 +234,12 @@ it("refreshes both erasure preconditions from the supplied current action after 
     kind: "CASE",
     target: stableTarget,
     expectedRevision: 8,
-    expectedFamilySequence: 25,
+    erasureReviewToken: "synthetic-review-25",
   });
-  expect(old.input.binding).toMatchObject({ expectedRevision: 4, expectedFamilySequence: 12 });
+  expect(old.input.binding).toMatchObject({
+    expectedRevision: 4,
+    erasureReviewToken: "synthetic-review-12",
+  });
   expect(() => {
     rebasedOperationBinding(old.input, stableTarget, 8, []);
   }).toThrow("A fresh reviewed action is required.");

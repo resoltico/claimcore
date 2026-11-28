@@ -142,37 +142,84 @@ it.each(["not-an-actor", "\n10000000-0000-4000-8000-000000000001"])(
   },
 );
 
-it("carries opaque binding selection while acquiring reviewed versions from current controls", () => {
-  const target = { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" } as const;
-  const path = actPath(target, "opaque.task", {
-    kind: "EXAMPLE",
+const selectedCase = "20000000-0000-4000-8000-000000000001";
+const firstRow = "20000000-0000-4000-8000-000000000002";
+const secondRow = "20000000-0000-4000-8000-000000000003";
+const target = { kind: "ID", caseId: selectedCase } as const;
+
+it.each([
+  ["party.update", "PARTY", "partyId"],
+  ["case.removePayment", "CASE", "paymentId"],
+] as const)("carries only the declared identity for %s", (act, kind, key) => {
+  const path = actPath(target, act, {
+    kind,
     target,
     expectedRevision: 7,
-    expectedFamilySequence: 12,
-    itemId: "opaque Ω",
+    erasureReviewToken: "synthetic-review",
+    [key]: firstRow,
   });
+  expect(path).toBe(`${casePath(selectedCase)}/acts/${act}?${key}=${firstRow}`);
   expect(parseRoute(new URL(path, location.origin))).toEqual({
     screen: "caseAct",
     target,
-    act: "opaque.task",
-    binding: { kind: "EXAMPLE", itemId: "opaque Ω" },
+    act,
+    selection: { kind: "selected", id: firstRow },
   });
-  for (const selection of ["null", "[]", "true", "invalid"]) {
-    expect(
-      parseRoute(
-        new URL(
-          `${casePath(target.caseId)}/acts/opaque.task?${new URLSearchParams({ binding: selection })}`,
-          location.origin,
-        ),
-      ),
-    ).toEqual({ screen: "missing" });
-  }
-  expect(
-    parseRoute(
-      new URL(
-        `${casePath(target.caseId)}/acts/opaque.task?binding=%7B%7D&binding=%7B%7D`,
-        location.origin,
-      ),
-    ),
-  ).toEqual({ screen: "missing" });
 });
+
+it("keeps reviewed erasure facts out of the URL", () => {
+  expect(
+    actPath(target, "case.erase", {
+      kind: "CASE",
+      target,
+      expectedRevision: 7,
+      erasureReviewToken: "synthetic-review",
+    }),
+  ).toBe(`${casePath(selectedCase)}/acts/case.erase`);
+});
+
+it.each([
+  ["party.remove", "PARTY", "partyId"],
+  ["case.removePayment", "CASE", "paymentId"],
+] as const)(
+  "refuses conflicting selectors for %s without treating them as omitted",
+  (act, kind, key) => {
+    const path = actPath(target, act);
+    const route = { screen: "caseAct", target, act };
+    expect(parseRoute(new URL(path, location.origin))).toEqual(route);
+    const withQuery = (query: URLSearchParams) =>
+      parseRoute(new URL(`${path}?${query}`, location.origin));
+    const rejected = [
+      new URLSearchParams([
+        [key, firstRow],
+        [key, secondRow],
+      ]),
+      new URLSearchParams([
+        [key, secondRow],
+        [key, firstRow],
+      ]),
+      new URLSearchParams([
+        [key, firstRow],
+        [key, firstRow],
+      ]),
+      new URLSearchParams({
+        binding: `{"kind":"${kind}","${key}":"${firstRow}","${key}":"${secondRow}"}`,
+      }),
+      new URLSearchParams({ binding: JSON.stringify({ kind, [key]: firstRow }) }),
+      new URLSearchParams({ binding: JSON.stringify({ kind }) }),
+      new URLSearchParams({ [key]: "" }),
+      new URLSearchParams({ [key]: "not-an-id" }),
+      new URLSearchParams({ [key]: "00000000-0000-0000-0000-000000000000" }),
+      new URLSearchParams({ [key]: firstRow, expectedRevision: "1" }),
+      new URLSearchParams({ [key]: firstRow, erasureReviewToken: "opaque" }),
+      new URLSearchParams({ [key]: firstRow, unknown: "1" }),
+    ];
+    for (const query of rejected) {
+      expect(withQuery(query)).toEqual({ ...route, selection: { kind: "invalid" } });
+    }
+    expect(parseRoute(new URL(actPath(target, act, { kind }), location.origin))).toEqual({
+      ...route,
+      selection: { kind: "invalid" },
+    });
+  },
+);

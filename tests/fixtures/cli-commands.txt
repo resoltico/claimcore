@@ -11,7 +11,7 @@ case close CC-NVJN-9VCD-PZVY-CKAX-07 --outcome other --expected-revision 3 --ope
 case reopen CC-NVJN-9VCD-PZVY-CKAX-07 --reason Additional --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
 case void CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --reason Mistake --operation-id 11111111-2222-7333-8444-555555555555
 case reinstate CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --reason Fixed --operation-id 11111111-2222-7333-8444-555555555555
-case erase CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555 --expected-family-sequence 1
+case erase CC-NVJN-9VCD-PZVY-CKAX-07 --expected-revision 3 --operation-id 11111111-2222-7333-8444-555555555555 --erasure-review-token synthetic-review
 people register --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-7333-8444-555555555555 --name Authored
 people grant 10000000-0000-4000-8000-000000000001 --role CASE_HANDLER --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1
 people grant 10000000-0000-4000-8000-000000000001 --role CASE_READER --case-reference CC-NVJN-9VCD-PZVY-CKAX-07 --operation-id 11111111-2222-7333-8444-555555555555 --expected-revision 1

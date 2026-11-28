@@ -41,8 +41,13 @@ it.each([
   ],
   [
     "case.erase",
-    { "input:expectedRevision": 3, "input:expectedFamilySequence": 4 },
-    { kind: "CASE", target: selection, expectedRevision: 3, expectedFamilySequence: 4 },
+    { "input:expectedRevision": 3, "input:erasureReviewToken": "synthetic-review-4" },
+    {
+      kind: "CASE",
+      target: selection,
+      expectedRevision: 3,
+      erasureReviewToken: "synthetic-review-4",
+    },
   ],
   ["people.enable", { "input:actorId": id, "input:expectedRevision": 3 }, binding],
 ] as const)("interprets the owner binding plan for %s", (task, values, expected) => {

@@ -273,27 +273,33 @@ let private editDecision
     =
     match state, binding with
     | Some state, Binding.Party(_, id, expected) ->
-        admitAction context environment state binding (editGate binding)
+        let gate (state: DecisionFacts) =
+            if state.Case.Value.Lifecycle = Lifecycle.Erased then
+                stateGate state
+            else
+                match Map.tryFind id state.Parties with
+                | Some prior ->
+                    match FamilyRules.revision expected prior.Revision with
+                    | Error refusal -> Some refusal
+                    | Ok() -> editGate binding state
+                | None -> editGate binding state
+
+        admitAction context environment state binding gate
         |> Result.bind (fun () ->
             let prior = Map.find id state.Parties
 
-            FamilyRules.revision expected prior.Revision
-            |> Result.bind (fun () ->
-                if removed || retained then
-                    Ok prior.Value.Content
-                else
-                    match prior.Value.Content with
-                    | None -> Error FamilyRules.unavailable
-                    | Some prior ->
-                        editParse
-                            prior
-                            (context.Decision.Lifetime = DecisionLifetime.Recorded)
-                            values
-                        |> Result.bind (fun changed ->
-                            if prior = changed then
-                                Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
-                            else
-                                Ok(Some changed)))
+            (if removed || retained then
+                 Ok prior.Value.Content
+             else
+                 match prior.Value.Content with
+                 | None -> Error FamilyRules.unavailable
+                 | Some prior ->
+                     editParse prior (context.Decision.Lifetime = DecisionLifetime.Recorded) values
+                     |> Result.bind (fun changed ->
+                         if prior = changed then
+                             Error(Refusal.Case CaseRefusal.CorrectionNoChanges)
+                         else
+                             Ok(Some changed)))
             |> Result.map (fun content ->
                 [
                     FamilyRules.change

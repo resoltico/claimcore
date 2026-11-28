@@ -785,3 +785,151 @@ let qualify (fixture: PublishedFixture.Fixture) =
     |> ignore
 
     assertCurrent false
+
+let partyConflict =
+    testCaseTask "published CLI party conflict renders the selected winning revision" (fun () ->
+        task {
+            use fixture = new PublishedFixture.Fixture()
+            do! fixture.Start()
+            do! ClaimCore.TestSupport.IdentityRealm.waitForFreshProviderProof ()
+            let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
+            let opened = verb fixture environment [ "case"; "open" ] 0 |> require "ACCEPTED"
+
+            let reference =
+                opened.GetProperty("subject").GetProperty("caseReference").GetString()
+                |> nonNull
+
+            let added =
+                verb
+                    fixture
+                    environment
+                    [
+                        "party"
+                        "add"
+                        reference
+                        "--party-role"
+                        "claimant"
+                        "--party-name"
+                        "Synthetic party at revision one"
+                    ]
+                    0
+                |> require "ACCEPTED"
+
+            let party =
+                added.GetProperty("subject").GetProperty("partyId").GetString() |> nonNull
+
+            let winner = id ()
+
+            let updateArguments operation name =
+                [
+                    "party"
+                    "update"
+                    reference
+                    "--party-id"
+                    party
+                    "--expected-party-revision"
+                    "1"
+                    "--operation-id"
+                    operation
+                    "--party-name"
+                    name
+                ]
+
+            let winningName = "Synthetic winning party edit"
+
+            verb fixture environment (updateArguments winner winningName) 0
+            |> require "ACCEPTED"
+            |> ignore
+
+            let stale = id ()
+            let arguments = updateArguments stale "Synthetic refused party edit"
+            let refused = verb fixture environment arguments 2 |> require "REJECTED"
+
+            Expect.equal
+                (refused.GetProperty("actualRevision").GetInt64())
+                2L
+                "The selected party owns the actual revision"
+
+            let changes = refused.GetProperty("changes")
+
+            Expect.equal
+                (changes.GetProperty("kind").GetString())
+                "PAGE"
+                "Authorized conflict history is readable"
+
+            let entry =
+                changes.GetProperty("page").GetProperty("entries").EnumerateArray()
+                |> Seq.exactlyOne
+
+            Expect.equal
+                (entry.GetProperty("operationId").GetString())
+                winner
+                "The winning operation is in the range"
+
+            let rendered =
+                invoke
+                    fixture
+                    environment
+                    (arguments @ [ "--format"; "text"; "--language"; "en"; "--details" ])
+                    Array.empty
+                    2
+
+            let output =
+                Encoding.UTF8.GetString rendered.StandardOutput
+                + Encoding.UTF8.GetString rendered.StandardError
+
+            Expect.stringContains
+                output
+                "Revision: 2"
+                "Native text presents the actual revision from the HUMAN reply"
+
+            Expect.stringContains
+                output
+                winningName
+                "Native text presents the authorized winning edit"
+
+            Expect.isFalse
+                (output.Contains("Synthetic refused party edit", StringComparison.Ordinal))
+                "History does not contain the refused change"
+
+            setup fixture
+
+            let automationArguments =
+                updateArguments (id ()) "Synthetic refused automation edit"
+
+            let automationConflict =
+                verb fixture fixture.Environment automationArguments 2 |> require "REJECTED"
+
+            Expect.equal
+                (automationConflict.GetProperty("actualRevision").GetInt64())
+                2L
+                "Automation JSON reports the same reviewed record revision"
+
+            for details in [ []; [ "--details" ] ] do
+                let reply =
+                    invoke
+                        fixture
+                        fixture.Environment
+                        (automationArguments @ [ "--format"; "text"; "--language"; "en" ] @ details)
+                        Array.empty
+                        2
+
+                let text =
+                    Encoding.UTF8.GetString reply.StandardOutput
+                    + Encoding.UTF8.GetString reply.StandardError
+
+                Expect.equal reply.ExitCode 2 "Automation conflict exits as a rejection"
+
+                Expect.stringContains
+                    text
+                    "Revision: 2"
+                    "Automation text shows the current revision"
+
+                if not details.IsEmpty then
+                    Expect.stringContains
+                        text
+                        winningName
+                        "Automation details show the winning edit"
+
+            fixture.Complete()
+        })

@@ -8083,7 +8083,7 @@
           "input:expectedRevision": {
             "$ref": "#/components/schemas/InputAtom"
           },
-          "input:expectedFamilySequence": {
+          "input:erasureReviewToken": {
             "$ref": "#/components/schemas/InputAtom"
           },
           "input:reason": {
@@ -8947,17 +8947,17 @@
             "minimum": 1,
             "maximum": 9007199254740991
           },
-          "expectedFamilySequence": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
+          "erasureReviewToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 155
           }
         },
         "required": [
           "kind",
           "target",
           "expectedRevision",
-          "expectedFamilySequence"
+          "erasureReviewToken"
         ]
       },
       "Binding.CASE.new": {
@@ -13378,6 +13378,11 @@
             "minimum": 1,
             "maximum": 9007199254740991
           },
+          "erasureReviewToken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 155
+          },
           "relatedCases": {
             "$ref": "#/components/schemas/RelatedCaseLinks"
           }
@@ -14357,6 +14362,9 @@
             "$ref": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE"
           },
           {
+            "$ref": "#/components/schemas/DataRejection.FAMILY_CHANGED"
+          },
+          {
             "$ref": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE"
           },
           {
@@ -14396,14 +14404,14 @@
             "ATTACHMENT_PREVIEW_UNAVAILABLE": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "NO_CHANGES": "#/components/schemas/DataRejection.WORK_NO_CHANGES",
             "ASSIGNEE_UNAVAILABLE": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "FAMILY_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "PAYMENT_NOT_FOUND": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "PARTY_LIMIT": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "LAST_OWNER": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "DISTINCT_OWNER_REQUIRED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_ALREADY_REGISTERED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
             "ACTOR_UNKNOWN": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
-            "ACTOR_CHANGED": "#/components/schemas/DataRejection.ASSIGNEE_UNAVAILABLE",
+            "FAMILY_CHANGED": "#/components/schemas/DataRejection.FAMILY_CHANGED",
+            "ACTOR_CHANGED": "#/components/schemas/DataRejection.FAMILY_CHANGED",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "SELF_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
             "DUPLICATE_LINK": "#/components/schemas/DataRejection.CORRECTION_REQUIRES_EXISTING_VALUE",
@@ -14430,14 +14438,12 @@
           "code": {
             "enum": [
               "ASSIGNEE_UNAVAILABLE",
-              "FAMILY_CHANGED",
               "PAYMENT_NOT_FOUND",
               "PARTY_LIMIT",
               "LAST_OWNER",
               "DISTINCT_OWNER_REQUIRED",
               "ACTOR_ALREADY_REGISTERED",
-              "ACTOR_UNKNOWN",
-              "ACTOR_CHANGED"
+              "ACTOR_UNKNOWN"
             ]
           },
           "action": {
@@ -14529,6 +14535,25 @@
           },
           "action": {
             "const": "CORRECT_INPUT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "DataRejection.FAMILY_CHANGED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "FAMILY_CHANGED",
+              "ACTOR_CHANGED"
+            ]
+          },
+          "action": {
+            "const": "REFRESH_PRECONDITION"
           }
         },
         "required": [
@@ -17102,6 +17127,7 @@
               "STOP_AND_INVESTIGATE",
               "ASK_FOR_ACCESS",
               "REVIEW_LATEST",
+              "REFRESH_PRECONDITION",
               "NONE_REQUIRED"
             ]
           }
@@ -17956,7 +17982,7 @@
           "group:payment",
           "input:operationId",
           "input:expectedRevision",
-          "input:expectedFamilySequence",
+          "input:erasureReviewToken",
           "input:reason",
           "input:principal.kind",
           "input:principal.issuer",
@@ -29331,7 +29357,7 @@
           "group:payment",
           "input:operationId",
           "input:expectedRevision",
-          "input:expectedFamilySequence",
+          "input:erasureReviewToken",
           "input:reason",
           "input:principal.kind",
           "input:principal.issuer",

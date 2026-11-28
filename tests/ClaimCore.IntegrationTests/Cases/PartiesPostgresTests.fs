@@ -139,10 +139,26 @@ let private integration (database: PostgresFixture.Database) =
             | Refusal.RevisionConflict stale ->
                 Expect.equal (Revision.value stale.ActualRevision) 2L "The actual party revision"
 
-                Expect.equal
-                    stale.Changes
-                    (Some ConflictChanges.Withheld)
-                    "Party history has no revision range"
+                match stale.Changes with
+                | Some(ConflictChanges.Page {
+                                                Entries = [ entry ]
+                                                NextCursor = None
+                                            }) ->
+                    Expect.equal
+                        entry.OperationId
+                        (accepted edited).OperationId
+                        "The range contains the winning edit"
+
+                    Expect.equal
+                        entry.Subject.PartId
+                        (PartyId.value party.PartyId)
+                        "The range is tied to the selected party"
+
+                    Expect.equal
+                        entry.Subject.Revision
+                        (Revision.create 2L |> Option.get)
+                        "Only the winning revision is included"
+                | other -> failtestf "Expected one authorized party revision: %A" other
 
                 Expect.equal
                     stale.ReadCaseId
@@ -407,7 +423,7 @@ let private integration (database: PostgresFixture.Database) =
                     target,
                     Revision.value afterRemoval.Snapshot.Revision,
                     None,
-                    Some(Sequence.value afterRemoval.FamilySequence)
+                    afterRemoval.ErasureReviewToken
                 ))
                 Map.empty
 

@@ -24,14 +24,14 @@ let private setMember name value =
 [<Tests>]
 let tests =
     testList
-        "final format 12 operation roots"
+        "format 13 operation roots"
         [
             testCase
-                "independently framed public metadata derives the literal final format 12 digest"
+                "independently framed public metadata derives the literal format 13 digest"
                 (fun () ->
                     let record = publicRecord ()
                     let root = record.Root
-                    // Independent Python struct/uuid/hashlib calculation: 589 bytes, .NET UTC ticks below.
+                    // Independent Python struct/uuid/hashlib calculation: 584 bytes, .NET UTC ticks below.
                     Expect.equal
                         root.Header.RecordedAt.UtcTicks
                         639297792000000000L
@@ -39,7 +39,7 @@ let tests =
 
                     Expect.equal
                         (EntryHash.toBytes root.Hash |> Convert.ToHexStringLower)
-                        "c4be13fe9a20a7f4611a0fc1ab6b990c374e47c95135542bcdd1c957298b5b22"
+                        "c0ec7d7b506181ed842c93070489ae05d1e6ebb7b17f125b6b2d559b9ec84aa2"
                         "Literal SHA-256 vector"
 
                     Expect.equal
@@ -59,7 +59,7 @@ let tests =
 
                     let previousGrammar =
                         Convert.FromHexString
-                            "8d44604617dbcdaee8595763ecb359f6a1b10fb4fa3507aed734b652b096e6b7"
+                            "c4be13fe9a20a7f4611a0fc1ab6b990c374e47c95135542bcdd1c957298b5b22"
                         |> EntryHash.ofBytes
                         |> Option.get
 
@@ -71,7 +71,7 @@ let tests =
                             (OperationRoot.effectBytes root)
                             []
                             previousGrammar)
-                        "The earlier development format-12 hash cannot admit the same public contents")
+                        "The published format-12 hash cannot admit the same public contents")
             testCase
                 "all six part kinds restore with available or erased compartment content"
                 (fun () ->

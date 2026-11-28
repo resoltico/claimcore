@@ -74,8 +74,8 @@ let private case (core: ServiceContext) ids number revision taskName values =
             OperationBinding.CaseNew revision, values
         else
             let family =
-                if declaration.ReviewsFamilySequence then
-                    Some(StoreFixtures.reviewedFamilySequence core.Store target)
+                if declaration.RequiresErasureReview then
+                    Some(StoreFixtures.reviewedErasureToken core.Store core.Principal target)
                 else
                     None
 
@@ -897,7 +897,7 @@ let tests =
                                 ]))
                     |> ignore
 
-                    execute stewardCore (case (core) (ids) (31) (3L) "case.erase" (Map.empty))
+                    execute stewardCore (case stewardCore (ids) (31) (3L) "case.erase" (Map.empty))
                     |> ignore
 
                     let erased = collect core target None

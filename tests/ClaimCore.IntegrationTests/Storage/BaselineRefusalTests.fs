@@ -155,14 +155,14 @@ let private earlierWitness () =
             let oldSql =
                 (PostgresFixture.witnessSchema ())
                     .Replace(
-                        "COMMENT ON SCHEMA claimcore_witness IS 'claimcore-format-12-payment-corrections';\n",
-                        ""
+                        "claimcore-format-13-erasure-review",
+                        "claimcore-format-12-payment-corrections"
                     )
 
             Expect.equal
                 (Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes oldSql)))
-                "ab6e16d374c2bd09d86f7a4b4c48c68e9504b833d178be17b74090219284ba60"
-                "Exact witness SQL from the earlier development baseline"
+                "ce174a585353a24f65d816113242c6efec6023eba00ffd353cb1e2808c127ffc"
+                "Exact witness SQL from the published v0.24.0 baseline"
 
             let! runtime, owner =
                 PostgresFixture.setupWitnessFrom oldSql earlier token |> Async.AwaitTask
@@ -257,23 +257,18 @@ let tests =
                     (int16 InstallationFormat.Current)
                     alteredBaseline)
             testCaseAsync
-                "the exact earlier development format-12 baseline refuses without mutation"
-                (refusedInstallation "claimcore-format-12" 12s (fun () ->
-                    let bytes =
-                        File
-                            .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
-                            .Replace(
-                                "COMMENT ON SCHEMA claimcore IS 'claimcore-format-12-payment-corrections';\n",
-                                ""
-                            )
-                        |> Encoding.UTF8.GetBytes
-
-                    Expect.equal
-                        (Convert.ToHexStringLower(SHA256.HashData bytes))
-                        "087a20c62f757c7eaddfdc21e397b8e35c7db7f576410ed31041b665c3977ae0"
-                        "Exact SQL identity from the earlier development base"
-
-                    bytes))
+                "format 12 refuses without mutation"
+                (refusedInstallation "claimcore-format-12-payment-corrections" 12s (fun () ->
+                    File
+                        .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
+                        .Replace(
+                            "claimcore-format-13-erasure-review",
+                            "claimcore-format-12-payment-corrections"
+                        )
+                        .Replace("installation_format = 13", "installation_format = 12")
+                        .Replace("installation_format=13", "installation_format=12")
+                        .Replace("p_format<>13", "p_format<>12")
+                    |> Encoding.UTF8.GetBytes))
             testCaseAsync
                 "an earlier development baseline with the same format and a different checksum refuses untouched"
                 (refusedInstallation

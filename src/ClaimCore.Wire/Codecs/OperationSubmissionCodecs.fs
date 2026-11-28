@@ -207,18 +207,18 @@ module OperationSubmissionCodecs =
                 |> field "expectedRevision" caseRevision version
                 |> field "paymentId" paymentId uuid
                 |> build
-            | ActSubject.Case when declaration.ReviewsFamilySequence ->
+            | ActSubject.Case when declaration.RequiresErasureReview ->
                 record (fun target revision family ->
                     OperationBinding.Case(target, revision, None, Some family))
                 |> fixedField "kind" "CASE"
                 |> field "target" caseTarget RequestCodecs.caseSelector
                 |> field "expectedRevision" caseRevision version
                 |> field
-                    "expectedFamilySequence"
+                    "erasureReviewToken"
                     (function
                     | OperationBinding.Case(_, _, _, Some family) -> family
                     | _ -> invalidOp "Erasure basis required.")
-                    (bounds InputTarget.ExpectedFamilySequence)
+                    ClaimCore.RecordFormat.BindingCodecs.erasureReviewToken
                 |> build
             | ActSubject.Case ->
                 record (fun target revision -> OperationBinding.Case(target, revision, None, None))

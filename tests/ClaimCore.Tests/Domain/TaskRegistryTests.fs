@@ -79,11 +79,11 @@ let tests =
                         "Updates and compound actions keep an existing binding"
 
                 Expect.isTrue
-                    (declaration "case.erase").ReviewsFamilySequence
+                    (declaration "case.erase").RequiresErasureReview
                     "Erasure reviews the complete family sequence"
 
                 Expect.isFalse
-                    (declaration "case.close").ReviewsFamilySequence
+                    (declaration "case.close").RequiresErasureReview
                     "Closing reviews the case part")
             testCase
                 "creation references and scope selection retain their public identities"

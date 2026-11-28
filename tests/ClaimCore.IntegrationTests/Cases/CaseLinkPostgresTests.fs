@@ -506,14 +506,75 @@ let private serialErasure (database: PostgresFixture.Database) =
                             SubmissionValue.Text "Synthetic race relationship"
                         ])
 
-            let erase = request fixture (index + 3) targetName 1L "case.erase" Map.empty
+            let review number =
+                task {
+                    let target = CaseSelector.Id destination
+                    let! current = Service.get owner { Target = target } token
+                    let current = succeeded current
+
+                    return
+                        Submissions.createRaw
+                            "case.erase"
+                            (id fixture number)
+                            (OperationBinding.Case(
+                                target,
+                                Revision.value current.Snapshot.Revision,
+                                None,
+                                current.ErasureReviewToken
+                            ))
+                            Map.empty
+                }
+
+            let reviewMustBeStale (stale: OperationSubmission) (reply: ExecuteReply) =
+                task {
+                    Expect.equal
+                        reply.Outcome
+                        (ExecuteResult.Rejected(Refusal.Case CaseRefusal.FamilyChanged))
+                        "A relationship change refuses the frozen review"
+
+                    let! current = Service.get owner { Target = CaseSelector.Id destination } token
+
+                    Expect.equal
+                        (succeeded current).Snapshot.Revision
+                        Revision.first
+                        "Case revision stays fixed"
+
+                    let! missing =
+                        Service.operationGet owner { OperationId = stale.OperationId } token
+
+                    match missing.Outcome with
+                    | Outcome.Succeeded(OperationLookupResult.Pending _ | OperationLookupResult.NotAccepted) ->
+                        ()
+                    | other -> failtestf "Refused erasure was recorded: %A" other
+                }
 
             match order with
             | "add first" ->
-                let! added, erased = race add erase
+                let! erase = review (index + 3)
+                let! added, refused = race add erase
                 accepted added |> ignore
-                accepted erased |> ignore
+                do! reviewMustBeStale erase refused
+
+                let! visible = Service.get owner { Target = selector } token
+
+                Expect.equal
+                    ((succeeded visible).RelatedCases.Outgoing |> List.map _.Note)
+                    [ NoteText.parse "Synthetic race relationship" |> Result.toOption ]
+                    "Stale erasure leaves the winning relationship note intact"
+
+                let! fresh = review (index + 4)
+                let! erased = Service.executeSubmission owner fresh token
+                let! retried = Service.executeSubmission owner fresh token
+
+                match retried.Outcome with
+                | ExecuteResult.AlreadyAccepted receipt ->
+                    Expect.equal
+                        receipt.OperationId
+                        (accepted erased).OperationId
+                        "Exact retry settles after clearing"
+                | other -> failtestf "Expected accepted retry: %A" other
             | "erase first" ->
+                let! erase = review (index + 3)
                 let! erased, refused = race erase add
                 accepted erased |> ignore
 
@@ -532,8 +593,13 @@ let private serialErasure (database: PostgresFixture.Database) =
                         (OperationBinding.Link(selector, Some add.OperationId))
                         Map.empty
 
-                let! removed, erased = race remove erase
+                let! erase = review (index + 3)
+                let! removed, refused = race remove erase
                 accepted removed |> ignore
+                do! reviewMustBeStale erase refused
+
+                let! fresh = review (index + 6)
+                let! erased = Service.executeSubmission owner fresh token
                 accepted erased |> ignore
 
             let! source = Service.get owner { Target = selector } token
@@ -541,6 +607,229 @@ let private serialErasure (database: PostgresFixture.Database) =
             Expect.isEmpty
                 (succeeded source).RelatedCases.Outgoing
                 "Every settled order clears the live relation"
+
+        let! _ = verified database
+        return ()
+    }
+
+let private scopedErasureReview (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = caseWorker fixture
+
+        let requester =
+            PrincipalKey.human "https://issuer.example/" "scoped-erasure-review"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registration =
+            personSubmission
+                fixture.Store
+                (id fixture 300)
+                requester
+                None
+                "people.register"
+                (Submissions.profile DomainInputs.actorProfile)
+
+        let! registered = Service.executeSubmission owner registration token
+        acceptedPeople registered
+
+        let openCase number name =
+            task {
+                let! result =
+                    Service.executeSubmission
+                        owner
+                        (request fixture number name 0L "case.open" Map.empty)
+                        token
+
+                return (accepted result |> caseReceipt).CaseId
+            }
+
+        let! source = openCase 301 "HIDDEN-SOURCE"
+        let! target = openCase 302 "SCOPED-TARGET"
+        let! other = openCase 303 "OTHER-TARGET"
+
+        let grantRole number person role scope supplied =
+            task {
+                let! result =
+                    grant owner (id fixture number) person { Role = role; Scope = scope } supplied
+
+                acceptedPeople result
+            }
+
+        do! grantRole 304 requester Role.DataSteward (GrantTarget.CaseId target) true
+        do! grantRole 305 requester Role.DataSteward (GrantTarget.CaseId other) true
+        do! grantRole 306 fixture.Owner Role.DataSteward GrantTarget.Installation true
+        let steward = core fixture requester
+
+        let read actor caseId =
+            task {
+                let! result = Service.get actor { Target = CaseSelector.Id caseId } token
+                return succeeded result
+            }
+
+        let command number caseId reviewed =
+            Submissions.createRaw
+                "case.erase"
+                (id fixture number)
+                (OperationBinding.Case(CaseSelector.Id caseId, 1L, None, Some reviewed))
+                Map.empty
+
+        let stale actor submission =
+            task {
+                let! refusal = Service.executeSubmission actor submission token
+
+                Expect.equal
+                    refusal.Outcome
+                    (ExecuteResult.Rejected(Refusal.Case CaseRefusal.FamilyChanged))
+                    "A stale or unusable token has the same generic refusal"
+            }
+
+        let! before = read steward target
+        let! secondRead = read steward target
+        let review = before.ErasureReviewToken.Value
+
+        Expect.notEqual
+            review
+            secondRead.ErasureReviewToken.Value
+            "Unchanged scope has independently randomized tokens"
+
+        do! stale owner (command 307 target review)
+        do! stale steward (command 308 other review)
+        do! stale steward (command 309 target "malformed-review")
+        let altered = (if review[0] = 'A' then "B" else "A") + review[1..]
+        do! stale steward (command 310 target altered)
+
+        let! linked =
+            Service.executeSubmission
+                owner
+                (Submissions.createRaw
+                    "link.add"
+                    (id fixture 311)
+                    (OperationBinding.Link(CaseSelector.Id source, None))
+                    (Map.ofList
+                        [
+                            Submissions.input InputTarget.LinkTargetId,
+                            SubmissionValue.Text(CaseId.format target)
+                            Submissions.input InputTarget.LinkNote,
+                            SubmissionValue.Text "Hidden synthetic relationship"
+                        ]))
+                token
+
+        accepted linked |> ignore
+
+        let! after = read steward target
+
+        Expect.equal
+            after.Snapshot.Revision
+            before.Snapshot.Revision
+            "Inbound link leaves the target revision unchanged"
+
+        Expect.equal
+            after.FamilySequence
+            before.FamilySequence
+            "Inbound link leaves the target family sequence unchanged"
+
+        Expect.isEmpty after.RelatedCases.Incoming "Scoped steward cannot read the source"
+        do! stale steward (command 312 target review)
+
+        let! sourceBefore = read owner source
+
+        Expect.hasLength
+            sourceBefore.RelatedCases.Outgoing
+            1
+            "Stale erasure preserves the winning link"
+
+        Expect.equal
+            (sourceBefore.RelatedCases.Outgoing.Head.Note |> Option.map NoteText.format)
+            (Some "Hidden synthetic relationship")
+            "Stale erasure preserves its private note"
+
+        let! peerErased =
+            Service.executeSubmission
+                owner
+                (command 313 source sourceBefore.ErasureReviewToken.Value)
+                token
+
+        accepted peerErased |> ignore
+        do! stale steward (command 314 target after.ErasureReviewToken.Value)
+
+        let! fresh = read steward target
+        let reviewed = command 315 target fresh.ErasureReviewToken.Value
+        do! grantRole 316 requester Role.DataSteward (GrantTarget.CaseId target) false
+        let! revoked = Service.executeSubmission steward reviewed token
+
+        match revoked.Outcome with
+        | ExecuteResult.Rejected(Refusal.Access _) -> ()
+        | other -> failtestf "Expected revoked authority to refuse: %A" other
+
+        do! grantRole 317 requester Role.DataSteward (GrantTarget.CaseId target) true
+        let! erased = Service.executeSubmission steward reviewed token
+        let original = accepted erased
+        let! foreignRetry = Service.executeSubmission owner reviewed token
+
+        Expect.equal
+            foreignRetry.Outcome
+            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "Exact settlement still belongs to the original erasure requester"
+
+        let! beforeRotation = read steward other
+        let oldReview = command 318 other beforeRotation.ErasureReviewToken.Value
+
+        do! enterMaintenance database
+
+        let handle =
+            MaintenanceHandle.create 1L (System.Guid.Parse "10000000-0000-4000-8000-000000000099")
+            |> Option.get
+
+        use administration =
+            new ClaimCore.Application.Administration.Administration(
+                PostgresFixture.ownerConnectionString database,
+                "test",
+                database.MasterKey
+            )
+
+        let! _ = administration.RotateEncryptionGeneration(handle, token)
+
+        let! _ =
+            RegisterMaintenanceStore.change
+                database.OwnerSource
+                database.MasterKey
+                (MaintenanceChange.Resume handle)
+                token
+
+        let! reopened =
+            Runtime.openConnection
+                (PostgresFixture.runtimeConnectionString database)
+                database.MasterKey
+                token
+
+        use reopened =
+            reopened
+            |> Result.defaultWith (fun error -> failtestf "Reopen after rotation: %A" error)
+
+        let currentSteward = Service.mapStore (fun _ -> Runtime.store reopened) steward
+        do! stale currentSteward oldReview
+
+        let! exactRetry = Service.executeSubmission currentSteward reviewed token
+
+        match exactRetry.Outcome with
+        | ExecuteResult.AlreadyAccepted receipt ->
+            Expect.equal
+                receipt.OperationId
+                original.OperationId
+                "Accepted retry survives generation rotation"
+        | outcome -> failtestf "Expected the original acceptance: %A" outcome
+
+        let! changed =
+            Service.executeSubmission
+                currentSteward
+                (command 315 target secondRead.ErasureReviewToken.Value)
+                token
+
+        Expect.equal
+            changed.Outcome
+            (ExecuteResult.Rejected Refusal.IdempotencyConflict)
+            "A different token cannot settle the same operation"
 
         let! _ = verified database
         return ()
@@ -686,6 +975,67 @@ let private boundedGroups (database: PostgresFixture.Database) =
             (incoming after, after.RelatedCases.IncomingCount)
             ([ caseId (limb 20) ], 1L)
             "Revocation tightens both count and visible membership"
+
+        let! granted =
+            grant
+                owner
+                (id fixture 225)
+                fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedPeople granted
+
+        let assertStale (reviewed: OperationSubmission) =
+            task {
+                let! result = Service.executeSubmission owner reviewed token
+
+                Expect.equal
+                    result.Outcome
+                    (ExecuteResult.Rejected(Refusal.Case CaseRefusal.FamilyChanged))
+                    "Changes outside the displayed selection invalidate the review"
+            }
+
+        let beforeDetach = request fixture 226 hub 1L "case.erase" Map.empty
+
+        let! detached =
+            Service.executeSubmission
+                owner
+                (Submissions.createRaw
+                    "link.remove"
+                    (id fixture 227)
+                    (OperationBinding.Link(caseTarget fixture (limb 1), Some(id fixture 141)))
+                    Map.empty)
+                token
+
+        accepted detached |> ignore
+        do! assertStale beforeDetach
+
+        let beforeReplacement = request fixture 228 hub 1L "case.erase" Map.empty
+
+        let! peerErased =
+            Service.executeSubmission
+                owner
+                (request fixture 229 (limb 21) 1L "case.erase" Map.empty)
+                token
+
+        accepted peerErased |> ignore
+        do! openCase 230 (limb 22)
+        do! link 231 (limb 22) hub
+        do! assertStale beforeReplacement
+
+        let! current = read owner
+
+        Expect.equal
+            (succeeded current).Snapshot.Revision
+            record.Snapshot.Revision
+            "Replacing an incoming dependency leaves the hub revision unchanged"
+
+        let! _ = verified database
+        return ()
     }
 
 [<Tests>]
@@ -694,6 +1044,9 @@ let tests =
         "related-case links"
         [
             testCaseAsync "use current read access in both directions" (run links)
+            testCaseAsync
+                "scope token protects hidden inbound relationships and current authority"
+                (run scopedErasureReview)
             testCaseAsync "group both directions at the display bound" (run boundedGroups)
             testCaseAsync
                 "serialize both add orders and unlink against target erasure"

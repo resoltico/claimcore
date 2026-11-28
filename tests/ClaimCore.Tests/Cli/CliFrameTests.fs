@@ -372,7 +372,20 @@ let private exampleFrames () =
                         None
                         opening)
             | ClaimCore.Domain.Tasks.Task.Family task ->
-                task.Decide context environment facts command.Binding command.Inputs
+                let binding =
+                    match command.Binding, facts with
+                    | Binding.CaseErase(target, revision, ErasureReview.Token token), Some facts ->
+                        Binding.CaseErase(
+                            target,
+                            revision,
+                            ErasureReview.Accepted(
+                                facts.Sequence,
+                                ClaimCore.RecordFormat.OperationIntent.reviewCommitment token
+                            )
+                        )
+                    | _ -> command.Binding
+
+                task.Decide context environment facts binding command.Inputs
             | _ -> failtest "Case task expected"
             |> CaseBuilders.accepted
 

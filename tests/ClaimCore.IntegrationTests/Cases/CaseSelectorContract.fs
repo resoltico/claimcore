@@ -279,7 +279,12 @@ let identities (fixture: Fixture) =
                         CaseSelector.Id expected,
                         3L,
                         None,
-                        Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expected))
+                        Some(
+                            reviewedErasureToken
+                                fixture.Store
+                                fixture.Owner
+                                (CaseSelector.Id expected)
+                        )
                     ))
                     Map.empty)
                 token
@@ -581,7 +586,12 @@ let grantScopes (fixture: Fixture) =
                         (CaseSelector.Id expectedId),
                         (2L),
                         None,
-                        (Some(reviewedFamilySequence fixture.Store (CaseSelector.Id expectedId)))
+                        (Some(
+                            reviewedErasureToken
+                                fixture.Store
+                                fixture.Owner
+                                (CaseSelector.Id expectedId)
+                        ))
                     ))
                     (Map.empty)))
                 token

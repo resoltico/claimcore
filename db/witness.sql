@@ -2,7 +2,7 @@
 -- This database and its backups are independent of the ClaimCore register.
 BEGIN;
 CREATE SCHEMA claimcore_witness;
-COMMENT ON SCHEMA claimcore_witness IS 'claimcore-format-12-payment-corrections';
+COMMENT ON SCHEMA claimcore_witness IS 'claimcore-format-13-erasure-review';
 REVOKE ALL ON SCHEMA claimcore_witness FROM PUBLIC;
 
 CREATE TABLE claimcore_witness.installations (

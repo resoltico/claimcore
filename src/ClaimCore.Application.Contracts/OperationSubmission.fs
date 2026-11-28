@@ -18,7 +18,7 @@ type OperationBinding<'revision> =
         target: CaseSelector *
         expectedRevision: 'revision *
         paymentId: Guid option *
-        expectedFamilySequence: int64 option
+        erasureReviewToken: string option
     | Work of target: CaseSelector * expectedRevision: 'revision
     | Note of target: CaseSelector * noteId: Guid option
     | Attachment of target: CaseSelector * attachmentId: Guid option
@@ -63,13 +63,10 @@ module OperationSubmission =
             OperationBinding.Case(target, Revision.value revision, None, None)
         | Binding.CasePayment(target, revision, id) ->
             OperationBinding.Case(target, Revision.value revision, Some(OperationId.value id), None)
-        | Binding.CaseErase(target, revision, sequence) ->
-            OperationBinding.Case(
-                target,
-                Revision.value revision,
-                None,
-                Some(Sequence.value sequence)
-            )
+        | Binding.CaseErase(target, revision, ErasureReview.Token token) ->
+            OperationBinding.Case(target, Revision.value revision, None, Some token)
+        | Binding.CaseErase(_, _, ErasureReview.Accepted _) ->
+            invalidArg "binding" "A submitted erasure requires a review token."
         | Binding.Work(target, revision) -> OperationBinding.Work(target, Revision.value revision)
         | Binding.ReminderNew target -> OperationBinding.Reminder(target, None)
         | Binding.Reminder(target, id, revision) ->
@@ -357,20 +354,12 @@ module OperationSubmission =
                             id
                         |> Result.map (fun id -> Binding.CasePayment(selection, expected, id))
                     | _ -> Error SubmissionProblem.Shape
-                elif declaration.ReviewsFamilySequence then
+                elif declaration.RequiresErasureReview then
                     match payment, family with
-                    | None, Some sequence ->
-                        Sequence.create sequence
-                        |> Option.filter (fun value -> value >= Sequence.first)
-                        |> Option.map (fun sequence ->
-                            Ok(Binding.CaseErase(selection, expected, sequence)))
-                        |> Option.defaultValue (
-                            Error(
-                                issue
-                                    (target InputTarget.ExpectedFamilySequence)
-                                    Violation.ExpectedRevisionRange
-                            )
-                        )
+                    | None, Some token when
+                        token.Length >= 1 && token.Length <= ErasureReview.MaximumTokenCharacters
+                        ->
+                        Ok(Binding.CaseErase(selection, expected, ErasureReview.Token token))
                     | _ -> Error SubmissionProblem.Shape
                 elif payment.IsNone && family.IsNone then
                     Ok(Binding.Case(selection, expected))
@@ -520,19 +509,6 @@ module OperationSubmission =
         let identifier create target violation =
             optional (identity create target violation)
 
-        let family =
-            optional (fun raw ->
-                Sequence.create raw
-                |> Option.filter (fun value -> value >= Sequence.first)
-                |> Option.map Ok
-                |> Option.defaultValue (
-                    Error(
-                        issue
-                            (target InputTarget.ExpectedFamilySequence)
-                            Violation.ExpectedRevisionRange
-                    )
-                ))
-
         match TaskDeclaration.bindingShape declaration, binding with
         | BindingShape.CaseNew, OperationBinding.CaseNew expected ->
             optional creationVersion expected
@@ -558,7 +534,16 @@ module OperationSubmission =
                         SubmissionDeclarations.existingRevision
                         InputTarget.ExpectedRevision
                         expected
-                    family sequence
+                    optional
+                        (fun (token: string) ->
+                            if
+                                token.Length >= 1
+                                && token.Length <= ErasureReview.MaximumTokenCharacters
+                            then
+                                Ok()
+                            else
+                                Error SubmissionProblem.Shape)
+                        sequence
                 ]
         | BindingShape.Work, OperationBinding.Work(_, expected) ->
             revision
@@ -831,7 +816,7 @@ module SubmissionAssembly =
             (Map.filter (fun key _ -> Set.contains key editable) authored)
             fixedValues
 
-    let draftBinding (declaration: TaskDeclaration) selection revision identity =
+    let draftBinding (declaration: TaskDeclaration) selection revision identity text =
         let plan = SubmissionDeclarations.binding declaration
 
         let expected =
@@ -839,7 +824,7 @@ module SubmissionAssembly =
             |> Option.bind (fun basis -> revision basis.Input |> Option.orElse basis.Initial)
 
         let selectedIdentity = plan.Identity |> Option.bind identity
-        let family = plan.Family |> Option.bind (fun basis -> revision basis.Input)
+        let family = plan.ErasureReview |> Option.bind text
 
         match plan.Shape with
         | BindingShape.CaseNew -> OperationBinding.CaseNew expected
@@ -886,7 +871,11 @@ module SubmissionAssembly =
         | BindingShape.CasePayment ->
             Binding.CasePayment(selected (), expected (), identified OperationId.create)
         | BindingShape.CaseErase ->
-            Binding.CaseErase(selected (), expected (), required "family" family)
+            Binding.CaseErase(
+                selected (),
+                expected (),
+                required "erasureReview" family |> ErasureReview.Token
+            )
         | BindingShape.Work -> Binding.Work(selected (), expected ())
         | BindingShape.NoteNew -> Binding.NoteNew(selected ())
         | BindingShape.Note -> Binding.Note(selected (), identified NoteId.create)

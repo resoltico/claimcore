@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "Die Bearbeitung dieses stornierten Falls wieder erlauben. Sein offener oder geschlossener Status bleibt unverändert.",
-    "source": "c48d44c1b7c1"
+    "text": "Stellen Sie den offenen oder geschlossenen Status wieder her, den der Fall vor der Annullierung hatte.",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "Wiedervorlage aufheben",
@@ -2828,20 +2828,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "Dieser Fall oder seine Bearbeitung, Notizen, Wiedervorlagen oder Zahlungen wurden seit Ihrer Löschprüfung geändert. Prüfen Sie den gesamten Fall erneut.",
-    "source": "14a2c7cc75ea"
+    "text": "Die Löschprüfung ist nicht mehr aktuell. Rufen Sie den aktuellen Fall ab und prüfen Sie die Löschung erneut.",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "Prüfen Sie vor dem Löschen den Fall samt Bearbeitung, Notizen, Wiedervorlagen und Zahlungen.",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "Rufen Sie den Fall erneut ab, um ein neues Token zu erhalten.",
+    "source": "3295efe5f5f4"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "Geprüfte Version des gesamten Falls",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "Token für die Löschprüfung",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "Verwenden Sie die von case.get gelieferte Familiensequenz des zur Löschung geprüften Falls.",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "Verwenden Sie das Token für die Löschprüfung aus dem aktuellen Fallabruf.",
+    "source": "3bd321be769e"
   },
   "change.CASE.recorded": {
     "text": "Falldaten erfasst",
@@ -2959,9 +2959,9 @@
     "text": "Finden Sie Fälle mit Handlungsbedarf und setzen Sie ihre Bearbeitung fort.",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "Dieser Fall hat sich geändert",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "Dieser Eintrag wurde geändert",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "Keine ausstehenden Zugriffsanfragen.",

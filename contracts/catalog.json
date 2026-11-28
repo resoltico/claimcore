@@ -489,10 +489,10 @@
       "scalar": null
     },
     {
-      "name": "expectedFamilySequence",
-      "labelId": "field.expectedFamilySequence.label",
-      "hintId": "field.expectedFamilySequence.hint",
-      "ruleId": "field.expectedFamilySequence.rule",
+      "name": "erasureReviewToken",
+      "labelId": "field.erasureReviewToken.label",
+      "hintId": "field.erasureReviewToken.hint",
+      "ruleId": "field.erasureReviewToken.rule",
       "scalar": null
     },
     {

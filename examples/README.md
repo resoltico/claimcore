@@ -37,13 +37,13 @@ The remaining changes require a human Data steward grant:
 claimcore call < examples/07-void.json
 claimcore call < examples/08-reinstate.json
 claimcore case get CC-7K3M-Q8T2-PW6D-X9HR-49 --format json
-# Set binding.expectedFamilySequence in 09-erase.json to the returned familySequence.
+# Set binding.erasureReviewToken in 09-erase.json to the returned erasureReviewToken.
 claimcore call < examples/09-erase.json
 ```
 
-The positive family sequence in the sample is illustrative: earlier accepted installation activity
-changes this value. Acquire it after step eight and preserve it with the reviewed request. Any accepted
-change to this case or its owned contents requires a new review before erasure.
+The example token is a placeholder. Acquire a token after step eight and preserve it with the
+reviewed request. Changes to the case, its owned contents or a covered relationship require a new
+review before erasure.
 
 The erased case retains its ID, reference and version 9. Related live case/payment/work/reminder/note payloads are
 removed; change metadata remains. Erasure does not remove WAL, backups or external copies.

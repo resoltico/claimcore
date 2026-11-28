@@ -64,7 +64,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
       kind: "CASE",
       target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
       expectedRevision: 1,
-      ...(kind === "case.erase" ? { expectedFamilySequence: 1 } : {}),
+      ...(kind === "case.erase" ? { erasureReviewToken: "synthetic-review-1" } : {}),
       ...(kind === "case.removePayment"
         ? { paymentId: "10000000-0000-7000-8000-000000000003" }
         : {}),

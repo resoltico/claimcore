@@ -46,7 +46,7 @@ import type { Notice } from "../protocol/notices";
 type Options = {
   affordance?: OperationAffordance | undefined;
   affordances?: ReadonlyArray<OperationAffordance>;
-  subject: "CASE" | "PEOPLE" | "WORK" | "REMINDER" | "NOTE" | "LINK" | "ATTACHMENT";
+  subject: ReturnType<typeof operationTask>["subject"];
   upload?: File | undefined;
   prefill?: FormValues | undefined;
   binding?: OperationBinding | undefined;

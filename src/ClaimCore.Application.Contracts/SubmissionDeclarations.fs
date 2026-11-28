@@ -18,7 +18,7 @@ type SubmissionBindingDeclaration =
         SelectsCase: bool
         Revision: SubmissionRevision option
         Identity: TaskInputId option
-        Family: SubmissionRevision option
+        ErasureReview: TaskInputId option
     }
 
 type SubmissionScopeRule =
@@ -33,7 +33,6 @@ type SubmissionScopeRule =
 module SubmissionDeclarations =
     let creationRevision = Revision.value Revision.zero
     let existingRevision = Revision.value Revision.first
-    let familyRevision = Sequence.value Sequence.first
     let scopeInput = TaskInputId.Scope
     let caseIdInput = TaskInputId.CaseId
 
@@ -97,13 +96,7 @@ module SubmissionDeclarations =
             | BindingShape.CaseErase ->
                 revision InputTarget.ExpectedRevision existingRevision None,
                 None,
-                Some
-                    {
-                        Input = InputTarget.ExpectedFamilySequence
-                        Minimum = familyRevision
-                        Maximum = Sequence.Maximum
-                        Initial = None
-                    }
+                Some(TaskInputId.Target InputTarget.ErasureReviewToken)
             | BindingShape.Work ->
                 revision InputTarget.ExpectedWorkRevision creationRevision None, None, None
             | BindingShape.NoteNew
@@ -134,13 +127,13 @@ module SubmissionDeclarations =
             SelectsCase = declaration.Target <> ActSubject.People && shape <> BindingShape.CaseNew
             Revision = expected
             Identity = identity
-            Family = family
+            ErasureReview = family
         }
 
     let integerBounds declaration input =
         let plan = binding declaration
 
-        [ plan.Revision; plan.Family ]
+        [ plan.Revision ]
         |> List.choose id
         |> List.tryFind (fun basis -> TaskInputId.Target basis.Input = input)
         |> Option.map (fun basis -> basis.Minimum, basis.Maximum)

@@ -9,8 +9,12 @@ open ClaimCore.Tests.TaskBuilders
 let private binding (declaration: TaskDeclaration) (state: CaseFamily) =
     if declaration.Creates then
         Binding.CaseNew Revision.zero
-    elif declaration.ReviewsFamilySequence then
-        Binding.CaseErase(target state, state.Case.Revision, state.Sequence)
+    elif declaration.RequiresErasureReview then
+        Binding.CaseErase(
+            target state,
+            state.Case.Revision,
+            ErasureReview.Accepted(state.Sequence, String.replicate 64 "0")
+        )
     elif
         declaration.Inputs
         |> List.exists (fun input -> input.Input = TaskInputId.Target InputTarget.PaymentId)

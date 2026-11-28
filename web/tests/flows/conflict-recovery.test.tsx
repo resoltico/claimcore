@@ -953,9 +953,13 @@ it.each([
             disclosure: "ERASED" as const,
           };
     refresh.resolve(response("case.get", "SUCCEEDED", after));
-    await screen.findByRole("button", {
-      name: "Review against latest",
-    });
+    if (level === "ERASED") {
+      await waitFor(() => {
+        expect(screen.queryByRole("button", { name: "Review against latest" })).toBeNull();
+      });
+    } else {
+      await screen.findByRole("button", { name: "Review against latest" });
+    }
     await user.click(
       screen.getByRole("button", {
         name: "Load more",

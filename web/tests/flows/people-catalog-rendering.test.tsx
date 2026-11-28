@@ -71,6 +71,7 @@ const PeopleBinding = ({
     <>
       <OperationDiscard model={model} />
       <OperationPanel
+        actPickerLabel="Access change"
         model={model}
         current={null}
         offered={peopleActs.map((entry) => entry.kind)}

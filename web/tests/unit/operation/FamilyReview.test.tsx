@@ -19,7 +19,7 @@ const current = (family: number): CurrentCase => ({
         kind: "CASE",
         target: { kind: "ID", caseId },
         expectedRevision: 7,
-        expectedFamilySequence: family,
+        erasureReviewToken: `synthetic-review-${family}`,
       },
       {},
       [],
@@ -66,7 +66,10 @@ it("explicit family review acquires the new supplied erasure basis without chang
     }),
   );
   await waitFor(() => {
-    expect(model!.bindingSource).toMatchObject({ expectedRevision: 7, expectedFamilySequence: 13 });
+    expect(model!.bindingSource).toMatchObject({
+      expectedRevision: 7,
+      erasureReviewToken: "synthetic-review-13",
+    });
   });
   expect(fetch).toHaveBeenCalledTimes(1);
   expect(model!.prepared).toBeNull();

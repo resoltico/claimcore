@@ -125,7 +125,7 @@ module TaskMetadata =
                                         input = TaskInputId.token input
                                         memberName = TaskInputId.key input
                                     |})
-                            family = plan.Family |> Option.map revision
+                            erasureReview = plan.ErasureReview |> Option.map TaskInputId.token
                         |})
                 defaults =
                     ledger

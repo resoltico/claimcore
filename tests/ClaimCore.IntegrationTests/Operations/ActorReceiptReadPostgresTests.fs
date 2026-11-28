@@ -392,8 +392,9 @@ let private scenario (database: PostgresFixture.Database) =
                         (1L),
                         None,
                         (Some(
-                            reviewedFamilySequence
+                            reviewedErasureToken
                                 fixture.Store
+                                fixture.Owner
                                 (CaseSelector.Id(CaseFixtures.caseId (id fixture 7)))
                         ))
                     ))

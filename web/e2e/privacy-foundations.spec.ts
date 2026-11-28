@@ -297,10 +297,10 @@ test("released and retained marker inventory through withdrawal and erasure @eng
     if (current.outcome.kind !== "SUCCEEDED") {
       throw new Error("Expected a live case and family sequence.");
     }
-    const { caseReference, revision, familySequence } = current.outcome.data;
+    const { caseReference, revision, erasureReviewToken } = current.outcome.data;
     await record({
       task: "case.erase",
-      binding: { ...binding(revision), expectedFamilySequence: familySequence },
+      binding: { ...binding(revision), erasureReviewToken: erasureReviewToken! },
       inputs: {},
     });
     const erased = await read();

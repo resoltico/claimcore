@@ -341,11 +341,14 @@ let tests =
                         |> required
 
                     let action =
-                        TaskAffordances.caseAction
+                        TaskAffordances.offered
                             (TaskId.ofLiteral "case.amendRegistration")
-                            ResponseExamples.snapshot.CaseId
-                            ResponseExamples.snapshot.Revision
-                            Sequence.zero
+                            (Some(
+                                Binding.Case(
+                                    CaseSelector.Id ResponseExamples.snapshot.CaseId,
+                                    ResponseExamples.snapshot.Revision
+                                )
+                            ))
                             (RegistrationInput.values bait |> TaskAffordances.fields)
                             (TaskAffordances.authored (TaskId.ofLiteral "case.amendRegistration"))
                             Map.empty
@@ -403,11 +406,14 @@ let tests =
                     let document = HumanCaseDocument.ofCore ResponseExamples.caseRead
 
                     let action =
-                        TaskAffordances.caseAction
+                        TaskAffordances.offered
                             (TaskId.ofLiteral "case.amendRegistration")
-                            ResponseExamples.snapshot.CaseId
-                            ResponseExamples.snapshot.Revision
-                            Sequence.zero
+                            (Some(
+                                Binding.Case(
+                                    CaseSelector.Id ResponseExamples.snapshot.CaseId,
+                                    ResponseExamples.snapshot.Revision
+                                )
+                            ))
                             (RegistrationInput.values DomainInputs.registration
                              |> TaskAffordances.fields)
                             []

@@ -1857,7 +1857,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     .click();
   await expect(
     page.getByRole("heading", {
-      name: "This case has changed",
+      name: "This record has changed",
       exact: true,
     }),
   ).toBeVisible();

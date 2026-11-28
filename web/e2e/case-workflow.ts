@@ -50,6 +50,24 @@ const refuseSubmitHttp = async (response: Response): Promise<never> => {
     : "UNCLASSIFIED_NONE";
   throw new Error(`E2E_SUBMIT_HTTP_${status}_${classification}`);
 };
+type CaseReadback = Extract<
+  ResponseFor<"case.get", "DATA">["outcome"],
+  { kind: "SUCCEEDED" }
+>["data"];
+type CaseOrPartyReceipt = Extract<
+  Awaited<ReturnType<typeof acceptedSubject>>,
+  { kind: "CASE" | "PARTY" }
+>;
+const expectAcceptedRevision = (current: CaseReadback, subject: CaseOrPartyReceipt) => {
+  expect(current.caseId).toBe(subject.caseId);
+  if (subject.kind === "CASE") {
+    expect(current.revision).toBe(subject.revision);
+  } else {
+    const party = current.parties.find(({ partyId }) => partyId === subject.partyId);
+    expect(party?.revision).toBe(subject.act === "party.remove" ? undefined : subject.revision);
+  }
+};
+
 export const recordReviewed = async (page: Page): Promise<void> => {
   // Callers can supply an authenticated page without using openApplication's setup.
   await retainResponseBodies(page);
@@ -91,10 +109,10 @@ export const recordReviewed = async (page: Page): Promise<void> => {
     receipt.subject.operationId,
     observedAccess(response.request()),
   );
-  if (subject.kind !== "CASE") {
-    throw new Error("Expected a case receipt.");
+  if (subject.kind !== "CASE" && subject.kind !== "PARTY") {
+    throw new Error("Expected a case or party receipt.");
   }
-  // An access refresh may mask transient feedback; independently verify the accepted case version.
+  // An access refresh may mask transient feedback; independently verify the accepted revision.
   const current = await workRequest(page, "case.get", {
     target: {
       kind: "ID",
@@ -104,8 +122,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   if (current.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected authorized case readback.");
   }
-  expect(current.outcome.data.caseId).toBe(subject.caseId);
-  expect(current.outcome.data.revision).toBe(subject.revision);
+  expectAcceptedRevision(current.outcome.data, subject);
   await expect(
     page.locator(".case-workspace .entries-view [data-entry='policyNumber']"),
   ).toHaveCount(receipt.disclosure === "CURRENT" ? 1 : 0);

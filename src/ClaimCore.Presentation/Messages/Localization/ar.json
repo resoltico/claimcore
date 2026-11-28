@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "السماح بمتابعة العمل على هذا الملف المبطل. لا تتغير حالته المفتوحة أو المغلقة.",
-    "source": "c48d44c1b7c1"
+    "text": "أعد الملف إلى حالته المفتوحة أو المغلقة التي كانت سارية قبل الإبطال.",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "إلغاء التذكير",
@@ -2947,20 +2947,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "تغيرت هذا الملف أو أعمالها أو ملاحظاتها أو تذكيراتها أو مدفوعاتها منذ مراجعة المحو. راجع الملف كاملًا مجددًا.",
-    "source": "14a2c7cc75ea"
+    "text": "لم تعد مراجعة المحو سارية. اقرأ الحالة الحالية وراجع المحو من جديد.",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "إصدار الملف الكامل الذي تمت مراجعته",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "رمز مراجعة المحو",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "استخدم تسلسل الملف الكامل الذي يوفره case.get للملف التي راجعتها للمحو.",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "استخدم رمز مراجعة المحو الوارد عند قراءة الحالة الحالية.",
+    "source": "3bd321be769e"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "راجع الملف وجميع أعمالها وملاحظاتها وتذكيراتها ومدفوعاتها قبل المحو.",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "اقرأ الحالة مرة أخرى للحصول على رمز جديد.",
+    "source": "3295efe5f5f4"
   },
   "diagnostic.CASE_ID_REQUIRED": {
     "text": "أدخل UUID غير فارغ للملف.",
@@ -3094,9 +3094,9 @@
     "text": "ابحث عن أعمال الملفات التي تحتاج إلى اهتمام وتابعها.",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "تغيّر هذا الملف",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "تغيّر هذا السجل",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "لا توجد طلبات وصول معلّقة.",

@@ -11,7 +11,7 @@ export type OperationEditorProps = {
   initialAct: ActKind;
   prefill?: FormValues;
   autoReview?: boolean;
-  binding?: Extract<OperationBinding, { kind: "CASE" }>;
+  binding?: OperationBinding;
   disclosureAvailable?: boolean;
   onCaseObserved?: (current: CurrentCase) => void;
   onClose: () => void;

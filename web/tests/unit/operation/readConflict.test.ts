@@ -23,9 +23,15 @@ const caseValue = () => ({
   ...current,
   subject: { ...current.subject, revision: 100, workRevision: 7 },
   history: "NONE" as const,
-  actions: current.actions.filter((action) =>
-    new Set<string>(["work.update"] as const).has(action.task),
-  ),
+  actions: [
+    operationAffordance(
+      "work.update",
+      { kind: "WORK", target: { kind: "ID", caseId: current.subject.caseId }, expectedRevision: 7 },
+      {},
+      [],
+      {},
+    ),
+  ],
 });
 const scoped = (source: LocalSource): source is ConflictSource =>
   source.prepared.input.binding.kind !== "PEOPLE";

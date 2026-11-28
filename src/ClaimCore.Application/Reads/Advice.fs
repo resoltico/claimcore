@@ -138,6 +138,29 @@ module internal Advice =
                     |> List.sortBy fst
                     |> List.map snd
 
+                let! erasureReview =
+                    task {
+                        match actor.Actor with
+                        | Some requester when
+                            not maintenance.Active
+                            && CaseState.lifecycle snapshot.State <> Lifecycle.Erased
+                            && Access.can
+                                services.Principal
+                                actor
+                                Capability.Steward
+                                (Scope.Case state.Id)
+                            ->
+                            let! token =
+                                CaseFamilyAcquisition.issueErasureReview
+                                    tx
+                                    state.Id
+                                    requester.ActorId
+                                    state.Sequence
+
+                            return Some token
+                        | _ -> return None
+                    }
+
                 let offers =
                     Registry.all
                     |> List.choose (function
@@ -153,11 +176,11 @@ module internal Advice =
                             && task.Declaration.Target = ActSubject.Case
                             ->
                             let binding =
-                                if task.Declaration.ReviewsFamilySequence then
+                                if task.Declaration.RequiresErasureReview then
                                     Binding.CaseErase(
                                         CaseSelector.Id state.Id,
                                         state.Case.Revision,
-                                        state.Sequence
+                                        ErasureReview.Token(defaultArg erasureReview "")
                                     )
                                 else
                                     Binding.Case(CaseSelector.Id state.Id, state.Case.Revision)
@@ -174,7 +197,10 @@ module internal Advice =
                     |> List.choose (fun ((declaration, binding), available) ->
                         if TaskDeclaration.bindingShape declaration = BindingShape.CasePayment then
                             None
-                        elif declaration.Creates then
+                        elif
+                            declaration.Creates
+                            || (declaration.RequiresErasureReview && erasureReview.IsNone)
+                        then
                             Some(TaskOffer.Declared declaration.Id)
                         else
                             Some(TaskOffer.forBinding declaration.Id binding available))
@@ -236,6 +262,7 @@ module internal Advice =
                                     }
                                 RelatedCases = RelatedCaseLinks.empty
                                 FamilySequence = familySequence
+                                ErasureReviewToken = erasureReview
                                 Snapshot = snapshot
                                 LatestPayments = latestPayments
                                 PaymentPayees = payees

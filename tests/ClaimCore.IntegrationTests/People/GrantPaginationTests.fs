@@ -113,8 +113,9 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
                     (1L),
                     None,
                     (Some(
-                        reviewedFamilySequence
+                        reviewedErasureToken
                             database.Fixture.Store
+                            database.Fixture.Owner
                             (caseTarget database.Fixture "GRANT-1")
                     ))
                 ))

@@ -82,6 +82,7 @@ let caseRead: CaseReadModel =
     {
         RelatedCases = RelatedCaseLinks.empty
         FamilySequence = Sequence.create 1L |> Option.get
+        ErasureReviewToken = None
         Snapshot = snapshot
         Parties = []
         PartyOffers = []

@@ -34,12 +34,14 @@ type CaseDetailProps = {
     | {
         key: string;
         act: ActKind;
+        onClose?: () => void;
         render: (
           current: CurrentCase,
           revalidate: () => void,
           onUnavailable: () => void,
           available: boolean,
           onObserved: (value: CurrentCase) => void,
+          currentForEntry: boolean,
         ) => ReactNode;
       }
     | undefined;
@@ -287,10 +289,12 @@ const UnavailableAct = ({
   value,
   state,
   onAct,
+  onClose,
 }: {
   value: ActKind;
   state: HumanDocument;
   onAct: CaseDetailProps["onAct"];
+  onClose: (() => void) | undefined;
 }) => {
   const p = usePresentation();
   const current = asCurrentCase(state);
@@ -299,6 +303,11 @@ const UnavailableAct = ({
       <p>
         <strong>{p.actLabel(value)}</strong>: {p.text("label.actionNotOffered")}
       </p>
+      {onClose === undefined ? null : (
+        <button type="button" onClick={onClose}>
+          {p.text("ui.returnToCase")}
+        </button>
+      )}
       {current === null ? null : (
         <CaseActions
           hideRecommendation
@@ -392,11 +401,16 @@ const caseReadPresentation = (
     );
   return timeline;
 };
+type OperationObservation = {
+  key: string;
+  document: CurrentCase;
+  workspaceBasis: HumanDocument | null;
+};
 const pageObservation = (
   current: ReturnType<typeof useCaseDisclosure>,
   disclosureAvailable: boolean,
   operation: CaseDetailProps["operation"],
-  updated: { key: string; document: CurrentCase } | null,
+  updated: OperationObservation | null,
 ) => {
   if (!disclosureAvailable) {
     return null;
@@ -404,6 +418,7 @@ const pageObservation = (
   if (
     updated !== null &&
     updated.key === operation?.key &&
+    updated.workspaceBasis === current.value &&
     current.value?.disclosure === "CURRENT"
   ) {
     return updated.document;
@@ -413,21 +428,24 @@ const pageObservation = (
 
 const OperationBanner = ({
   state,
+  operation,
   act,
   onAct,
 }: {
   state: HumanDocument | null;
+  operation: CaseDetailProps["operation"];
   act: ActKind | null;
   onAct: CaseDetailProps["onAct"];
 }) =>
   state === null || act === null ? null : (
-    <UnavailableAct value={act} state={state} onAct={onAct} />
+    <UnavailableAct value={act} state={state} onAct={onAct} onClose={operation?.onClose} />
   );
 
 const OperationLayer = ({
   operation,
   mounted,
   availability,
+  currentForEntry,
   revalidate,
   onUnavailable,
   onObserved,
@@ -435,8 +453,9 @@ const OperationLayer = ({
   operation: CaseDetailProps["operation"];
   mounted: CurrentCase | null;
   availability: boolean;
+  currentForEntry: boolean;
   revalidate: () => void;
-  onUnavailable: (act: ActKind) => void;
+  onUnavailable: (key: string) => void;
   onObserved: (observation: { key: string; document: CurrentCase }) => void;
 }) => {
   if (operation === undefined || mounted === null) {
@@ -446,25 +465,31 @@ const OperationLayer = ({
     mounted,
     revalidate,
     () => {
-      onUnavailable(operation.act);
+      onUnavailable(operation.key);
     },
     availability,
     (document) => {
       onObserved({ key: operation.key, document });
     },
+    currentForEntry,
   );
 };
 
 const useCaseOperationObservation = (operation: CaseDetailProps["operation"]) => {
-  const [unavailableAct, setUnavailableAct] = useState<ActKind | null>(null);
-  const [updated, setUpdated] = useState<{ key: string; document: CurrentCase } | null>(null);
+  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [updated, setUpdated] = useState<OperationObservation | null>(null);
   if (updated !== null && updated.key !== operation?.key) {
     setUpdated(null);
   }
-  if (unavailableAct !== null && unavailableAct !== operation?.act) {
-    setUnavailableAct(null);
+  if (unavailable !== null && unavailable !== operation?.key) {
+    setUnavailable(null);
   }
-  return { unavailableAct, updated, reportUnavailable: setUnavailableAct, observe: setUpdated };
+  return {
+    unavailableAct: unavailable === operation?.key ? operation.act : null,
+    updated,
+    reportUnavailable: setUnavailable,
+    observe: setUpdated,
+  };
 };
 
 const CaseNotices = ({ state }: { state: HumanDocument | null }) => {
@@ -527,7 +552,9 @@ const CaseDisclosure = ({
           operation={operation}
         />
       }
-      banner={<OperationBanner state={state} act={unavailableAct} onAct={onAct} />}
+      banner={
+        <OperationBanner state={state} operation={operation} act={unavailableAct} onAct={onAct} />
+      }
     >
       <CurrentFeedback
         message={current.message}
@@ -559,7 +586,10 @@ const CaseDisclosure = ({
         mounted={mounted}
         revalidate={current.revalidate}
         onUnavailable={reportUnavailable}
-        onObserved={observe}
+        onObserved={(observation) => {
+          observe({ ...observation, workspaceBasis: current.value });
+        }}
+        currentForEntry={lookup !== null && !current.loading && !current.denied}
         availability={operationIsAvailable(disclosureAvailable, current, lookup)}
       />
     </Page>

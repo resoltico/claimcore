@@ -48,7 +48,7 @@ type InputTarget =
     | Field of BusinessField
     | OperationId
     | ExpectedRevision
-    | ExpectedFamilySequence
+    | ErasureReviewToken
     | Group of RecordGroup
     | Reason
     | PrincipalKind
