@@ -5,58 +5,51 @@ open ClaimCore.Application.Contracts
 open ScreenEntries
 
 module PaymentsScreen =
-    let private money value =
-        {
-            PresentedMoney.Value = value
-            DisplayScale = Money.displayScale value
-        }
-
-    let netPaid (totals: PaymentTotals) =
-        PresentedValue.moneyTotal (Money.currencyValue totals.Payable) totals.NetPaid
-
     let progressCaptionId = "label.paymentProgress"
 
-    let meter (position: FinancialPosition) =
-        FinancialPosition.totals position
-        |> Option.bind (fun totals ->
-            let payable = DecimalTotal.ofAmount (Money.amount totals.Payable)
+    [<Literal>]
+    let ProgressMaximum = 1000
 
-            if totals.NetPaid < DecimalTotal.zero || totals.NetPaid > payable then
-                None
-            else
-                let current =
-                    DecimalTotal.format totals.NetPaid
-                    |> Amount.parse
-                    |> Result.defaultWith (fun _ ->
-                        invalidOp "Net payment lies within payable bounds.")
-                    |> fun amount -> Money.create amount (Money.currencyValue totals.Payable)
+    let private meter (assessment: FinancialAssessment) =
+        if assessment.NeedsReview then
+            None
+        else
+            assessment.Comparison
+            |> Option.bind (fun comparison ->
+                let payable = DecimalTotal.ofAmount (Money.amount comparison.Payable)
 
-                Some
-                    {
-                        PresentedMoneyMeter.Current = money current
-                        Target = money totals.Payable
-                        Complete =
-                            CaseProgress.ofFinancial position |> CaseProgress.completesPayment
-                        Description =
-                            {
-                                MessageId = progressCaptionId
-                                Arguments =
-                                    Map.ofList
-                                        [
-                                            "paid", PresentedValue.money current
-                                            "payable", PresentedValue.money totals.Payable
-                                        ]
-                            }
-                    })
+                if payable = DecimalTotal.zero then
+                    None
+                else
+                    Some
+                        {
+                            PresentedMoneyMeter.Position =
+                                DecimalTotal.progress ProgressMaximum comparison.NetPaid payable
+                            Maximum = ProgressMaximum
+                            Description =
+                                {
+                                    MessageId = progressCaptionId
+                                    Arguments =
+                                        Map.ofList
+                                            [
+                                                "paid",
+                                                PresentedValue.moneyTotal
+                                                    (Money.currencyValue comparison.Payable)
+                                                    comparison.NetPaid
+                                                "payable", PresentedValue.money comparison.Payable
+                                            ]
+                                }
+                        })
 
     let tableWithControls
         select
         controls
         (position: FinancialPosition)
+        outcome
         (payees: PaymentPayee list)
         entries
         =
-        let totals = FinancialPosition.totals position
+        let assessment = FinancialAssessment.ofPosition outcome position
 
         let definitions =
             [
@@ -158,7 +151,9 @@ module PaymentsScreen =
                         "payable"
                         "field.payableAmount.label"
                         Prominence.Primary
-                        (totals |> Option.map _.Payable |> optional PresentedValue.money)
+                        (assessment.Comparison
+                         |> Option.map _.Payable
+                         |> optional PresentedValue.money)
                     value
                         "decisionBasis"
                         "field.decisionBasis.label"
@@ -178,16 +173,44 @@ module PaymentsScreen =
                         "label.payments"
                         Prominence.Primary
                         (PresentedValue.Count position.PaymentCount)
-                    for KeyValue(currency, buckets) in position.CurrencyTotals do
+                    for KeyValue(currency, net) in FinancialPosition.actualBalances position do
                         value
                             ("netPaid." + Currency.format currency)
                             "label.netPaid"
                             Prominence.Primary
-                            (PresentedValue.moneyTotal currency (CurrencyPaymentTotals.net buckets))
+                            (PresentedValue.moneyTotal currency net)
+                    match assessment.Overpayment with
+                    | Some(currency, excess) ->
+                        value
+                            "overpayment"
+                            "label.paymentOverpayment"
+                            Prominence.Primary
+                            (PresentedValue.moneyTotal currency excess)
+                    | None -> ()
+                    for KeyValue(currency, net) in assessment.NegativeBalances do
+                        value
+                            ("negativeBalance." + Currency.format currency)
+                            "label.paymentNegativeBalance"
+                            Prominence.Primary
+                            (PresentedValue.moneyTotal currency net)
+                    if assessment.SettledWithoutCoverage then
+                        value
+                            "settledWithoutCoverage"
+                            "label.settledWithoutCoverage"
+                            Prominence.Primary
+                            (PresentedValue.Message "label.paymentsNeedReview")
+                    match assessment.Comparison with
+                    | Some comparison when PayableComparison.noPaymentDue comparison ->
+                        value
+                            "coverage"
+                            "label.paymentCoverage"
+                            Prominence.Primary
+                            (PresentedValue.Message "label.noPaymentDue")
+                    | _ -> ()
                 ]
 
         { table with
-            Meter = meter position
+            Meter = meter assessment
             Sections =
                 [
                     paymentTotals
@@ -198,14 +221,43 @@ module PaymentsScreen =
         }
 
     let table position entries =
-        tableWithControls id (fun _ -> None, []) position [] entries
+        tableWithControls id (fun _ -> None, []) position None [] entries
 
     /// Receipts retain the direction and identity of every accepted payment change.
-    let changes position differences =
+    let changes position (balances: BalanceDifference list) differences =
         let table =
-            tableWithControls PaymentDifference.entry (fun _ -> None, []) position [] differences
+            tableWithControls
+                PaymentDifference.entry
+                (fun _ -> None, [])
+                position
+                None
+                []
+                differences
 
         { table with
+            Meter = None
+            Sections =
+                table.Sections
+                @ (balances
+                   |> List.map (fun balance ->
+                       section
+                           "label.netPaid"
+                           [
+                               value
+                                   ("balance." + Currency.format balance.Currency + ".before")
+                                   "label.before"
+                                   Prominence.Secondary
+                                   (optional
+                                       (PresentedValue.moneyTotal balance.Currency)
+                                       balance.Net.Before)
+                               value
+                                   ("balance." + Currency.format balance.Currency + ".after")
+                                   "label.after"
+                                   Prominence.Primary
+                                   (optional
+                                       (PresentedValue.moneyTotal balance.Currency)
+                                       balance.Net.After)
+                           ]))
             Columns =
                 table.Columns
                 @ [
@@ -282,6 +334,7 @@ module PaymentsScreen =
                                         value.Revision
                                         item)
                                 position
+                                value.ClosureOutcome
                                 value.Payees
                                 value.Items
                         ))

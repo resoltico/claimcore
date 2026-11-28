@@ -23,7 +23,7 @@ Cases opens at **Needs attention**. Use the view tabs, **More views**, and **Fil
 On phones, swipe the view tabs to reach More views or open **Filters** for the list filters and export.
 
 **Mine** follows explicit responsibility. **Unassigned** finds active open cases with nobody responsible.
-**Decided and not fully paid** includes partly paid cases. Paid cases ready to close need attention too.
+**Decided and not fully paid** includes partly paid cases. Cases ready to close and active cases with financial exceptions need attention too.
 A case with several attention reasons counts once.
 
 Search matches the current reference, policy numbers, insurer claim references, party names and
@@ -90,7 +90,7 @@ the core's recommendation. **More actions** groups the other offered changes, in
 Activity and receipt details show the recorded comparisons and IDs,
 versions and copy controls.
 
-The Paid stage uses net payments in the decision currency. It is complete when the case is Paid or Overpaid.
+Payable coverage uses current net payments in the decision currency. The tracker gives closure its own step.
 Voided and erased cases show their disposition. A reinstatement notice remains until the next fact change.
 A blocked task link explains the current reason and any offered alternative while preserving the workspace.
 
@@ -101,23 +101,31 @@ identified as either missing or outside your access.
 
 Choose **Record payment decision** to enter the decision date, payable amount and currency, and
 optional decision basis. You can revise or withdraw a decision independently of recorded payments.
-A zero-payable decision with zero net paid is Paid.
+A zero-payable decision with zero net paid shows **No payment due**.
 
 Use **Record actual payment** for each transfer or return. Enter the direction, the actual payment
 date, a positive amount and its own currency. Include the bank or letter reference and a payee
 from the case's current parties when known. A payment can precede the decision or use another
 currency. The payment date must be at or before the business date.
 
-The case shows net paid by currency. Progress compares the decision's payable amount with net paid
-in that currency. An overpayment or negative net raises **Payments need review** on an active open
-case. The tracker uses the latest date of a current Paid entry for the Paid stage. A removed payee
-keeps its last recorded name with a removed marker.
+The case shows exact net paid for each currency with current transfers. Equal payments and
+returns leave a recorded zero. Removing the last entry removes the currency balance.
+Progress compares the decision's payable amount with the net in that currency and shows the
+exact amounts alongside a meter when comparable. Transfers keep their own dates. **Latest
+transfer date** is the greatest date among current payments and returns.
+
+An overpayment, negative net in any currency, or a Settled outcome without a covered positive
+payable raises **Payments need review** on an active case. It suppresses **Ready to close** and
+the seeded close outcome. Authorized users can deliberately close by choosing an outcome.
+Active closed cases remain eligible for payment recording, correction and removal. These changes
+preserve the recorded closure and can bring a closed case into **Needs attention**.
 
 The workspace shows the latest three entries and their total count. **Show all payments** opens
 the paged list, also available through `claimcore case payments`. Use **Remove payment entry** for
-an assertion recorded in error. **Correct payment entry** replaces the amount, currency, direction,
-date, reference and payee in one operation. The receipt identifies the removed and replacement
-entries. Use Returned to record money actually returned by a recipient.
+an assertion recorded in error. **Correct payment entry** asks which facts to change and keeps
+the other facts. The original payee can be kept even after removal. A changed payee must be a
+current party on the same case. Clear a reference or payee explicitly. A successful correction
+records both entry identities in one operation.
 
 ## Plan case work
 
@@ -224,9 +232,9 @@ filters, scroll and focus under the same workspace owner; direct entry falls bac
 ## Close or reopen
 
 Choose **Close the case** when handling is finished. Confirm the outcome and optionally record a
-closing note. The core suggests Declined for zero payable or Settled when net paid covers a
-positive payable. You can choose any listed outcome. The Closed tracker stage shows that outcome
-and the business date of the close.
+closing note. When no financial exception needs review, the core suggests Declined for zero
+payable or Settled when net paid covers a positive payable. You can choose any listed outcome.
+The Closed tracker stage shows the outcome and the business date of the close.
 
 Choose **Reopen the case** and enter a reason. The receipt and authorized history record it.
 Reopen and close again to record a new outcome. Each close remains in history.

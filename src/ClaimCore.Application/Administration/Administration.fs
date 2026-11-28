@@ -255,6 +255,7 @@ module internal AdministrationFailures =
         | RuntimeOpenFault.UnsupportedDatabase -> OperatorFault.UnsupportedDatabase
         | RuntimeOpenFault.UnsafeRole -> OperatorFault.PermissionDenied
         | RuntimeOpenFault.SchemaMismatch -> OperatorFault.SchemaMismatch
+        | RuntimeOpenFault.WitnessMismatch -> OperatorFault.WitnessMismatch
         | RuntimeOpenFault.InstallationInvalid -> OperatorFault.InstallationInvalid
         | RuntimeOpenFault.DataKeyInvalid -> OperatorFault.DataKeyInvalid
         | RuntimeOpenFault.HeadMismatch -> OperatorFault.HeadMismatch
@@ -321,6 +322,30 @@ type Administration(connectionString: string, productVersion: string, masterKey:
             raise (OperatorFaultException OperatorFault.ConnectionInvalid)
 
     static member ClassifyFailure error = AdministrationFailures.classify error
+
+    member _.CheckWitness(connection: string, token) =
+        task {
+            let settings = NpgsqlConnectionStringBuilder connection
+            InstallationCheck.transport settings
+            use witness = InstallationCheck.dataSource connection
+
+            let! systemId =
+                DatabaseSession.read source token (fun connection ->
+                    task {
+                        let! rows =
+                            DatabaseSession.rows
+                                connection
+                                "SELECT system_identifier FROM pg_catalog.pg_control_system()"
+                                [||]
+                                token
+
+                        return DatabaseSession.value<int64> 0 (List.exactlyOne rows)
+                    })
+
+            do!
+                DatabaseSession.read witness token (fun connection ->
+                    WitnessCluster.requireIndependent systemId connection token)
+        }
 
     member _.EnrollWitness(connection: string, installation: Installation, token) =
         task {

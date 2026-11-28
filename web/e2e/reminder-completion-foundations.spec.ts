@@ -250,7 +250,7 @@ const current = {
                 value: {
                   kind: "STATE",
                   vocabulary: "headline",
-                  token: "PAID",
+                  token: "PAYABLE_COVERED",
                 },
               },
             ],

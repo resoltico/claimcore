@@ -3,17 +3,21 @@ import type { ResponseFor } from "@contracts/client";
 import { expect, test, type Page } from "./fixtures";
 import { applyPeople, selectedActor, syntheticPrincipals } from "./people-setup";
 import { reviewedPeopleBinding } from "./people-revision";
+import { retainResponseBodies } from "./response-bodies";
 import { login, openAuthenticated, seedSignedOut } from "./session-helpers";
 import { casePath } from "../src/routing/routes";
 import { operationId } from "../src/operation/operationId";
 
 const reactivate = async (page: Page) => {
   await page.bringToFront();
-  const request = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/case.get",
-  );
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  return (await (await request).json()) as ResponseFor<"case.get", "HUMAN">;
+  const received = page
+    .waitForResponse((response) => new URL(response.url()).pathname === "/api/case.get")
+    .then(async (response) => (await response.json()) as ResponseFor<"case.get", "HUMAN">);
+  const [reply] = await Promise.all([
+    received,
+    page.evaluate(() => window.dispatchEvent(new Event("focus"))),
+  ]);
+  return reply;
 };
 
 test("separate browser sessions lose restricted related facts on activation @engine", async ({
@@ -83,6 +87,7 @@ test("separate browser sessions lose restricted related facts on activation @eng
       await expect(page.locator(".case-workspace")).toContainText(sourceFact);
       await expect(page.locator(".case-workspace")).toContainText(relation);
       const target = await page.context().newPage();
+      await retainResponseBodies(target);
       await target.goto(casePath(targetId));
       await expect(target.locator(".case-workspace")).toContainText(targetFact);
 

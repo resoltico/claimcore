@@ -30,6 +30,8 @@ module CaseIndex =
         =
         let fields = CaseState.fields snapshot.State
 
+        let finance = fields |> Option.map FinancialAssessment.ofCase
+
         let work = if snapshot.State = CaseState.Erased then None else work
         let responsible, _, workSearch = CaseWorkSnapshot.columns work
 
@@ -47,7 +49,7 @@ module CaseIndex =
                     deadlineDue
             Status = fields |> Option.map _.Status
             Outcome = fields |> Option.bind (_.Handling >> Handling.closure) |> Option.map _.Outcome
-            Progress = fields |> Option.map (fun fields -> CaseProgress.ofFinancial fields.Finance)
+            Progress = finance |> Option.map _.Progress
             ChangedAt = changedAt
             SearchText = fields |> Option.map (CaseSearch.text parties)
             WorkSearchText = workSearch
@@ -55,9 +57,7 @@ module CaseIndex =
                 fields
                 |> Option.bind (fun fields -> Registration.receivedDate fields.Registration)
             Claimed = fields |> Option.bind (fun fields -> Registration.claimed fields.Registration)
-            PaymentReview =
-                fields
-                |> Option.map (fun fields -> FinancialPosition.needsReview fields.Finance)
+            PaymentReview = finance |> Option.map _.NeedsReview
             Payable =
                 fields
                 |> Option.bind (fun fields -> fields.Decision |> Option.map Decision.payable)

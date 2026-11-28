@@ -35,7 +35,7 @@ type private Command = { PaymentId: OperationId }
 let check (_: InputMap) = []
 
 let private gate =
-    CaseRules.gate true (fun state ->
+    CaseRules.gate false (fun state ->
         state.Case.Value.Content
         |> Option.exists (fun content -> content.Finance.PaymentCount > 0L))
 
@@ -93,7 +93,7 @@ let decisionFactsAvailable (state: DecisionFacts option) (_: Binding) =
 let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.CasePayment(_, _, id) ->
-        CaseRules.admit context environment state binding capability (FamilyRules.active true)
+        CaseRules.admit context environment state binding capability (FamilyRules.active false)
         |> Parsing.reject
         |> Result.bind (fun () ->
             match Map.tryFind id state.Payments with

@@ -127,6 +127,48 @@ let tests =
                             TaskInputId.Target InputTarget.PaymentDirection, InputValue.Text "PAID"
                         ])
                     "No authored precision normalization")
+            testCase "payment correction accepts either money member alone" (fun () ->
+                let selection =
+                    [
+                        "case"
+                        "correct-payment"
+                        "--case-id"
+                        "123e4567-e89b-42d3-a456-426614174000"
+                        "--payment-id"
+                        "01a21f61-6251-7f84-bc98-4e9a7c9ac348"
+                        "--expected-revision"
+                        "3"
+                    ]
+
+                for flag, field, value in
+                    [
+                        "--paid-amount", BusinessField.PaidAmount, "10.1"
+                        "--paid-currency", BusinessField.PaidCurrency, "USD"
+                    ] do
+                    let submitted = input (selection @ [ flag; value ]) |> Submissions.command
+
+                    Expect.equal
+                        submitted.Inputs.Values
+                        (Map.ofList
+                            [ TaskInputId.Target(InputTarget.Field field), InputValue.Text value ])
+                        "Only the selected scalar is authored"
+
+                Expect.isError
+                    (Grammar.prepare
+                        (fun () -> operation)
+                        [
+                            "case"
+                            "record-payment"
+                            "--case-id"
+                            "123e4567-e89b-42d3-a456-426614174000"
+                            "--expected-revision"
+                            "3"
+                            "--payment-date"
+                            "2026-08-05"
+                            "--paid-amount"
+                            "10.1"
+                        ])
+                    "Recording still requires the currency")
             testCase
                 "correction preserves separate keep clear and selected scalar intent"
                 (fun () ->

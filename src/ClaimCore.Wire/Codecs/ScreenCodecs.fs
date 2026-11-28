@@ -71,17 +71,22 @@ module ScreenCodecs =
         |> named "PresentedColumn"
 
     let private moneyMeter =
-        (record (fun current target complete description ->
+        (record (fun position maximum description ->
             {
-                PresentedMoneyMeter.Current = current
-                Target = target
-                Complete = complete
+                PresentedMoneyMeter.Position = position
+                Maximum = maximum
                 Description = description
             })
         : Fields<PresentedMoneyMeter, _>)
-        |> field "current" _.Current (moneyFields |> build)
-        |> field "target" _.Target (moneyFields |> build)
-        |> field "complete" _.Complete boolean
+        |> field
+            "position"
+            _.Position
+            (integer 0L (int64 PaymentsScreen.ProgressMaximum) |> map int int64)
+        |> field
+            "maximum"
+            _.Maximum
+            (integer (int64 PaymentsScreen.ProgressMaximum) (int64 PaymentsScreen.ProgressMaximum)
+             |> map int int64)
         |> field "description" _.Description message
         |> build
         |> named "PresentedMoneyMeter"
@@ -101,12 +106,11 @@ module ScreenCodecs =
         |> named "PresentedRowDetail"
 
     let private stage =
-        (record (fun stage reached date stageValue meter link actions ->
+        (record (fun stage reached date stageValue link actions ->
             {
                 RegionStage.Stage = stage
                 Link = link
                 Actions = defaultArg actions []
-                Meter = meter
                 Reached = reached
                 Date = date
                 StageValue = stageValue
@@ -116,7 +120,6 @@ module ScreenCodecs =
         |> field "reached" _.Reached boolean
         |> field "date" _.Date (nullable calendarDate)
         |> field "value" _.StageValue (nullable value)
-        |> optionalField "meter" _.Meter moneyMeter
         |> optionalField "link" _.Link link
         |> optionalField
             "actions"

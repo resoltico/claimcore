@@ -89,15 +89,60 @@ module internal ReadRowCodecs =
         |> fieldMapWithPresence
 
     let private facts =
-        (record (fun parties fields ->
+        (record (fun parties -> { CaseSummaryFacts.Parties = parties }))
+        |> field "parties" (fun (facts: CaseSummaryFacts) -> facts.Parties) partySummary
+
+    let private grouping =
+        (record (fun registered received closed days outcome ->
             {
-                CaseSummaryFacts.Fields = fields
-                Parties = parties
-                ClosureOutcome = None
-            })
-        : Fields<CaseSummaryFacts, _>)
-        |> field "parties" _.Parties partySummary
-        |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseSummaryFields.declarations)
+                CaseReportGroupingFacts.RegisteredOn = registered
+                ReceivedOn = received
+                ClosedOn = closed
+                DaysOpen = days
+                Outcome = outcome
+            }))
+        |> field "registeredOn" _.RegisteredOn calendarDate
+        |> field "receivedOn" _.ReceivedOn (nullable calendarDate)
+        |> field "closedOn" _.ClosedOn (nullable calendarDate)
+        |> field "daysOpen" _.DaysOpen (integer -3652058L 3652058L |> map int int64)
+        |> field "outcome" _.Outcome (nullable (VocabularyCodec.create ClosureOutcome.vocabulary))
+        |> build
+        |> named "CaseReportGroupingFacts"
+
+    let private contribution =
+        (record (fun currency claimed payable net ->
+            if claimed = None && payable = None && net = None then
+                Error "A currency contribution requires an amount."
+            else
+                Ok
+                    {
+                        CaseCurrencyContribution.Currency = currency
+                        Claimed = claimed
+                        Payable = payable
+                        NetPaid = net
+                    }))
+        |> field "currency" _.Currency currencyCode
+        |> field "claimed" _.Claimed (nullable (decimalTotal false))
+        |> field "payable" _.Payable (nullable (decimalTotal false))
+        |> field "netPaid" _.NetPaid (nullable (decimalTotal true))
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
+        |> named "CaseCurrencyContribution"
+
+    let private contributions =
+        list CodeVocabularies.currencies.Length contribution
+        |> interpret
+            (fun path items ->
+                if
+                    items |> List.pairwise |> List.forall (fun (a, b) -> a.Currency < b.Currency)
+                then
+                    Ok items
+                else
+                    Error
+                        {
+                            Path = path
+                            Reason = "Contribution currencies must be in strict order."
+                        })
+            id
 
     let private caseNextAction =
         (record (fun id action due dueState ->
@@ -134,9 +179,10 @@ module internal ReadRowCodecs =
                 responsible
                 pending
                 stages
-                paid
+                money
+                reportGrouping
                 paymentCount
-                lastPaymentDate ->
+                latestTransferDate ->
                 {
                     CaseSummary.CaseId = id
                     Reference = reference
@@ -151,9 +197,10 @@ module internal ReadRowCodecs =
                     Responsible = responsible
                     PendingReminders = pending
                     Stages = stages
-                    NetPaid = paid
+                    Contributions = money
+                    Grouping = reportGrouping
                     PaymentCount = paymentCount
-                    LastPaymentDate = lastPaymentDate
+                    LatestTransferDate = latestTransferDate
                 })
         : Fields<CaseSummary, _>)
         |> field "caseId" _.CaseId caseId
@@ -172,8 +219,9 @@ module internal ReadRowCodecs =
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
-        |> field "netPaid" _.NetPaid (nullable PaymentCodecs.totals)
+        |> field "contributions" _.Contributions contributions
+        |> field "grouping" _.Grouping grouping
         |> field "paymentCount" _.PaymentCount (integer 0L SafeInteger.Maximum)
-        |> field "lastPaymentDate" _.LastPaymentDate (nullable calendarDate)
+        |> field "latestTransferDate" _.LatestTransferDate (nullable calendarDate)
         |> build
         |> named "CaseSummary"

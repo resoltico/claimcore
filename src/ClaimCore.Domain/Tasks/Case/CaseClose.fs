@@ -67,7 +67,13 @@ let availability environment state binding =
     let recommendation, outcome =
         state
         |> Option.bind (fun state -> state.Case.Value.Content)
-        |> Option.bind (fun content -> FinancialPosition.totals content.Finance)
+        |> Option.bind (fun content ->
+            let assessment = FinancialAssessment.ofPosition None content.Finance
+
+            if assessment.NeedsReview then
+                None
+            else
+                assessment.Comparison)
         |> Option.map (fun totals ->
             let payable = DecimalTotal.ofAmount (Money.amount totals.Payable)
 

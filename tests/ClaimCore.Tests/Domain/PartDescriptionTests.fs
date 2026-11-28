@@ -209,15 +209,14 @@ let tests =
                             (Some { Before = None; After = Some false })
                             "New live entry"
 
-                        let net totals =
-                            totals
-                            |> Option.map (fun (total: PaymentTotals) ->
-                                DecimalTotal.format total.NetPaid)
+                        let balance = List.exactlyOne finance.Balances
+                        Expect.equal (Currency.format balance.Currency) "EUR" "Recorded currency"
+                        Expect.equal balance.Net.Before None "No recorded transfer before"
 
                         Expect.equal
-                            (net entry.Totals.Before, net entry.Totals.After)
-                            (Some "0", Some "25.5")
-                            "Before and after net in the decision currency"
+                            (balance.Net.After |> Option.map DecimalTotal.format)
+                            (Some "25.5")
+                            "The case effect owns the resulting actual balance"
 
                         Expect.isEmpty
                             finance.Money

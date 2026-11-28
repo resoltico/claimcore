@@ -2,8 +2,7 @@ import { expect, it } from "vitest";
 import { Stepper } from "../../../src/ui/Stepper";
 import { render } from "../../support/presentation-test-support";
 
-it("renders decorative connectors and leaves only the informative money meter", () => {
-  const amount = { amount: "5", currency: "EUR", displayScale: 2 };
+it("renders coverage and decorative connectors without a second meter", () => {
   const { container } = render(
     <Stepper
       timeZone="UTC"
@@ -15,20 +14,8 @@ it("renders decorative connectors and leaves only the informative money meter", 
           {
             stage: "PAID",
             reached: true,
-            date: "2026-11-02",
-            value: null,
-            meter: {
-              current: amount,
-              target: amount,
-              complete: true,
-              description: {
-                messageId: "label.paymentProgress",
-                arguments: [
-                  { key: "paid", value: { ...amount, kind: "MONEY" } },
-                  { key: "payable", value: { ...amount, kind: "MONEY" } },
-                ],
-              },
-            },
+            date: null,
+            value: { kind: "MESSAGE", messageId: "label.payableCovered" },
           },
           { stage: "CLOSED", reached: false, date: null, value: null },
         ],
@@ -38,6 +25,6 @@ it("renders decorative connectors and leaves only the informative money meter", 
   expect(
     container.querySelectorAll('li > .stage-connector[aria-hidden="true"] + strong'),
   ).toHaveLength(3);
-  expect(container.querySelectorAll("meter")).toHaveLength(1);
-  expect(container.querySelector('li[aria-current="step"] .money-meter meter')).toBeInTheDocument();
+  expect(container.querySelectorAll("meter")).toHaveLength(0);
+  expect(container.querySelector('li[aria-current="step"] strong')).toBeInTheDocument();
 });

@@ -69,6 +69,7 @@ let tests =
                                     )
                                 Items = [ item tasks ]
                                 Payees = []
+                                ClosureOutcome = None
                                 NextCursor = None
                             }
 

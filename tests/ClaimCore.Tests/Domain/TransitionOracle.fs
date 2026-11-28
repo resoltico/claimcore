@@ -116,9 +116,7 @@ let samples =
         bare "case.withdrawDecision"
         payment
         bare "case.removePayment"
-        { payment with
-            Task = "case.correctPayment"
-        }
+        bare "case.correctPayment"
         {
             Task = "case.close"
             Inputs = business [ BusinessField.Outcome, "SETTLED" ]
@@ -170,6 +168,9 @@ let private eligible (fields: CaseFields) witness =
     | "case.open" -> false
     | "case.reopen" -> fields.Status = CaseStatus.Closed
     | "case.correct" -> fields.Status = CaseStatus.Closed || fields.Decision.IsSome
+    | "case.recordPayment"
+    | "case.correctPayment"
+    | "case.removePayment" -> activeEligible fields witness
     | _ when fields.Status = CaseStatus.Closed -> false
     | _ -> activeEligible fields witness
 

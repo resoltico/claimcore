@@ -575,6 +575,7 @@ let receiptStatusAndProgress =
                 ReopenReason = None
                 RecordedFields = recorded
                 Payments = []
+                Balances = []
             }
 
     testList

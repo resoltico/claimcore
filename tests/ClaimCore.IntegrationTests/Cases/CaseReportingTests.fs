@@ -940,6 +940,251 @@ let private maximumEnvelope (database: PostgresFixture.Database) =
             "The first larger representable authenticated envelope is withheld before serialization"
     }
 
+let private contributionReconciliation (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = caseWorker fixture
+
+        let on day =
+            { owner with
+                Calendar =
+                    { new IBusinessCalendar with
+                        member _.TimeZoneId = owner.Calendar.TimeZoneId
+                        member _.DateAt _ = CalendarDate.value (date day)
+                    }
+            }
+
+        let observation = on "2026-04-02"
+        let! first = openCase fixture (on "2026-01-01") 10 (Some "2026-01-01") (Some "0")
+        accepted first |> ignore
+        let! second = openCase fixture (on "2026-03-03") 11 None (Some "11")
+        accepted second |> ignore
+        let! moneyless = openCase fixture observation 12 None None
+        accepted moneyless |> ignore
+
+        let execute number target revision act fields =
+            task {
+                let! result =
+                    Service.executeSubmission
+                        observation
+                        (request fixture number target revision act fields)
+                        token
+
+                accepted result |> ignore
+            }
+
+        let firstTarget, secondTarget = "REPORT-10", "REPORT-11"
+
+        do!
+            execute
+                20
+                firstTarget
+                1L
+                "case.decide"
+                (Submissions.fields
+                    [
+                        BusinessField.PaymentDecisionDate, "2026-01-02"
+                        BusinessField.PayableAmount, "0"
+                        BusinessField.PayableCurrency, "EUR"
+                    ])
+
+        let transfer number target revision direction amount currency =
+            Submissions.fields
+                [
+                    BusinessField.PaymentDate, "2026-03-03"
+                    BusinessField.PaidAmount, amount
+                    BusinessField.PaidCurrency, currency
+                ]
+            |> Map.add
+                (Submissions.input InputTarget.PaymentDirection)
+                (SubmissionValue.Text direction)
+            |> execute number target revision "case.recordPayment"
+
+        do! transfer 21 firstTarget 2L "PAID" "5" "EUR"
+        do! transfer 22 firstTarget 3L "PAID" "7.0001" "USD"
+        do! transfer 23 secondTarget 1L "RETURNED" "5" "EUR"
+
+        let who = CaseFixtures.actorId (id fixture 1)
+
+        let! assigned =
+            Service.executeSubmission
+                (on "2026-04-01")
+                (Submissions.createRaw
+                    "work.update"
+                    (id fixture 24)
+                    (OperationBinding.Work(caseTarget fixture firstTarget, 0L))
+                    (Submissions.work
+                        {
+                            Responsible = WorkValue.Set(ActorId.format who)
+                            Summary = WorkValue.Keep
+                        }))
+                token
+
+        accepted assigned |> ignore
+
+        let! closed =
+            Service.executeSubmission
+                (on "2026-04-01")
+                (request
+                    fixture
+                    25
+                    firstTarget
+                    4L
+                    "case.close"
+                    (Submissions.fields [ BusinessField.Outcome, "DECLINED" ]))
+                token
+
+        accepted closed |> ignore
+
+        let mutable cursor = None
+        let listed = ResizeArray<CaseSummary>()
+        let mutable basis = None
+
+        for index in 1..3 do
+            let! page =
+                Service.list
+                    observation
+                    {
+                        Filter = CaseListFilter.empty<string>
+                        Page = { Limit = 1; AfterCursor = cursor }
+                    }
+                    token
+
+            let page = success page
+            Expect.hasLength page.Items 1 "Pagination stays at the case grain"
+            Expect.equal page.NextCursor.IsSome (index < 3) "One continuation per remaining case"
+            listed.AddRange page.Items
+            cursor <- page.NextCursor
+            basis <- Some page.Basis
+
+        let basis = basis |> Option.get
+
+        let csv =
+            Array.append CaseCsv.csvHeader (CaseCsv.csvRows basis listed)
+            |> Encoding.UTF8.GetString
+
+        let csvLines = csv.Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
+        let columns = csvLines[0].Split(',')
+
+        let rows =
+            csvLines[1..]
+            |> Array.map (fun line -> Array.zip columns (line.Split(',')) |> Map.ofArray)
+
+        Expect.hasLength rows 4 "Two currencies, one currency, and one moneyless case"
+
+        Expect.hasLength
+            (rows |> Array.filter (fun row -> row["currency"] = ""))
+            1
+            "One moneyless row"
+
+        let absent fallback value = if value = "" then fallback else value
+
+        let month fallback (value: string) =
+            if value = "" then fallback else value.Substring(0, 7)
+
+        let band days =
+            if days <= 30 then "0-30"
+            elif days <= 90 then "31-90"
+            elif days <= 180 then "91-180"
+            elif days <= 365 then "181-365"
+            else "366+"
+
+        let group grouping (row: Map<string, string>) =
+            match grouping with
+            | None -> ""
+            | Some CaseGrouping.RegisteredMonth -> month "" row["registeredOn"]
+            | Some CaseGrouping.ReceivedMonth -> month "NOT_RECORDED" row["receivedOn"]
+            | Some CaseGrouping.ClosedMonth -> month "NOT_CLOSED" row["closedOn"]
+            | Some CaseGrouping.Outcome -> absent "NOT_CLOSED" row["outcome"]
+            | Some CaseGrouping.Responsible -> absent "UNASSIGNED" row["responsible.actorId"]
+            | Some CaseGrouping.DaysOpen ->
+                band (Int32.Parse(row["daysOpen"], Globalization.CultureInfo.InvariantCulture))
+
+        let amount (raw: string) =
+            Decimal.Parse(raw, Globalization.CultureInfo.InvariantCulture)
+
+        let contribution (rows: Map<string, string> array) key =
+            let values =
+                rows
+                |> Array.choose (fun row ->
+                    if row[key] = "" then
+                        None
+                    else
+                        Some(row["caseId"], amount row[key]))
+
+            if values.Length = 0 then
+                None
+            else
+                Some(
+                    Array.sumBy snd values,
+                    values |> Array.map fst |> Array.distinct |> Array.length
+                )
+
+        let expected grouping =
+            rows
+            |> Array.groupBy (group grouping)
+            |> Array.collect (fun (key, cases) ->
+                let count =
+                    cases |> Array.map (fun row -> row["caseId"]) |> Array.distinct |> Array.length
+
+                let money = cases |> Array.filter (fun row -> row["currency"] <> "")
+
+                if money.Length = 0 then
+                    [| (key, ""), (count, None, None, None) |]
+                else
+                    money
+                    |> Array.groupBy (fun row -> row["currency"])
+                    |> Array.map (fun (currency, items) ->
+                        (key, currency),
+                        (count,
+                         contribution items "claimed",
+                         contribution items "payable",
+                         contribution items "netPaid")))
+            |> Map.ofArray
+
+        for grouping in None :: (Vocabulary.all CaseGrouping.vocabulary |> List.map Some) do
+            let! report =
+                Service.caseSummary
+                    observation
+                    {
+                        Selection =
+                            {
+                                Filter = CaseListFilter.empty<string>
+                                GroupBy = grouping
+                            }
+                        Page = { Limit = 50; AfterCursor = None }
+                    }
+                    token
+
+            let report = success report
+            Expect.equal report.Basis.BusinessDate basis.BusinessDate "Same business observation"
+
+            let actual =
+                report.Rows
+                |> List.map (fun row ->
+                    let group =
+                        row.Group |> Option.map CaseGroupKey.token |> Option.defaultValue ""
+
+                    let currency =
+                        row.Currency |> Option.map Currency.format |> Option.defaultValue ""
+
+                    let read (measure: CurrencyTotal option) =
+                        measure
+                        |> Option.map (fun total ->
+                            amount (DecimalTotal.format total.Amount), int total.Cases)
+
+                    (group, currency),
+                    (int row.Count, read row.Claimed, read row.Payable, read row.NetPaid))
+                |> Map.ofList
+
+            Expect.equal actual (expected grouping) ("CSV reconciles for " + string grouping)
+
+        Expect.equal
+            ((expected None)["", "EUR"] |> fun (_, _, _, net) -> net)
+            (Some(0M, 2))
+            "Opposite nonzero balances remain two contributing cases"
+    }
+
 [<Tests>]
 let tests =
     testList
@@ -969,6 +1214,9 @@ let tests =
                 "month grouping, date predicates, currency counts, access and CSV share authorized cases"
                 (run monthReporting)
             testCaseAsync "current outcome projection groups the recorded closures" (run outcomes)
+            testCaseAsync
+                "case CSV contributions reconcile for every report grouping"
+                (run contributionReconciliation)
             testCaseAsync
                 "51 Received months traverse bounded HUMAN and complete CSV"
                 (run traversal)

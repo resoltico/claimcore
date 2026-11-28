@@ -146,11 +146,110 @@ let private differentChecksum () =
 
     Array.append baseline (Encoding.UTF8.GetBytes "\n-- Synthetic checksum control.\n")
 
+let private earlierWitness () =
+    async {
+        let! database = PostgresFixture.createDurableWithOwner () |> Async.AwaitTask
+        let earlier = PostgresFixture.createWitness ()
+
+        try
+            let oldSql =
+                (PostgresFixture.witnessSchema ())
+                    .Replace(
+                        "COMMENT ON SCHEMA claimcore_witness IS 'claimcore-format-12-payment-corrections';\n",
+                        ""
+                    )
+
+            Expect.equal
+                (Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes oldSql)))
+                "ab6e16d374c2bd09d86f7a4b4c48c68e9504b833d178be17b74090219284ba60"
+                "Exact witness SQL from the earlier development baseline"
+
+            let! runtime, owner =
+                PostgresFixture.setupWitnessFrom oldSql earlier token |> Async.AwaitTask
+
+            use oldWitness = NpgsqlDataSource.Create owner
+
+            let! primary =
+                DatabaseSession.read database.OwnerSource token (fun connection ->
+                    WitnessPrimary.read connection token)
+                |> Async.AwaitTask
+
+            let! before = dump earlier |> Async.AwaitTask
+            let! mainBefore = dump database.Container |> Async.AwaitTask
+
+            let! opened =
+                Runtime.openWitnessedConnection
+                    (PostgresFixture.runtimeConnectionString database)
+                    runtime
+                    database.MasterKey
+                    token
+                |> Async.AwaitTask
+
+            match opened with
+            | Error RuntimeOpenFault.WitnessMismatch -> ()
+            | Error other -> failtestf "Expected incompatibility, got %A" other
+            | Ok runtime ->
+                runtime.Dispose()
+                failtest "Earlier witness must not be admitted"
+
+            let! enrollRefused =
+                task {
+                    try
+                        let! _ =
+                            WitnessEnrollment.enroll
+                                database.OwnerSource
+                                oldWitness
+                                database.Installation.InstallationId
+                                token
+
+                        return false
+                    with :? OperatorFaultException as error ->
+                        return
+                            error.Fault =
+                                ClaimCore.Application.Contracts.OperatorFault.WitnessMismatch
+                }
+                |> Async.AwaitTask
+
+            Expect.isTrue enrollRefused "Earlier witness cannot be enrolled"
+
+            let! restoreRefused =
+                task {
+                    try
+                        let! _ =
+                            WitnessRestore.fence
+                                oldWitness
+                                primary.SystemId
+                                database.Installation.InstallationId
+                                (Guid.NewGuid())
+                                token
+
+                        return false
+                    with :? OperatorFaultException as error ->
+                        return
+                            error.Fault =
+                                ClaimCore.Application.Contracts.OperatorFault.WitnessMismatch
+                }
+                |> Async.AwaitTask
+
+            Expect.isTrue restoreRefused "Earlier witness cannot supply restore evidence"
+
+            let! after = dump earlier |> Async.AwaitTask
+            let! mainAfter = dump database.Container |> Async.AwaitTask
+            Expect.equal after before "Earlier witness remains byte-identical"
+            Expect.equal mainAfter mainBefore "No change to the final primary"
+        finally
+            earlier.DisposeAsync().AsTask().GetAwaiter().GetResult()
+            database.Fixture.Dispose()
+    }
+
 [<Tests>]
 let tests =
     testList
         "baseline admission preserves incompatible installations"
         [
+            testCaseAsync
+                "the exact earlier witness refuses runtime enrollment and restore without mutation"
+                (earlierWitness ())
             testCaseAsync
                 "a synthetic baseline differing by one SQL statement is refused untouched"
                 (refusedInstallation
@@ -158,14 +257,23 @@ let tests =
                     (int16 InstallationFormat.Current)
                     alteredBaseline)
             testCaseAsync
-                "the published format 11 and baseline identity refuse without mutation"
-                (refusedInstallation "claimcore-format-11" 11s (fun () ->
-                    File
-                        .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
-                        .Replace("installation_format = 12", "installation_format = 11")
-                        .Replace("installation_format=12", "installation_format=11")
-                        .Replace("p_format<>12", "p_format<>11")
-                    |> Encoding.UTF8.GetBytes))
+                "the exact earlier development format-12 baseline refuses without mutation"
+                (refusedInstallation "claimcore-format-12" 12s (fun () ->
+                    let bytes =
+                        File
+                            .ReadAllText(Path.Combine(RepositoryRoot.find (), "db/baseline.sql"))
+                            .Replace(
+                                "COMMENT ON SCHEMA claimcore IS 'claimcore-format-12-payment-corrections';\n",
+                                ""
+                            )
+                        |> Encoding.UTF8.GetBytes
+
+                    Expect.equal
+                        (Convert.ToHexStringLower(SHA256.HashData bytes))
+                        "087a20c62f757c7eaddfdc21e397b8e35c7db7f576410ed31041b665c3977ae0"
+                        "Exact SQL identity from the earlier development base"
+
+                    bytes))
             testCaseAsync
                 "an earlier development baseline with the same format and a different checksum refuses untouched"
                 (refusedInstallation

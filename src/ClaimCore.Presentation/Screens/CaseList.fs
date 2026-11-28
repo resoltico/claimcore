@@ -22,7 +22,7 @@ module CaseListScreen =
                 IsMoney = false
                 Read =
                     fun row ->
-                        let outcome = CaseState.fields row.State |> Option.bind _.ClosureOutcome
+                        let outcome = row.Grouping.Outcome
                         headline row.Headline outcome
             }
             for role, key, label in
@@ -46,24 +46,33 @@ module CaseListScreen =
                             PresentedValue.Text(
                                 names |> List.map PartyName.format |> String.concat "; "
                             ))
-            yield!
-                caseFields FieldPresentation.declarations (fun (row: CaseSummary) ->
-                    CaseState.fields row.State
-                    |> Option.map (fun (facts: CaseSummaryFacts) -> facts.Fields))
-                |> List.map (fun definition ->
-                    { definition with
-                        Prominence =
-                            if definition.Key = BusinessField.key BusinessField.PayableAmount then
-                                Prominence.Detail
-                            else
-                                Prominence.Secondary
-                        Read =
-                            fun row ->
-                                if CaseState.lifecycle row.State = Lifecycle.Erased then
-                                    PresentedValue.Absent "lifecycle.ERASED.label"
-                                else
-                                    definition.Read row
-                    })
+            for field, prominence, measure in
+                [
+                    BusinessField.ClaimedAmount,
+                    Prominence.Secondary,
+                    fun (value: CaseCurrencyContribution) -> value.Claimed
+                    BusinessField.PayableAmount, Prominence.Detail, fun value -> value.Payable
+                ] do
+                column
+                    (BusinessField.key field)
+                    (FieldPresentation.labelId field)
+                    prominence
+                    true
+                    (fun row ->
+                        if CaseState.lifecycle row.State = Lifecycle.Erased then
+                            PresentedValue.Absent "lifecycle.ERASED.label"
+                        else
+                            row.Contributions
+                            |> List.tryPick (fun value ->
+                                measure value
+                                |> Option.map (PresentedValue.moneyTotal value.Currency))
+                            |> optional id)
+            column
+                "latestTransferDate"
+                "label.latestTransferDate"
+                Prominence.Detail
+                false
+                (fun row -> row.LatestTransferDate |> optional PresentedValue.Date)
             {
                 Key = "responsible"
                 LabelId = FieldPresentation.labelId BusinessField.ResponsibleActor

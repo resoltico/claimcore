@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import type { HumanResponseByEndpoint } from "@contracts/client";
 import { fireEvent, render, screen } from "../../support/presentation-test-support";
 import { LookupInput } from "../../../src/components/LookupInput";
-import { taskInput } from "../../../src/protocol/taskCatalog";
+import { TaskInputs } from "../../../src/components/TaskInputs";
+import { operationAffordance } from "../../support/affordances.fixtures";
+import { current } from "../../support/presentation-state.fixtures";
+import { operationTask, taskInput } from "../../../src/protocol/taskCatalog";
 const choice = "00000000-0000-4000-8000-000000000002";
 const caseId = "00000000-0000-4000-8000-000000000003";
 const page: HumanResponseByEndpoint["case.assignees"] = {
@@ -127,4 +130,38 @@ it("keeps an unlisted value and omits canonical typing guidance", async () => {
   fireEvent.focus(picker);
   expect(screen.queryByText("Use a current party's ID.")).not.toBeInTheDocument();
   expect(change).not.toHaveBeenCalled();
+});
+
+it("does not list the unavailable assignee carried forward by a work affordance", async () => {
+  supply();
+  const unavailable = "00000000-0000-4000-8000-000000000004";
+  const change = vi.fn();
+  const binding = {
+    kind: "WORK",
+    target: { kind: "ID", caseId: current.subject.caseId },
+    expectedRevision: current.subject.workRevision,
+  } as const;
+  render(
+    <TaskInputs
+      task={operationTask("work.update")}
+      binding={binding}
+      current={current}
+      affordance={operationAffordance("work.update", binding, {
+        "field:responsibleActor": unavailable,
+      })}
+      values={{ "field:responsibleActor": unavailable }}
+      disabled={false}
+      errors={{}}
+      onChange={change}
+      onFieldsChange={vi.fn()}
+    />,
+  );
+
+  const picker = screen.getByRole("combobox");
+  expect(await screen.findByText("The current choice is not among those listed.")).toBeVisible();
+  await userEvent.click(picker);
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+  expect(screen.queryByRole("option", { name: "Keep current selection" })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("option", { name: "Core opaque choice Ψ" }));
+  expect(change).toHaveBeenCalledExactlyOnceWith("field:responsibleActor", choice);
 });

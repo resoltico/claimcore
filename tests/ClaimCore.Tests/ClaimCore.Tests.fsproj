@@ -203,7 +203,6 @@
     <Compile Include="Contract/InputContractScenarios.fs" />
     <Compile Include="Contract/ContractTests.fs" />
     <Compile Include="Contract/ResponseLimitTests.fs" />
-    <Compile Include="Contract/ListedCaseFieldTests.fs" />
     <Compile Include="Contract/WorkDescriptorTests.fs" />
     <Compile Include="Contract/PresentedViewTests.fs" />
     <Compile Include="Contract/ScreenCompositionTests.fs" />

@@ -48,9 +48,17 @@ let case: CaseSummary =
         NextAction = None
         Responsible = None
         PendingReminders = 0L
-        NetPaid = None
+        Contributions = []
+        Grouping =
+            {
+                RegisteredOn = CalendarDate.ofDate DomainInputs.workBasis.BusinessDate
+                ReceivedOn = None
+                ClosedOn = None
+                DaysOpen = 0
+                Outcome = None
+            }
         PaymentCount = 0L
-        LastPaymentDate = None
+        LatestTransferDate = None
     }
 
 let private documents () =

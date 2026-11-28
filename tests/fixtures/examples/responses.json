@@ -65,7 +65,9 @@
         "operationId": "10000000-0000-7000-8000-000000000001",
         "outcome": {
           "kind": "RECEIPT_UNAVAILABLE",
-          "data": { "caseReference": "CC-MT7E-RJR6-QWHA-6REM-91" }
+          "data": {
+            "caseReference": "CC-MT7E-RJR6-QWHA-6REM-91"
+          }
         }
       }
     },
@@ -527,7 +529,7 @@
               "summaryChangedAt": null,
               "summaryRecordedBy": null
             },
-            "headline": "PAID",
+            "headline": "NO_PAYMENT_DUE",
             "attention": ["NO_NEXT_ACTION", "UNASSIGNED", "READY_TO_CLOSE"],
             "stages": {
               "kind": "TRACKER",
@@ -541,8 +543,8 @@
                     "amount": "0",
                     "currency": "EUR"
                   },
-                  "netPaid": null,
-                  "outcome": null
+                  "outcome": null,
+                  "noPaymentDue": false
                 },
                 {
                   "stage": "DECIDED",
@@ -552,30 +554,24 @@
                     "amount": "0",
                     "currency": "EUR"
                   },
-                  "netPaid": null,
-                  "outcome": null
+                  "outcome": null,
+                  "noPaymentDue": false
                 },
                 {
                   "stage": "PAID",
                   "completed": true,
-                  "date": "2026-01-01",
+                  "date": null,
                   "amount": null,
-                  "netPaid": {
-                    "payable": {
-                      "amount": "0",
-                      "currency": "EUR"
-                    },
-                    "netPaid": "0"
-                  },
-                  "outcome": null
+                  "outcome": null,
+                  "noPaymentDue": true
                 },
                 {
                   "stage": "CLOSED",
                   "completed": false,
                   "date": null,
                   "amount": null,
-                  "netPaid": null,
-                  "outcome": null
+                  "outcome": null,
+                  "noPaymentDue": false
                 }
               ]
             },
@@ -620,12 +616,6 @@
                 "revision": 1,
                 "state": {
                   "kind": "ACTIVE",
-                  "fields": {
-                    "claimedAmount": "1000",
-                    "claimedCurrency": "EUR",
-                    "payableAmount": null,
-                    "payableCurrency": null
-                  },
                   "parties": {
                     "CLAIMANT": ["Synthetic claimant"],
                     "INSURER": ["Synthetic insurer"]
@@ -643,22 +633,30 @@
                   "completed": ["OPENED"]
                 },
                 "paymentCount": 0,
-                "lastPaymentDate": null,
                 "workRevision": 0,
                 "canAssign": false,
-                "netPaid": null
+                "latestTransferDate": null,
+                "contributions": [
+                  {
+                    "currency": "EUR",
+                    "claimed": "1000",
+                    "payable": null,
+                    "netPaid": null
+                  }
+                ],
+                "grouping": {
+                  "registeredOn": "2026-09-07",
+                  "receivedOn": null,
+                  "closedOn": null,
+                  "daysOpen": 0,
+                  "outcome": null
+                }
               },
               {
                 "caseReference": "CC-DXVB-7GBM-T0DE-MJGH-22",
                 "revision": 2,
                 "state": {
                   "kind": "VOIDED",
-                  "fields": {
-                    "claimedAmount": "1000",
-                    "claimedCurrency": "EUR",
-                    "payableAmount": null,
-                    "payableCurrency": null
-                  },
                   "parties": {
                     "CLAIMANT": ["Synthetic claimant"],
                     "INSURER": ["Synthetic insurer"]
@@ -673,10 +671,24 @@
                 "pendingReminders": 0,
                 "stages": null,
                 "paymentCount": 0,
-                "lastPaymentDate": null,
                 "workRevision": 0,
                 "canAssign": false,
-                "netPaid": null
+                "latestTransferDate": null,
+                "contributions": [
+                  {
+                    "currency": "EUR",
+                    "claimed": "1000",
+                    "payable": null,
+                    "netPaid": null
+                  }
+                ],
+                "grouping": {
+                  "registeredOn": "2026-09-07",
+                  "receivedOn": null,
+                  "closedOn": null,
+                  "daysOpen": 0,
+                  "outcome": null
+                }
               },
               {
                 "caseReference": "CC-PM0N-VGH8-3ZA8-9QE1-08",
@@ -693,10 +705,17 @@
                 "pendingReminders": 0,
                 "stages": null,
                 "paymentCount": 0,
-                "lastPaymentDate": null,
                 "workRevision": 0,
                 "canAssign": false,
-                "netPaid": null
+                "latestTransferDate": null,
+                "contributions": [],
+                "grouping": {
+                  "registeredOn": "2026-09-07",
+                  "receivedOn": null,
+                  "closedOn": null,
+                  "daysOpen": 0,
+                  "outcome": null
+                }
               }
             ],
             "nextCursor": "x",
@@ -1344,7 +1363,8 @@
                   "claimedAmount",
                   "claimedCurrency"
                 ],
-                "payments": []
+                "payments": [],
+                "balances": []
               },
               "caseId": "10000000-0000-7000-8000-000000000001"
             },
@@ -1429,7 +1449,8 @@
                     "claimedAmount",
                     "claimedCurrency"
                   ],
-                  "payments": []
+                  "payments": [],
+                  "balances": []
                 },
                 "caseId": "10000000-0000-7000-8000-000000000001"
               },
@@ -1637,6 +1658,7 @@
                           }
                         }
                       ],
+                      "balances": [],
                       "disposition": null
                     }
                   }
@@ -2142,12 +2164,24 @@
           "data": {
             "review": {
               "task": "case.open",
-              "target": { "kind": "OPENING" },
-              "references": { "actors": [], "cases": [] },
-              "binding": { "kind": "CASE", "expectedRevision": 0 },
+              "target": {
+                "kind": "OPENING"
+              },
+              "references": {
+                "actors": [],
+                "cases": []
+              },
+              "binding": {
+                "kind": "CASE",
+                "expectedRevision": 0
+              },
               "changes": [],
               "opening": {
-                "case": { "fields": [], "money": [], "lifecycle": "ACTIVE" },
+                "case": {
+                  "fields": [],
+                  "money": [],
+                  "lifecycle": "ACTIVE"
+                },
                 "parties": []
               },
               "context": {
@@ -3046,6 +3080,7 @@
                 "totals": []
               }
             },
+            "closureOutcome": null,
             "items": [],
             "nextCursor": null,
             "workRevision": 0,
@@ -3060,7 +3095,10 @@
       "valid": true,
       "value": {
         "representation": "DATA",
-        "outcome": { "kind": "SUCCEEDED", "data": null }
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": null
+        }
       }
     },
     {

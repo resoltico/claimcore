@@ -26,6 +26,7 @@ type OperatorFault =
     | UnsupportedDatabase
     | SchemaMismatch
     | FormatMismatch
+    | WitnessMismatch
     | InstallationInvalid
     | HeadMismatch
     | MaintenanceRequired

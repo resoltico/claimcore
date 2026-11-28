@@ -1,5 +1,6 @@
+import { cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import {
   render,
   screen,
@@ -14,9 +15,16 @@ import { operationId } from "../../src/operation/operationId";
 import { pendingLookup } from "../support/operation-lookup.fixtures";
 import { recoveryRecord, testJournal } from "../support/recovery.fixtures";
 
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
 it.each(["ar", "en-XA"] as const)(
   "renders the actual pending recovery screen in %s with a semantic deadline and accessible controls",
   async (language) => {
+    // Suspend the periodic poll so the second lookup can only come from the keyboard action.
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
     expect(savePreferences({ ...defaults, language, displayLocale: "ar-EG" }).kind).toBe(
       "available",
     );
@@ -53,9 +61,14 @@ it.each(["ar", "en-XA"] as const)(
       expect(controls[0]).not.toBeDisabled();
     });
     await user.keyboard("{Enter}");
-    await waitFor(() => {
-      expect(lookup).toHaveBeenCalledTimes(2);
-    });
+    expect(controls[0]).toBeDisabled();
+    // An explicit check waits for the pending response's retry delay before sending.
+    await waitFor(
+      () => {
+        expect(lookup).toHaveBeenCalledTimes(2);
+      },
+      { timeout: 3000 },
+    );
     expect(lookup.mock.calls[1]![1]).toEqual(lookup.mock.calls[0]![1]);
     expect(document.body).not.toHaveTextContent("label.operationPending");
     expect(document.body).not.toHaveTextContent("diagnostic.");

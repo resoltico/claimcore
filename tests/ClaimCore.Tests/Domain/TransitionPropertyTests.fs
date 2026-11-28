@@ -91,17 +91,24 @@ let private decide number sequence (current: CaseFamily) model stale (witness: O
     let environment = ClaimCore.Tests.TaskBuilders.environment
     let binding = binding model stale witness
 
+    let inputs =
+        if witness.Task = "case.correctPayment" then
+            let reference = "REF-" + string number
+
+            InputMap.create
+                (Map.ofList
+                    [ TaskInputId.Target InputTarget.PaymentReference, InputValue.Text reference ])
+                Map.empty
+            |> Option.get
+        else
+            witness.Inputs
+
     match selected witness with
     | Task.Opening task ->
-        task.Admit context environment None binding witness.Inputs
+        task.Admit context environment None binding inputs
         |> Result.bind (task.Accept current.Reference (Some current.Id))
     | Task.Family task ->
-        task.Decide
-            context
-            environment
-            (Some(DecisionFacts.fromReplay current))
-            binding
-            witness.Inputs
+        task.Decide context environment (Some(DecisionFacts.fromReplay current)) binding inputs
     | Task.Person _ -> failtest "Expected a case task."
 
 let private execute number sequence current model stale witness =

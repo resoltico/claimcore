@@ -500,13 +500,21 @@ test.describe("adopted work surface design matrix", () => {
     const action = dialog.locator("tbody").getByRole("button").first();
     await expect(action).toBeVisible();
     await action.click();
-    await expect(dialog.locator(".lookup-input").getByRole("combobox")).toBeVisible();
+    const editPayee = dialog.getByRole("checkbox", { name: "Change Payee", exact: true });
+    const payee = dialog.getByRole("combobox", { name: "Payee", exact: true });
+    await expect(editPayee).toBeVisible();
+    await expect(payee).toHaveCount(0);
     await expect(prompt).toHaveCount(0);
     await expect(dialog).toHaveCount(1);
     expect(await workFrame(dialog)).toEqual(selectionFrame);
     await expect
       .poll(() => dialog.evaluate((node) => node.contains(document.activeElement)))
       .toBe(true);
+    await editPayee.check();
+    await expect(payee).toBeVisible();
+    expect(await workFrame(dialog)).toEqual(selectionFrame);
+    await editPayee.uncheck();
+    await expect(payee).toHaveCount(0);
     await page.keyboard.press("Escape");
     await expect(page).toHaveURL(caseUrl);
     await expect(page.locator("main h1")).toBeFocused();

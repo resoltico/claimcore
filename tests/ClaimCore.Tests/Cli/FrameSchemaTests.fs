@@ -75,7 +75,12 @@ let private examples response () =
             else
                 Frames.admit bytes |> Result.isOk
 
-        Expect.equal admitted expected "Actual frame admission judges the frozen payload."
+        Expect.equal
+            admitted
+            expected
+            ("Actual frame admission for "
+             + example.GetProperty(if response then "name" else "id").GetString())
+
         use document = JsonDocument.Parse bytes
 
         Expect.equal

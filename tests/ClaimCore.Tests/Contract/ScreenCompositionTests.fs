@@ -119,6 +119,7 @@ let redesignDeclarations =
                             "attention", primary
                             "insurers", detail
                             "payableAmount", detail
+                            "latestTransferDate", detail
                             "changedAt", detail
                         ]
                         "Human columns are independent of the machine projection"
@@ -488,20 +489,22 @@ let tests =
                 | _ -> failtest "Reminder details contain entries")
             testCase "payment activity uses a heading without amount placeholders" (fun () ->
                 let change =
-                    TimelineChange.Payments
-                        {
-                            Entries = []
-                            Before = None
-                            After =
-                                Some
+                    TimelineChange.Balances
+                        [
+                            {
+                                Currency =
+                                    Currency.parse "EUR" |> Result.defaultWith (string >> failtest)
+                                Net =
                                     {
-                                        NetPaid =
-                                            DecimalTotal.parse "100"
-                                            |> Result.toOption
-                                            |> Option.get
-                                        Payable = CaseFixtures.money "300" "EUR"
+                                        Before = None
+                                        After =
+                                            Some(
+                                                DecimalTotal.parse "100"
+                                                |> Result.defaultWith (string >> failtest)
+                                            )
                                     }
-                        }
+                            }
+                        ]
 
                 let disclosure =
                     TimelineDisclosure.create
@@ -535,7 +538,7 @@ let tests =
 
                 Expect.equal
                     (detail.Highlights |> List.map _.TitleId)
-                    [ "label.paymentTotals" ]
+                    [ "label.netPaid" ]
                     "The progress sentence needs arguments and cannot be a section heading")
             testCase
                 "timeline metadata survives in details without disclosing withheld business changes"

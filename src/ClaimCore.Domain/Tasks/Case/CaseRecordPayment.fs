@@ -30,16 +30,25 @@ let declaration =
 
 let private capability = List.exactlyOne declaration.Capabilities
 
+let internal parseDirection value =
+    Vocabulary.tryParse PaymentDirection.vocabulary value
+    |> Option.map Ok
+    |> Option.defaultValue (Error Violation.PaymentDirectionFormat)
+
+let internal parsePayee value =
+    match System.Guid.TryParseExact(value, "D") with
+    | true, id ->
+        PartyId.create id
+        |> Option.map Ok
+        |> Option.defaultValue (Error Violation.PayeeUnavailable)
+    | _ -> Error Violation.PayeeUnavailable
+
 let internal parse admitReference admit inputs =
     let direction =
         Parsing.optionalText InputTarget.PaymentDirection inputs
         |> Result.bind (function
             | None -> Ok PaymentDirection.defaultValue
-            | Some value ->
-                Vocabulary.tryParse PaymentDirection.vocabulary value
-                |> Option.map Ok
-                |> Option.defaultValue (Error Violation.PaymentDirectionFormat)
-                |> Parsing.at InputTarget.PaymentDirection)
+            | Some value -> parseDirection value |> Parsing.at InputTarget.PaymentDirection)
 
     let optional target parse =
         Parsing.optionalText target inputs
@@ -47,14 +56,7 @@ let internal parse admitReference admit inputs =
             | None -> Ok None
             | Some value -> parse value |> Parsing.at target |> Result.map Some)
 
-    let payee =
-        optional InputTarget.PaymentPayee (fun value ->
-            match System.Guid.TryParseExact(value, "D") with
-            | true, id ->
-                PartyId.create id
-                |> Option.map Ok
-                |> Option.defaultValue (Error Violation.PayeeUnavailable)
-            | _ -> Error Violation.PayeeUnavailable)
+    let payee = optional InputTarget.PaymentPayee parsePayee
 
     let details =
         Admission.map2
@@ -71,7 +73,7 @@ let internal parse admitReference admit inputs =
 let check inputs =
     Parsing.check (parse Ok (fun _ -> Ok)) inputs
 
-let private gate = FamilyRules.active true
+let private gate = FamilyRules.active false
 
 let availability environment state binding =
     let offered =
@@ -79,7 +81,8 @@ let availability environment state binding =
 
     let recommendation =
         state
-        |> Option.bind (fun (state: DecisionFacts) -> state.Case.Value.Content)
+        |> Option.filter (fun (state: DecisionFacts) -> state.Case.Value.Handling = Handling.Open)
+        |> Option.bind (fun state -> state.Case.Value.Content)
         |> Option.bind (fun content ->
             match CaseProgress.ofFinancial content.Finance with
             | CaseProgress.Decided
@@ -90,9 +93,9 @@ let availability environment state binding =
         Recommendation = recommendation
     }
 
-let internal admitPayee (state: DecisionFacts) payment =
+let internal admitPayee (state: DecisionFacts) payee =
     let valid =
-        Payment.payee payment
+        payee
         |> Option.forall (fun id ->
             Map.tryFind id state.Parties
             |> Option.exists (fun part -> not part.Value.Removed && part.Value.Content.IsSome))
@@ -138,7 +141,7 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
             let! payment = parse Identifier.admit admit inputs |> Parsing.reject
 
             let! content = CaseRules.acceptedContent gate state
-            do! admitPayee state payment
+            do! admitPayee state (Payment.payee payment)
 
             do!
                 if Map.containsKey context.Stamp.OperationId state.Payments then
@@ -173,7 +176,7 @@ let decide (context: TaskContext) environment (state: DecisionFacts option) bind
 let decideRetained context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
     | Some state, Binding.Case _ ->
-        CaseRules.admit context environment state binding capability (FamilyRules.active true)
+        CaseRules.admit context environment state binding capability (FamilyRules.active false)
         |> Parsing.reject
         |> Result.map (fun () ->
             [

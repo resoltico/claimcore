@@ -59,6 +59,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                                 ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
+                                Balances = []
                             }
                         )
                 }

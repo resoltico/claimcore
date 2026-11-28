@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "この案件の現在および保持されている詳細、支払、作業、リマインダー、メモ、添付ファイルを完全に削除します。参照番号と変更記録は残ります。他の場所にあるコピーには影響しません。",
-    "source": "8bf54b53220a"
+    "text": "稼働中の登録簿から案件の非公開の詳細と、関連案件へのリンク先とメモを消去します。案件 ID、案件番号、変更記録は残ります。別の場所に保管されたコピーには影響しません。",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "プロフィールを消去",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "分かっている登録情報を使って案件を登録します。案件番号を空欄にすると、自動的に割り当てられます。登録簿で許可されている場合は、独自の案件番号を入力できます。",
-    "source": "debda0b6773d",
+    "text": "分かっている登録情報を使って案件を登録します。ClaimCore がその案件番号を割り当てます。この番号は変更されません。",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "有効な案件参照番号を使用してください。独自の参照番号は ASCII の英字で始まり、英数字とグループ間の単一ハイフンを合わせて最大32文字です。CC- はシステム割り当て用です。",
-    "source": "f856f6f13ef0",
+    "text": "ClaimCore が発行した案件番号を、チェック桁を含めてすべて入力してください。",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -833,9 +834,20 @@
     "text": "消去済み",
     "source": "1c9a70fabcb6"
   },
-  "headline.PAID.label": {
-    "text": "支払済み",
-    "source": "fb81b961af45"
+  "headline.NO_PAYMENT_DUE.label": {
+    "text": "支払いは不要です",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "headline.PAYABLE_COVERED.label": {
+    "text": "支払予定額を充足",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "headline.OVERPAID.label": {
+    "text": "過払い",
+    "source": "c93dce4211a4",
+    "machineMade": true
   },
   "headline.UNDECIDED.label": {
     "text": "未決定",
@@ -1086,8 +1098,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "消去済みです。案件番号だけが残ります。",
-    "source": "e63410fae906"
+    "text": "案件は消去されました。案件 ID、案件番号、変更記録は残ります。",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "無効化済み",
@@ -1409,12 +1422,14 @@
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "添付ファイルのダウンロード",
-    "source": "ba23685b28f6"
+    "text": "添付ファイルのダウンロードを許可",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "添付ファイルのプレビュー",
-    "source": "01b3a2e62a0d"
+    "text": "添付ファイルのプレビューを許可",
+    "source": "5e82512366e5",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "エクスポート",
@@ -1525,8 +1540,9 @@
     "source": "30ba702eee51"
   },
   "caseStage.PAID.label": {
-    "text": "支払済み",
-    "source": "fb81b961af45"
+    "text": "支払予定額の充足状況",
+    "source": "5ad88498af13",
+    "machineMade": true
   },
   "caseStage.CLOSED.label": {
     "text": "終了",
@@ -1677,13 +1693,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "ASCII 文字を1〜{maximumCharacters}文字使用してください。独自の参照番号は英字で始め、英数字とグループ間の単一ハイフンを使用します。CC- はシステム割り当て用です。",
-    "source": "e7fc63264856",
+    "text": "ASCII 文字で最大 {maximumCharacters} 文字の、発行済みの案件番号全体を、2つのチェック桁を含めて入力してください。",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "独自の参照番号は、訂正や消去の後も予約されたままです。個人情報を含めないでください。",
-    "source": "4936b3dc4560",
+    "text": "案件の登録時に発行された番号を入力してください。",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1988,8 +2004,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "案件参照番号とハイフンを確認してください。独自の参照番号は英字で始め、英数字とハイフンを合わせて32文字以内にしてください。CC- は予約済みです。",
-    "source": "00e1c36eb2e1",
+    "text": "ハイフンとチェック桁を含め、案件番号全体を確認してください。",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2053,8 +2069,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "現在および保持されている案件の詳細、支払、作業、リマインダー、メモを完全に削除します。参照番号と変更記録は残ります。他の場所にあるコピーには影響しません。",
-    "source": "0e447a932597"
+    "text": "稼働中の登録簿から非公開の詳細、添付ファイル、関連案件へのリンク先とメモを完全に消去します。案件 ID、案件番号、変更記録は残ります。別の場所に保管されたコピーには影響しません。",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "アカウントを登録しました。",
@@ -2654,8 +2671,9 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "{payable}のうち{paid}を支払済み",
-    "source": "6c78ba810cb0"
+    "text": "純支払額 {paid}（支払予定額 {payable}）",
+    "source": "56460f70ab2f",
+    "machineMade": true
   },
   "progress.PARTLY_PAID.label": {
     "text": "一部支払済み",
@@ -2962,8 +2980,9 @@
     "source": "480d7f933767"
   },
   "task.case.correctPayment.meaning": {
-    "text": "誤って記録した支払いを、正しい日付、方向、金額、参照番号、受取人で置き換えます。受領記録には両方の記録が表示されます。",
-    "source": "a892687bc3b6"
+    "text": "支払記録から変更する項目を選びます。省略した項目は維持され、削除済みの元の受取人も維持できます。参照番号や受取人を消去する場合は明示的に指定します。受領書には両方の記録が記載されます。",
+    "source": "cc5e912ffeda",
+    "machineMade": true
   },
   "task.case.correctPayment.done": {
     "text": "支払記録を訂正しました。",
@@ -4724,6 +4743,186 @@
   "label.sessionRetirementConfirmed": {
     "text": "期限切れのセッション終了結果の削除が確認されました。",
     "source": "f5bdfec416d5",
+    "machineMade": true
+  },
+  "label.noPaymentDue": {
+    "text": "支払いは不要です",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "label.paymentCoverage": {
+    "text": "支払いの充足状況",
+    "source": "6be717107bb3",
+    "machineMade": true
+  },
+  "label.payableCovered": {
+    "text": "支払予定額を充足",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "label.paymentOverpayment": {
+    "text": "過払い",
+    "source": "c401c8b19b9c",
+    "machineMade": true
+  },
+  "label.paymentNegativeBalance": {
+    "text": "マイナス残高",
+    "source": "416ff745db5a",
+    "machineMade": true
+  },
+  "label.settledWithoutCoverage": {
+    "text": "支払予定額が未充足のまま精算済み",
+    "source": "a9326845d984",
+    "machineMade": true
+  },
+  "label.paymentsNeedReview": {
+    "text": "支払いの確認が必要です",
+    "source": "089412a8dedd",
+    "machineMade": true
+  },
+  "label.keepCurrentSelection": {
+    "text": "現在の選択を維持",
+    "source": "d64220d1c205",
+    "machineMade": true
+  },
+  "label.latestTransferDate": {
+    "text": "最終送金日",
+    "source": "86ea49748782",
+    "machineMade": true
+  },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "アクセス申請",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "添付ファイル一覧",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "案件担当者",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "案件一覧",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "案件メモ",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "案件関係者",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "案件の支払い",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "案件の概要",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "案件の履歴の閲覧",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "リマインダーのまとめ",
+    "source": "b0c80c0e513f",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "操作の照会",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "操作のプレビュー",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "操作の受領記録",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "アカウント一覧",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "アカウントの権限付与",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "アカウントの履歴",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "リマインダー一覧",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "リマインダーの閲覧",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "要求者の情報",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "確認後の案件の変更",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "セッションの終了",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "作業ビューの件数",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "開示された案件",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "開示されたアカウント",
+    "source": "5b856c5553bc",
+    "machineMade": true
+  },
+  "label.disclosureRowCount": {
+    "text": "返された行数",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "すべての行が届く前に CSV のエクスポートが終了しました。",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "受領記録を取得できません。元の操作 ID を使って操作を照会してください。",
+    "source": "f23e5cdf6158",
     "machineMade": true
   }
 }

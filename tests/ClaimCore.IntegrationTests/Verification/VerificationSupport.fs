@@ -265,6 +265,7 @@ let rehashed
             [
                 text "ClaimCore.Operation"
                 u32 InstallationFormat.Current
+                text InstallationFormat.Identity
                 header.InstallationId.ToByteArray(true)
                 i64 (Sequence.value header.Sequence)
                 EntryHash.toBytes header.PreviousHash

@@ -4,9 +4,9 @@
     "net11.0": {
       "Acornima": {
         "type": "Direct",
-        "requested": "[1.8.0, )",
-        "resolved": "1.8.0",
-        "contentHash": "ZtcK7lu5LZZH5qDWfeUdBn/WXChWQjGdpB9sSFOJPyqnODGSMS1wqBoONP7GXzQRPHKoV8byWZT4EeBPI69ODQ=="
+        "requested": "[1.9.2, )",
+        "resolved": "1.9.2",
+        "contentHash": "Nze/Lev8jf+ZB42rVb77pMyiwupDItiZyG7kWdP5O254nXt+EmJSgA8uGya72FjoxAyJ7/1TUqafvPrBlQiWsw=="
       },
       "FSharp.Core": {
         "type": "Direct",
@@ -49,10 +49,10 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.23.0, )",
-          "ClaimCore.Domain": "[0.23.0, )",
-          "ClaimCore.Json": "[0.23.0, )",
-          "ClaimCore.RecordFormat": "[0.23.0, )",
+          "ClaimCore.Application.Contracts": "[0.24.0, )",
+          "ClaimCore.Domain": "[0.24.0, )",
+          "ClaimCore.Json": "[0.24.0, )",
+          "ClaimCore.RecordFormat": "[0.24.0, )",
           "FSharp.Core": "[11.0.101, )",
           "Npgsql": "[11.0.0, )"
         }
@@ -60,15 +60,15 @@
       "claimcore.application.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.23.0, )",
+          "ClaimCore.Domain": "[0.24.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.commandline": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.23.0, )",
-          "ClaimCore.Json": "[0.23.0, )",
+          "ClaimCore.Domain": "[0.24.0, )",
+          "ClaimCore.Json": "[0.24.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },
@@ -93,28 +93,28 @@
       "claimcore.presentation": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.23.0, )",
-          "ClaimCore.Domain": "[0.23.0, )",
-          "ClaimCore.Json": "[0.23.0, )",
+          "ClaimCore.Application.Contracts": "[0.24.0, )",
+          "ClaimCore.Domain": "[0.24.0, )",
+          "ClaimCore.Json": "[0.24.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.23.0, )",
-          "ClaimCore.Json": "[0.23.0, )",
+          "ClaimCore.Domain": "[0.24.0, )",
+          "ClaimCore.Json": "[0.24.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },
       "claimcore.wire": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.23.0, )",
-          "ClaimCore.Domain": "[0.23.0, )",
-          "ClaimCore.Json": "[0.23.0, )",
-          "ClaimCore.Presentation": "[0.23.0, )",
-          "ClaimCore.RecordFormat": "[0.23.0, )",
+          "ClaimCore.Application.Contracts": "[0.24.0, )",
+          "ClaimCore.Domain": "[0.24.0, )",
+          "ClaimCore.Json": "[0.24.0, )",
+          "ClaimCore.Presentation": "[0.24.0, )",
+          "ClaimCore.RecordFormat": "[0.24.0, )",
           "FSharp.Core": "[11.0.101, )"
         }
       },

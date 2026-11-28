@@ -67,19 +67,12 @@ module internal CaseDetailQueries =
                 ->
                 let! authors = PeopleReads.actorRefs tx [ facts.RecordedBy ]
 
-                let! paidDates =
-                    PaymentStorage.latestPaidDates
-                        tx.Connection
-                        [ record.CaseId ]
-                        tx.CancellationToken
-
                 return
                     match
                         CaseStages.describe
                             record.Snapshot.State
                             (Some facts.OpenedOn)
-                            facts.ClosedOn
-                            (Map.tryFind record.CaseId paidDates),
+                            facts.ClosedOn,
                         Map.tryFind facts.RecordedBy authors,
                         Ok facts.Disposition
                     with

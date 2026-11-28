@@ -26,7 +26,7 @@ type CaseStageEntry =
         Completed: bool
         Date: CalendarDate option
         Amount: Money option
-        NetPaid: PaymentTotals option
+        NoPaymentDue: bool
         Outcome: ClosureOutcome option
     }
 
@@ -76,7 +76,7 @@ module CaseStages =
                         ]
                 }
 
-    let describe state (opened: CalendarDate option) (closed: CalendarDate option) latestPayment =
+    let describe state (opened: CalendarDate option) (closed: CalendarDate option) =
         match state with
         | CaseState.Erased -> Ok CaseStageDisplay.Erased
         | CaseState.Active(fields: CaseFields)
@@ -93,7 +93,7 @@ module CaseStages =
                         Completed = List.contains stage outline.Completed
                         Date = date
                         Amount = amount
-                        NetPaid = None
+                        NoPaymentDue = false
                         Outcome = None
                     }
 
@@ -109,8 +109,10 @@ module CaseStages =
                                 CaseStageKind.Decided
                                 (fields.Decision |> Option.map Decision.date)
                                 payable
-                            { step CaseStageKind.Paid latestPayment None with
-                                NetPaid = FinancialPosition.totals fields.Finance
+                            { step CaseStageKind.Paid None None with
+                                NoPaymentDue =
+                                    FinancialPosition.comparePayable fields.Finance
+                                    |> Option.exists PayableComparison.noPaymentDue
                             }
                             { step
                                   CaseStageKind.Closed

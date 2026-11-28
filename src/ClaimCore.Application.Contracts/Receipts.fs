@@ -13,6 +13,7 @@ type DisclosedCaseReceipt =
         ReopenReason: Reason option
         RecordedFields: BusinessField list
         Payments: PaymentDifference list
+        Balances: BalanceDifference list
     }
 
 [<RequireQualifiedAccess>]

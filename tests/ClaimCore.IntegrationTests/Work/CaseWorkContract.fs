@@ -473,6 +473,25 @@ let internal assignmentAndDisclosure fixture =
             (Some false)
             "Unavailable relation remains factual"
 
+        let resubmitted =
+            Submissions.createRaw
+                "work.update"
+                (id fixture 37)
+                (OperationBinding.Work(CaseSelector.Id caseId, 1L))
+                (Submissions.work
+                    {
+                        Responsible =
+                            WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 10)))
+                        Summary = WorkValue.Keep
+                    })
+
+        let! invalidRetention = Service.executeSubmission owner resubmitted token
+
+        Expect.equal
+            invalidRetention.Outcome
+            (ExecuteResult.Rejected(Refusal.Case CaseRefusal.AssigneeUnavailable))
+            "Resubmitting the unavailable current assignee is refused"
+
         let! hidden = get (core fixture person) caseId
 
         Expect.equal

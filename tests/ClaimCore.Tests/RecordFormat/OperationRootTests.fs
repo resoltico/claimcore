@@ -24,14 +24,14 @@ let private setMember name value =
 [<Tests>]
 let tests =
     testList
-        "format 12 operation roots"
+        "final format 12 operation roots"
         [
             testCase
-                "independently framed public metadata derives the literal format 12 digest"
+                "independently framed public metadata derives the literal final format 12 digest"
                 (fun () ->
                     let record = publicRecord ()
                     let root = record.Root
-                    // Independent Python struct/uuid/hashlib calculation: 546 bytes, .NET UTC ticks below.
+                    // Independent Python struct/uuid/hashlib calculation: 589 bytes, .NET UTC ticks below.
                     Expect.equal
                         root.Header.RecordedAt.UtcTicks
                         639297792000000000L
@@ -39,7 +39,7 @@ let tests =
 
                     Expect.equal
                         (EntryHash.toBytes root.Hash |> Convert.ToHexStringLower)
-                        "8d44604617dbcdaee8595763ecb359f6a1b10fb4fa3507aed734b652b096e6b7"
+                        "c4be13fe9a20a7f4611a0fc1ab6b990c374e47c95135542bcdd1c957298b5b22"
                         "Literal SHA-256 vector"
 
                     Expect.equal
@@ -55,7 +55,23 @@ let tests =
                         """{"aggregate":{"id":"00000000-0000-7000-8000-000000000002","kind":"PERSON"},"erases":{"id":"00000000-0000-7000-8000-000000000002","kind":"PROFILE"},"part":{"id":"00000000-0000-7000-8000-000000000002","kind":"PERSON"},"retained":{"enabled":true,"grants":[]},"revision":2}"""
                         "Hand-authored canonical effect"
 
-                    Expect.equal (restore root) (Ok root) "Public-only root restores")
+                    Expect.equal (restore root) (Ok root) "Public-only root restores"
+
+                    let previousGrammar =
+                        Convert.FromHexString
+                            "8d44604617dbcdaee8595763ecb359f6a1b10fb4fa3507aed734b652b096e6b7"
+                        |> EntryHash.ofBytes
+                        |> Option.get
+
+                    Expect.isError
+                        (restoreWith
+                            root.Header
+                            (TaskId.token root.Structure.Task)
+                            (OperationRoot.structureBytes root)
+                            (OperationRoot.effectBytes root)
+                            []
+                            previousGrammar)
+                        "The earlier development format-12 hash cannot admit the same public contents")
             testCase
                 "all six part kinds restore with available or erased compartment content"
                 (fun () ->

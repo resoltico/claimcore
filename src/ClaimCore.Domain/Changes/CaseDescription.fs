@@ -108,6 +108,13 @@ module CaseDescription =
             Lifecycle = Difference.value (before |> Option.map _.Lifecycle) (Some after.Lifecycle)
             Fields = changes
             Money = amounts
+            Balances =
+                match prior, next with
+                | Some prior, Some next ->
+                    BalanceDifference.between
+                        (FinancialPosition.actualBalances prior.Finance)
+                        (FinancialPosition.actualBalances next.Finance)
+                | _ -> []
             Disposition = after.Disposition
         }
 

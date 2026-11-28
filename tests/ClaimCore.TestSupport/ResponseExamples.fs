@@ -54,6 +54,7 @@ let receipt: OperationReceipt =
                                 ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
+                                Balances = []
                             }
                 }
     }
@@ -169,6 +170,7 @@ let preview: PreviewReply =
                                                         }
                                                 Fields = []
                                                 Money = []
+                                                Balances = []
                                                 Disposition =
                                                     Some(
                                                         CaseDisposition.Voided(
@@ -304,6 +306,7 @@ let internal replies () : IEndpointOutput list =
                                 snapshot.State
                         Items = []
                         Payees = []
+                        ClosureOutcome = None
                         NextCursor = None
                     })
         yield!

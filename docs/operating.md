@@ -139,22 +139,18 @@ workload and host capacity.
 ## Install a fresh register
 
 Use matching service, browser and CLI builds. Initialize an empty database with the current
-[SQL baseline](../db/baseline.sql). ClaimCore reads installation format 12 and
-[CLI recovery journal](../src/ClaimCore.Cli/Recovery/RecoveryJournal.fs) format 4. A service
-or owner command checks the database against the supported
-[installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs) and exact baseline identity
-before accessing installation data. The published format 11 and earlier development databases marked
-format 12 require a fresh installation. Initialize a fresh database for a new register. Backup
-restore requires the supported format and baseline. Provision a fresh witness with this build's
-[SQL](../db/witness.sql). Preserve any nonmatching database, witness and recovery records separately.
-Existing sessions, bearer credentials and pending sign-in flows require fresh admission.
+[SQL baseline](../db/baseline.sql) and provision a matching independent [recovery
+witness](../db/witness.sql). The [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs)
+declares public format 12 and its compatibility identity. The service and owner commands check the
+identity and exact baseline before accessing register data. The identity also binds ledger roots and
+the witness. Restore backups using matching builds and keys. Operator commands report
+`SCHEMA_MISMATCH` for an incompatible register and `WITNESS_MISMATCH` for an incompatible witness.
+Web startup reports `RUNTIME_WITNESS_MISMATCH` for witness incompatibility.
 
-Before cutover, resolve pending operations in each old browser profile and CLI state directory
-against the matching installation and build. Keep the old database, matching keys, build and
-unresolved operation IDs when settlement is unavailable. Keep browser profiles intact until their
-old attempts have been settled. The new browser opens a separate recovery database with an expiry index and surfaces
-earlier stores without opening or changing them. An authorized Operation ID lookup works even
-when a journal entry is unreadable. There is no cross-installation settlement.
+Settle unconfirmed operations against the installation that received them before replacing it. Keep
+the matching database, keys, build, browser profiles, CLI state, and unresolved operation IDs until
+their outcomes are known. Use an authorized [operation lookup](integrating.md#operation-lookup) if a
+journal entry is unreadable. A fresh installation requires fresh sign-in and API credentials.
 
 Prepare separate database-owner and runtime credentials, a protected Web key ring, an OIDC issuer
 and audience, and HTTPS. The [evaluation Compose file](../deployment/compose.yaml) and
@@ -169,7 +165,8 @@ Connection strings with `Multiplexing` or `Write Coalescing Buffer Threshold Byt
 refused. If you set `Application Name`, use that value when filtering the Npgsql
 `db.client.connection.pool.name` metric label.
 
-Use PostgreSQL 19. Create the database with `UTF8` encoding and the built-in `C.UTF-8` locale.
+Use the PostgreSQL version in [postgresql-baseline.json](../db/postgresql-baseline.json).
+Create the database with `UTF8` encoding and the built-in `C.UTF-8` locale.
 The PostgreSQL cluster must have data checksums enabled. The Compose files initialize this profile.
 On a self-managed server, provision separate login roles and set their passwords securely. Create an
 empty database owned by the dedicated owner role:
@@ -191,9 +188,9 @@ Initialize with `claimcore-server initialize ZONE --owner-issuer URL --owner-sub
 Supply `--owner-contact TEXT` and repeat `--owner-role ROLE` as needed. The canonical IANA business zone is fixed for the installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
-ClaimCore issues permanent case references when cases are opened. Setup has no reference-policy
-configuration. On an existing supported installation, `--skip-existing` returns
-`INITIALIZATION_SKIPPED` with its installation ID after checking the first accepted owner operation.
+ClaimCore issues permanent case references when cases are opened. On an existing supported
+installation, `--skip-existing` returns `INITIALIZATION_SKIPPED` with its installation ID after
+checking the first accepted owner operation.
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Initialization records the
 human owner, authored profile and optional CASE_HANDLER, PAYMENT_RECORDER, DATA_STEWARD or AUDITOR roles
@@ -251,7 +248,8 @@ an output reply. Stdout remains one JSON reply; storage diagnostics use stderr.
 | `TIME_ZONE_INVALID`, `INITIAL_OWNER_INVALID`, `INVOCATION_INVALID` | Check the command's help, canonical IANA zone, owner principal/profile and supported roles. |
 | `ALREADY_INITIALIZED` | Inspect status; initialization does not adopt or upgrade an existing schema. |
 | `UNSUPPORTED_DATABASE` | Use UTF8 encoding, the built-in C.UTF-8 locale, and a cluster with data checksums enabled. The owner command exits with code 2. Web startup reports `RUNTIME_UNSUPPORTED_DATABASE`. |
-| `UNSUPPORTED_SERVER`, `SCHEMA_MISMATCH`, `FORMAT_MISMATCH`, `INSTALLATION_INVALID` | Check the supported PostgreSQL version and matching build/installation; format changes require fresh installation. |
+| `UNSUPPORTED_SERVER`, `SCHEMA_MISMATCH`, `FORMAT_MISMATCH`, `INSTALLATION_INVALID` | Check the supported PostgreSQL version and the register's compatibility with the build. Format changes require a fresh installation. |
+| `WITNESS_MISMATCH` | Use the independent witness admitted for this register and compatible with the build. |
 | `CHECKPOINT_FILE_REFUSED`, `CHECKPOINT_INVALID` | Check the absolute private path, permissions and closed checkpoint JSON. |
 | `MAINTENANCE_REQUIRED` | Isolate traffic as required and enter register maintenance. |
 | `INTEGRITY_FAILURE`, `HEAD_MISMATCH` | Keep traffic isolated and investigate accepted history and independent checkpoints. |
@@ -677,8 +675,8 @@ preserved recovery evidence. Restoring the witness along with the register defea
 independence. Protect witness backups separately and reconcile their coverage before resuming.
 
 `/health/ready` reports the local register, `/health/recovery` reports the independently admitted
-generation, and `/health/identity` reports discovery. An unavailable witness blocks actor
-operations and digest sends. Protected responses require a committed disclosure and an independent
+generation, and `/health/identity` reports discovery. Startup checks the configured witness before
+admitting the runtime. Loss of the witness after startup blocks actor operations and digest sends. Protected responses require a committed disclosure and an independent
 acknowledgement. The main connection is released before waiting for that acknowledgement.
 
 Budget reservations for random-IV durable encryption commit before taking the ledger head lock.

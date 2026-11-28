@@ -6,9 +6,24 @@ open System
 
 type CaseSummaryFacts =
     {
-        Fields: Map<BusinessField, CaseFieldValue option>
         Parties: Map<PartyRole, PartyName list>
-        ClosureOutcome: ClosureOutcome option
+    }
+
+type CaseReportGroupingFacts =
+    {
+        RegisteredOn: CalendarDate
+        ReceivedOn: CalendarDate option
+        ClosedOn: CalendarDate option
+        DaysOpen: int
+        Outcome: ClosureOutcome option
+    }
+
+type CaseCurrencyContribution =
+    {
+        Currency: Currency
+        Claimed: DecimalTotal option
+        Payable: DecimalTotal option
+        NetPaid: DecimalTotal option
     }
 
 type CaseNextAction =
@@ -34,9 +49,10 @@ type CaseSummary =
         NextAction: CaseNextAction option
         Responsible: ActorRef option
         PendingReminders: int64
-        NetPaid: PaymentTotals option
+        Contributions: CaseCurrencyContribution list
+        Grouping: CaseReportGroupingFacts
         PaymentCount: int64
-        LastPaymentDate: CalendarDate option
+        LatestTransferDate: CalendarDate option
     }
 
 type CaseRef =

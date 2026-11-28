@@ -144,7 +144,16 @@ module ReviewScreen =
                         { Before = None; After = Some reason })
                 |> Option.toList
 
-            removals @ lifecycle @ reason, unchanged
+            let balances =
+                value.Balances
+                |> List.map (fun balance ->
+                    changed
+                        (prefix + "netPaid." + Currency.format balance.Currency)
+                        "label.netPaid"
+                        (PresentedValue.moneyTotal balance.Currency)
+                        balance.Net)
+
+            removals @ lifecycle @ reason @ balances, unchanged
         | PartDescription.Payment value ->
             let removed = value.Removed |> Option.bind _.After = Some true
 
@@ -192,19 +201,7 @@ module ReviewScreen =
                         | None -> ()
                     ])
 
-            let balances =
-                if value.Totals.Before = value.Totals.After then
-                    []
-                else
-                    [
-                        changed
-                            (prefix + "netPaid")
-                            "label.netPaid"
-                            PaymentsScreen.netPaid
-                            value.Totals
-                    ]
-
-            entry @ balances, []
+            entry, []
         | PartDescription.Work value ->
             let differences =
                 [

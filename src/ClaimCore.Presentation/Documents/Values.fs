@@ -332,9 +332,8 @@ type RegionRowGroup =
 
 type PresentedMoneyMeter =
     {
-        Current: PresentedMoney
-        Target: PresentedMoney
-        Complete: bool
+        Position: int
+        Maximum: int
         Description: PresentedMessage
     }
 
@@ -353,7 +352,6 @@ type RegionStage =
         Reached: bool
         Date: CalendarDate option
         StageValue: PresentedValue option
-        Meter: PresentedMoneyMeter option
         Link: Link option
         Actions: Affordance list
     }

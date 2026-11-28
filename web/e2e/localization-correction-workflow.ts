@@ -192,6 +192,10 @@ const acceptSetup = async (
     kind: "DISCLOSED",
     disposition: null,
     recordedFields,
+    balances:
+      request.task === "case.recordPayment"
+        ? [{ currency: "EUR", net: { before: null, after: "300.25" } }]
+        : [],
     state: {
       kind: "ACTIVE",
       fields: { ...fields, caseReference: reference },

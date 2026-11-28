@@ -11,7 +11,7 @@ module TimelineCsv =
         (change.Before |> Option.map format |> Option.defaultValue ""),
         (change.After |> Option.map format |> Option.defaultValue "")
 
-    let scalarDifferences =
+    let private textDifferences =
         function
         | TimelineChange.CaseField change ->
             [
@@ -23,13 +23,8 @@ module TimelineCsv =
                         After = change.After
                     }
             ]
-        | TimelineChange.CaseMoney change ->
-            [
-                difference
-                    (BusinessField.key change.FieldName)
-                    (fun money -> Money.format money + " " + Money.currency money)
-                    change.Change
-            ]
+        | TimelineChange.CaseMoney _
+        | TimelineChange.Balances _ -> []
         | TimelineChange.Disposition disposition ->
             [ "reason", "", (CaseDisposition.reason disposition |> Reason.format) ]
         | TimelineChange.Lifecycle change ->
@@ -51,46 +46,24 @@ module TimelineCsv =
             ]
         | TimelineChange.HandlingSummary change ->
             [ difference "handlingSummary" HandlingSummary.format change ]
-        | TimelineChange.Payments change ->
+        | TimelineChange.Payment change ->
+            let entry = PaymentDifference.entry change
+            let prefix = "payment." + OperationId.format (PaymentEntry.id entry) + "."
+
             [
-                for changed in change.Entries do
-                    let entry = PaymentDifference.entry changed
-                    let prefix = "payment." + OperationId.format (PaymentEntry.id entry) + "."
-                    let date = CalendarDate.format (PaymentEntry.date entry)
-                    let money = PaymentEntry.money entry
-
-                    let cells =
-                        [
-                            "paymentDate", date
-                            "amount", Money.format money
-                            "currency", Money.currency money
-                            "direction", PaymentDirection.token (PaymentEntry.direction entry)
-                            "reference",
-                            PaymentEntry.reference entry
-                            |> Option.map Identifier.format
-                            |> Option.defaultValue ""
-                            "payee",
-                            PaymentEntry.payee entry
-                            |> Option.map PartyId.format
-                            |> Option.defaultValue ""
-                        ]
-
-                    for name, value in cells do
-                        match changed with
-                        | PaymentDifference.Recorded _ -> yield prefix + name, "", value
-                        | PaymentDifference.Removed _ -> yield prefix + name, value, ""
-                yield
-                    difference
-                        "netPaid"
-                        (fun (totals: PaymentTotals) ->
-                            DecimalTotal.format totals.NetPaid
-                            + " "
-                            + Money.currency totals.Payable)
-                        {
-                            Before = change.Before
-                            After = change.After
-                        }
+                "paymentDate", CalendarDate.format (PaymentEntry.date entry)
+                "direction", PaymentDirection.token (PaymentEntry.direction entry)
+                "reference",
+                PaymentEntry.reference entry
+                |> Option.map Identifier.format
+                |> Option.defaultValue ""
+                "payee",
+                PaymentEntry.payee entry |> Option.map PartyId.format |> Option.defaultValue ""
             ]
+            |> List.map (fun (name, value) ->
+                match change with
+                | PaymentDifference.Recorded _ -> prefix + name, "", value
+                | PaymentDifference.Removed _ -> prefix + name, value, "")
         | TimelineChange.Attachment _ -> []
         | TimelineChange.Note(_, id, text) ->
             [
@@ -150,6 +123,59 @@ module TimelineCsv =
                     |> List.map (difference (prefix + "state") ReminderState.token)
             ]
 
+    let private typedDifferences change =
+        let blank = CsvValue.Text ""
+
+        let money key (change: ValueChange<Money>) =
+            let amount value =
+                value
+                |> Option.map (Money.amount >> DecimalTotal.ofAmount >> CsvValue.ExactTotal)
+                |> Option.defaultValue blank
+
+            let currency value =
+                value |> Option.map Money.currency |> Option.defaultValue ""
+
+            key,
+            amount change.Before,
+            amount change.After,
+            currency change.Before,
+            currency change.After
+
+        let text =
+            textDifferences change
+            |> List.map (fun (key, before, after) ->
+                key, CsvValue.Text before, CsvValue.Text after, "", "")
+
+        match change with
+        | TimelineChange.CaseMoney change ->
+            [ money (BusinessField.key change.FieldName) change.Change ]
+        | TimelineChange.Balances differences ->
+            differences
+            |> List.map (fun difference ->
+                let endpoint value =
+                    match value with
+                    | Some amount ->
+                        CsvValue.ExactTotal amount, Currency.format difference.Currency
+                    | None -> blank, ""
+
+                let before, beforeCurrency = endpoint difference.Net.Before
+                let after, afterCurrency = endpoint difference.Net.After
+                "netPaid", before, after, beforeCurrency, afterCurrency)
+        | TimelineChange.Payment change ->
+            let entry = PaymentDifference.entry change
+            let amount = PaymentEntry.money entry
+
+            let before, after =
+                match change with
+                | PaymentDifference.Recorded _ -> None, Some amount
+                | PaymentDifference.Removed _ -> Some amount, None
+
+            money
+                ("payment." + OperationId.format (PaymentEntry.id entry) + ".amount")
+                { Before = before; After = after }
+            :: text
+        | _ -> text
+
     let private csv = Csv.row
 
     let csvHeader =
@@ -173,6 +199,8 @@ module TimelineCsv =
                 "field"
                 "before"
                 "after"
+                "beforeCurrency"
+                "afterCurrency"
             ]
 
     let private rows reference (entry: CaseTimelineEntry) =
@@ -220,13 +248,20 @@ module TimelineCsv =
         let differences =
             match entry.Changes with
             | TimelineChanges.Disclosed disclosure ->
-                disclosure.Items |> List.collect scalarDifferences
+                disclosure.Items |> List.collect typedDifferences
             | _ -> []
 
-        let differences = if differences.IsEmpty then [ "", "", "" ] else differences
+        let differences =
+            if differences.IsEmpty then
+                [ "", CsvValue.Text "", CsvValue.Text "", "", "" ]
+            else
+                differences
 
         differences
-        |> Seq.map (fun (key, before, after) -> csv (metadata @ [ key; before; after ]))
+        |> Seq.map (fun (key, before, after, beforeCurrency, afterCurrency) ->
+            (metadata @ [ key ] |> List.map CsvValue.Text)
+            @ [ before; after; CsvValue.Text beforeCurrency; CsvValue.Text afterCurrency ]
+            |> Csv.typedRow)
 
     let csvChunks (page: CaseTimelinePage) =
         page.Items |> Seq.collect (rows page.Reference)

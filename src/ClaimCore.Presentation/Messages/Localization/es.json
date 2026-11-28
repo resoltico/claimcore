@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Borra de forma permanente los detalles actuales y conservados, pagos, trabajo, recordatorios, notas y adjuntos de este expediente. Se conservan la referencia y el registro de cambios. Las copias guardadas en otros lugares quedan fuera del borrado.",
-    "source": "8bf54b53220a"
+    "text": "Suprima del registro activo los datos privados del expediente y las notas y referencias de destino de los vínculos entre expedientes. Se conservan el ID, la referencia y el registro de cambios del expediente. Las copias guardadas en otros lugares se mantienen.",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "Suprimir perfil",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Abra un expediente con los datos de registro que conozca. Deje en blanco la referencia del expediente para que se asigne automáticamente. Si su registro lo permite, puede introducir una referencia de expediente personalizada.",
-    "source": "debda0b6773d",
+    "text": "Abra un expediente con los datos de registro que conozca. ClaimCore le asigna una referencia permanente.",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "Use una referencia de expediente válida. Una referencia personalizada empieza con una letra ASCII y tiene hasta 32 caracteres entre letras, dígitos y guiones simples entre grupos. El prefijo CC- está reservado para las referencias asignadas por el sistema.",
-    "source": "f856f6f13ef0",
+    "text": "Use la referencia completa del expediente asignada por ClaimCore, incluidos sus dígitos de control.",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -833,9 +834,20 @@
     "text": "Suprimido",
     "source": "1c9a70fabcb6"
   },
-  "headline.PAID.label": {
-    "text": "Pagado",
-    "source": "fb81b961af45"
+  "headline.NO_PAYMENT_DUE.label": {
+    "text": "No hay ningún pago pendiente",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "headline.PAYABLE_COVERED.label": {
+    "text": "Importe a pagar cubierto",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "headline.OVERPAID.label": {
+    "text": "Pagado en exceso",
+    "source": "c93dce4211a4",
+    "machineMade": true
   },
   "headline.UNDECIDED.label": {
     "text": "Sin decisión",
@@ -1086,8 +1098,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "Suprimido. Solo queda la referencia del expediente.",
-    "source": "e63410fae906"
+    "text": "Expediente suprimido. Se conservan su ID, su referencia y el registro de cambios.",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "Anulado",
@@ -1409,12 +1422,14 @@
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "Descarga de adjunto",
-    "source": "ba23685b28f6"
+    "text": "Descarga del adjunto autorizada",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "Vista previa de adjunto",
-    "source": "01b3a2e62a0d"
+    "text": "Vista previa del adjunto autorizada",
+    "source": "5e82512366e5",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "Exportación",
@@ -1525,8 +1540,9 @@
     "source": "30ba702eee51"
   },
   "caseStage.PAID.label": {
-    "text": "Pagado",
-    "source": "fb81b961af45"
+    "text": "Cobertura del importe a pagar",
+    "source": "5ad88498af13",
+    "machineMade": true
   },
   "caseStage.CLOSED.label": {
     "text": "Cerrado",
@@ -1677,13 +1693,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "Use de 1 a {maximumCharacters} caracteres ASCII. Las referencias personalizadas empiezan con una letra y usan letras, dígitos y guiones simples entre grupos. El prefijo CC- está reservado para las referencias asignadas por el sistema.",
-    "source": "e7fc63264856",
+    "text": "Use la referencia completa asignada al expediente, con hasta {maximumCharacters} caracteres ASCII y ambos dígitos de control.",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Una referencia personalizada sigue reservada incluso después de una corrección o supresión. No incluya información personal en ella.",
-    "source": "4936b3dc4560",
+    "text": "Introduzca la referencia asignada al abrir el expediente.",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1988,8 +2004,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "Revise la referencia del expediente y sus guiones. Una referencia personalizada empieza con una letra y admite hasta 32 letras, dígitos y guiones. El prefijo CC- está reservado.",
-    "source": "00e1c36eb2e1",
+    "text": "Compruebe la referencia completa del expediente, incluidos los guiones y los dígitos de control.",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2053,8 +2069,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "Esto elimina permanentemente los detalles actuales y conservados, pagos, trabajo, recordatorios y notas del expediente. Se conservan la referencia y el registro de cambios. No afecta a las copias guardadas en otros lugares.",
-    "source": "0e447a932597"
+    "text": "Esto suprime permanentemente del registro activo los datos privados, los adjuntos y las notas y referencias de destino de los vínculos entre expedientes. Se conservan el ID, la referencia y el registro de cambios del expediente. Las copias guardadas en otros lugares se mantienen.",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "Cuenta registrada.",
@@ -2654,8 +2671,9 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "Pagado {paid} de {payable}",
-    "source": "6c78ba810cb0"
+    "text": "Pagado neto {paid} de {payable}",
+    "source": "56460f70ab2f",
+    "machineMade": true
   },
   "progress.PARTLY_PAID.label": {
     "text": "Pagado parcialmente",
@@ -2962,8 +2980,9 @@
     "source": "480d7f933767"
   },
   "task.case.correctPayment.meaning": {
-    "text": "Sustituya un asiento de pago erróneo con la fecha, el sentido, el importe, la referencia y el beneficiario correctos. El recibo identifica ambos asientos.",
-    "source": "a892687bc3b6"
+    "text": "Cambie los datos seleccionados de un pago. Omita los datos que quiera conservar, incluido el beneficiario original tras su eliminación. Borre expresamente la referencia o el beneficiario. El recibo identifica ambos registros.",
+    "source": "cc5e912ffeda",
+    "machineMade": true
   },
   "task.case.correctPayment.done": {
     "text": "Asiento de pago corregido.",
@@ -4724,6 +4743,186 @@
   "label.sessionRetirementConfirmed": {
     "text": "Se ha confirmado la retirada de los resultados caducados de cierre de sesiones.",
     "source": "f5bdfec416d5",
+    "machineMade": true
+  },
+  "label.noPaymentDue": {
+    "text": "No hay ningún pago pendiente",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "label.paymentCoverage": {
+    "text": "Cobertura de pagos",
+    "source": "6be717107bb3",
+    "machineMade": true
+  },
+  "label.payableCovered": {
+    "text": "Importe a pagar cubierto",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "label.paymentOverpayment": {
+    "text": "Pago en exceso",
+    "source": "c401c8b19b9c",
+    "machineMade": true
+  },
+  "label.paymentNegativeBalance": {
+    "text": "Saldo negativo",
+    "source": "416ff745db5a",
+    "machineMade": true
+  },
+  "label.settledWithoutCoverage": {
+    "text": "Caso liquidado sin cubrir el importe a pagar",
+    "source": "a9326845d984",
+    "machineMade": true
+  },
+  "label.paymentsNeedReview": {
+    "text": "Los pagos requieren revisión",
+    "source": "089412a8dedd",
+    "machineMade": true
+  },
+  "label.keepCurrentSelection": {
+    "text": "Conservar la selección actual",
+    "source": "d64220d1c205",
+    "machineMade": true
+  },
+  "label.latestTransferDate": {
+    "text": "Fecha de la última transferencia",
+    "source": "86ea49748782",
+    "machineMade": true
+  },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "Solicitudes de acceso",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "Lista de adjuntos",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "Personas disponibles para asignar al expediente",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "Lista de expedientes",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "Notas del expediente",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "Partes del expediente",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "Pagos del expediente",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "Resumen de expedientes",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "Consulta de la actividad del expediente",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "Resumen de recordatorios",
+    "source": "b0c80c0e513f",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "Consulta de operación",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "Vista previa de la operación",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "Comprobante de la operación",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "Directorio de personas",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "Roles asignados a las cuentas",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "Historial de acceso",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "Lista de recordatorios",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "Consulta de un recordatorio",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "Contexto de la identidad solicitante",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "Cambios del expediente desde la revisión",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "Finalización de sesiones",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "Recuentos de las vistas de trabajo",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "Expedientes divulgados",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "Cuentas divulgadas",
+    "source": "5b856c5553bc",
+    "machineMade": true
+  },
+  "label.disclosureRowCount": {
+    "text": "Filas devueltas",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "La exportación CSV terminó antes de que se entregaran todas las filas.",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "El comprobante no está disponible. Consulte la operación con su ID original.",
+    "source": "f23e5cdf6158",
     "machineMade": true
   }
 }

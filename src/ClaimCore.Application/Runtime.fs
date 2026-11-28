@@ -183,6 +183,7 @@ module Runtime =
         =
         task {
             let mutable owned: NpgsqlDataSource option = None
+            let mutable ownedWitness: RecoveryWitness option = None
 
             try
                 let source = InstallationCheck.dataSource connectionString
@@ -206,11 +207,19 @@ module Runtime =
                                     DatabaseSession.read source cancellationToken (fun conn ->
                                         WitnessPrimary.read conn cancellationToken)
 
+                                let target = InstallationCheck.dataSource settings.ConnectionString
+
                                 let witness =
-                                    new RecoveryWitness(
-                                        InstallationCheck.dataSource settings.ConnectionString,
-                                        installation.InstallationId
-                                    )
+                                    new RecoveryWitness(target, installation.InstallationId)
+
+                                ownedWitness <- Some witness
+
+                                do!
+                                    DatabaseSession.read target cancellationToken (fun connection ->
+                                        WitnessCluster.requireIndependent
+                                            primary.SystemId
+                                            connection
+                                            cancellationToken)
 
                                 return Some(witness, primary)
                         }
@@ -228,6 +237,14 @@ module Runtime =
                     (cipher :> IDisposable).Dispose()
                     return raise error
             with error ->
+                match ownedWitness with
+                | Some witness ->
+                    do!
+                        FailureDiagnostics.cleanup (fun () ->
+                            (witness :> IDisposable).Dispose()
+                            ValueTask())
+                | None -> ()
+
                 match owned with
                 | Some source -> do! FailureDiagnostics.cleanup source.DisposeAsync
                 | None -> ()
@@ -240,6 +257,7 @@ module Runtime =
                             match fault.Fault with
                             | OperatorFault.SchemaMismatch
                             | OperatorFault.FormatMismatch -> RuntimeOpenFault.SchemaMismatch
+                            | OperatorFault.WitnessMismatch -> RuntimeOpenFault.WitnessMismatch
                             | OperatorFault.DataKeyInvalid -> RuntimeOpenFault.DataKeyInvalid
                             | OperatorFault.UnsupportedServer -> RuntimeOpenFault.UnsupportedServer
                             | OperatorFault.UnsupportedDatabase ->

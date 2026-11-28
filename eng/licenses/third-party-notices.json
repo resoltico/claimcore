@@ -60,7 +60,7 @@
     {
       "file": "Acornima-BSD-3-Clause.txt",
       "sha256": "4182d3e7ce42f69b01f35c6ed27d075d26794a3c2f0b0182aa475be6ca565bab",
-      "source": "https://raw.githubusercontent.com/adams85/acornima/b4508e06c520493d798064dc172ad472e44968ce/LICENSE"
+      "source": "https://raw.githubusercontent.com/adams85/acornima/34ec81b8a992b4c8669cbc0bf5f619c99f6bced1/LICENSE"
     }
   ],
   "packages": [
@@ -306,7 +306,7 @@
     },
     {
       "id": "Acornima",
-      "version": "1.8.0",
+      "version": "1.9.2",
       "repository": "https://github.com/adams85/acornima",
       "texts": [
         "Acornima-BSD-3-Clause.txt"
@@ -314,8 +314,8 @@
       "assets": [
         "runtime:Acornima.dll"
       ],
-      "packageRevision": "b4508e06c520493d798064dc172ad472e44968ce",
-      "licenseRevision": "b4508e06c520493d798064dc172ad472e44968ce"
+      "packageRevision": "34ec81b8a992b4c8669cbc0bf5f619c99f6bced1",
+      "licenseRevision": "34ec81b8a992b4c8669cbc0bf5f619c99f6bced1"
     }
   ],
   "host": {

@@ -3,26 +3,12 @@ import { TaskControls } from "./TaskControls";
 import { coreRowLink } from "./regions/rowLink";
 import { followLink } from "../routing/followLink";
 import "./stepper.css";
-import { MoneyMeter } from "./regions/MoneyMeter";
 import type { RegionContent } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
 import { PresentedValue } from "../components/PresentedValue";
 type Step = Extract<RegionContent, { kind: "STAGES" }>["steps"][number];
 const StageMetadata = ({ step, timeZone }: { step: Step; timeZone: string }) => {
   const p = usePresentation();
-  if (!step.reached && step.meter === undefined) {
-    return null;
-  }
-  let value = null;
-  if (step.meter !== undefined) {
-    value = <MoneyMeter meter={step.meter} timeZone={timeZone} />;
-  } else if (step.value !== null) {
-    value = (
-      <span className="stage-amount">
-        <PresentedValue value={step.value} timeZone={timeZone} />
-      </span>
-    );
-  }
   return (
     <>
       {step.date === null || !step.reached ? null : (
@@ -30,7 +16,11 @@ const StageMetadata = ({ step, timeZone }: { step: Step; timeZone: string }) => 
           <time dateTime={step.date}>{p.date(step.date)}</time>
         </span>
       )}
-      {value}
+      {step.value === null ? null : (
+        <span className="stage-amount">
+          <PresentedValue value={step.value} timeZone={timeZone} />
+        </span>
+      )}
     </>
   );
 };

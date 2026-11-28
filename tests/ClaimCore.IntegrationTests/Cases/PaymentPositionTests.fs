@@ -585,6 +585,58 @@ let private lockedBounds () =
         accept rolledBack (fst earlier) "case.recordPayment" (payment "2026-08-04")
         entries <- earlier :: entries
 
+        let selected, established = entries |> List.last
+        let corrected = Guid.CreateVersion7()
+
+        let correctionInputs =
+            Map.ofList
+                [
+                    Submissions.input InputTarget.PaymentId,
+                    SubmissionValue.Text(selected.ToString("D"))
+                    Submissions.input InputTarget.PaymentReference,
+                    SubmissionValue.Text "Rollback witness"
+                    Submissions.field BusinessField.PaymentDate,
+                    SubmissionValue.Text(CalendarDate.format established)
+                ]
+
+        let future =
+            correctionInputs
+            |> Map.add
+                (Submissions.field BusinessField.PaymentDate)
+                (SubmissionValue.Text "2026-08-07")
+
+        let refusedCorrection =
+            Service.executeSubmission
+                rolledBack
+                (request (Guid.CreateVersion7()) "case.correctPayment" future)
+                token
+            |> awaitResult
+
+        match refusedCorrection.Outcome with
+        | ExecuteResult.Rejected(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues |> List.map _.Violation)
+                [ Violation.FutureDate ]
+                "A changed date cannot be newly asserted beyond the business date"
+        | other -> failtestf "Expected correction date refusal: %A" other
+
+        let correction = request corrected "case.correctPayment" correctionInputs
+        accept rolledBack corrected "case.correctPayment" correctionInputs
+
+        entries <-
+            entries
+            |> List.map (fun (id, date) -> (if id = selected then corrected else id), date)
+
+        let retry = Service.executeSubmission rolledBack correction token |> awaitResult
+
+        match retry.Outcome with
+        | ExecuteResult.AlreadyAccepted receipt ->
+            Expect.equal
+                (OperationId.value receipt.OperationId)
+                corrected
+                "Retry retains its accepting identity"
+        | other -> failtestf "Expected accepted retry during calendar rollback: %A" other
+
         let checkPosition () =
             let current = Service.get actor { Target = target () } token |> awaitResult
 
@@ -604,8 +656,6 @@ let private lockedBounds () =
                 (string entries.Length)
                 "Exact independently tracked sum"
 
-            let latest = entries |> List.map snd |> List.sortDescending |> List.tryHead
-
             let paidStep =
                 match current with
                 | Outcome.Succeeded value ->
@@ -617,7 +667,28 @@ let private lockedBounds () =
                     | CaseStageDisplay.Erased -> None
                 | other -> failtestf "Expected payment stage: %A" other
 
-            Expect.equal paidStep latest "Latest paid date agrees with the projection after removal"
+            Expect.equal paidStep None "Coverage never displays a transfer date"
+
+            let page =
+                Service.list
+                    actor
+                    {
+                        Page = { AfterCursor = None; Limit = 50 }
+                        Filter = CaseListFilter.empty<string>
+                    }
+                    token
+                |> awaitResult
+
+            match page, current with
+            | Outcome.Succeeded page, Outcome.Succeeded current ->
+                let row = page.Items |> List.find (fun row -> row.CaseId = current.Snapshot.CaseId)
+                let latest = entries |> List.map snd |> List.sortDescending |> List.tryHead
+
+                Expect.equal
+                    row.LatestTransferDate
+                    latest
+                    "Latest transfer comes only from current entries"
+            | other -> failtestf "Expected case list and detail: %A" other
 
         checkPosition ()
         let selected = [ fst earlier; fst (List.last entries) ]
@@ -691,6 +762,125 @@ let private lockedBounds () =
     finally
         fixture.Dispose()
 
+let private closedFinancialExceptions () =
+    let database = PostgresFixture.create().GetAwaiter().GetResult()
+    let fixture = database.Fixture
+
+    try
+        let token = CancellationToken.None
+
+        let actor =
+            StoreFixtures.caseWorker fixture
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let name = "FIN-CLOSED"
+        let target () = StoreFixtures.caseTarget fixture name
+        let mutable revision = 0L
+
+        let accept task fields =
+            let id = Guid.CreateVersion7()
+            let request = StoreFixtures.requestAs fixture id name revision task fields
+
+            let result =
+                Service.executeSubmission actor request token
+                |> fun pending -> pending.GetAwaiter().GetResult()
+
+            match result.Outcome with
+            | ExecuteResult.Accepted {
+                                         Subject = ReceiptSubject.Case receipt
+                                     } ->
+                revision <- Revision.value receipt.Revision
+                id
+            | other -> failtestf "Expected %s accepted: %A" task other
+
+        let transfer direction amount =
+            Submissions.fields
+                [
+                    BusinessField.PaymentDate, "2026-08-03"
+                    BusinessField.PaidAmount, amount
+                    BusinessField.PaidCurrency, "EUR"
+                ]
+            |> Map.add
+                (Submissions.input InputTarget.PaymentDirection)
+                (SubmissionValue.Text(PaymentDirection.token direction))
+
+        let attention expected =
+            let result =
+                Service.list
+                    actor
+                    {
+                        Page = { AfterCursor = None; Limit = 50 }
+                        Filter =
+                            { CaseListFilter.empty<string> with
+                                View = Some CaseView.NeedsAttention
+                            }
+                    }
+                    token
+                |> fun pending -> pending.GetAwaiter().GetResult()
+
+            match result with
+            | Outcome.Succeeded page ->
+                let matching =
+                    page.Items |> List.tryFind (fun item -> CaseSelector.Id item.CaseId = target ())
+
+                Expect.equal
+                    (matching
+                     |> Option.exists (fun item ->
+                         item.Attention = [ CaseAttention.PaymentsNeedReview ]
+                         && item.Grouping.Outcome = Some ClosureOutcome.Settled
+                         && item.Headline = CaseHeadline.Closed))
+                    expected
+                    "Closed financial attention follows current coverage"
+            | other -> failtestf "Expected the attention list: %A" other
+
+        accept "case.open" Map.empty |> ignore
+
+        accept
+            "case.decide"
+            (Submissions.fields
+                [
+                    BusinessField.PaymentDecisionDate, "2026-08-02"
+                    BusinessField.PayableAmount, "100"
+                    BusinessField.PayableCurrency, "EUR"
+                ])
+        |> ignore
+
+        accept "case.recordPayment" (transfer PaymentDirection.Paid "100") |> ignore
+
+        accept "case.close" (Submissions.fields [ BusinessField.Outcome, "SETTLED" ])
+        |> ignore
+
+        attention false
+        let returned = accept "case.recordPayment" (transfer PaymentDirection.Returned "10")
+        attention true
+
+        accept
+            "case.removePayment"
+            (Map.ofList
+                [
+                    Submissions.input InputTarget.PaymentId,
+                    SubmissionValue.Text(returned.ToString("D"))
+                ])
+        |> ignore
+
+        attention false
+
+        accept
+            "case.correct"
+            (Map.ofList
+                [
+                    Submissions.input (InputTarget.Group RecordGroup.Registration),
+                    SubmissionValue.Text "KEEP"
+                    Submissions.input (InputTarget.Group RecordGroup.Decision),
+                    SubmissionValue.Text "CLEAR"
+                ])
+        |> ignore
+
+        attention true
+
+    finally
+        fixture.Dispose()
+
 [<Tests>]
 let tests =
     testList
@@ -702,4 +892,7 @@ let tests =
             testCase
                 "locked payment bounds survive ties calendar rollback and concurrent removals"
                 lockedBounds
+            testCase
+                "closed settled financial exceptions follow current coverage"
+                closedFinancialExceptions
         ]

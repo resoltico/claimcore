@@ -99,9 +99,7 @@ export const CasePayments = ({
       actions={<TaskControls actions={region.actions ?? []} compact onAction={onAct} />}
     >
       <PaymentDecisionEntries sections={content.sections ?? []} zone={zone} />
-      {meter === undefined ? null : (
-        <MoneyMeter meter={meter} timeZone={zone} label={p.text("label.paid")} />
-      )}
+      {meter === undefined ? null : <MoneyMeter meter={meter} timeZone={zone} />}
       {expanded === owner && total !== null ? (
         <CasePaymentPages current={current} onAction={onAct} onChanged={onChanged} />
       ) : (

@@ -637,7 +637,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
                       {
                         kind: "STATE",
                         vocabulary: "headline",
-                        token: "PAID",
+                        token: "PAYABLE_COVERED",
                       },
                       {
                         kind: "TEXT",
@@ -737,7 +737,7 @@ test("renders core view ordering, counts and row semantics without reconstructin
     .getByRole("tab");
   await expect(views).toHaveText(["Overdue 7", "Needs attention 2"]);
   await expect(views.last()).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".table-view tbody")).toContainText("Paid");
+  await expect(page.locator(".table-view tbody")).toContainText("Payable covered");
   await expect(page.locator(".table-view tbody")).toContainText("Core next action");
   await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
   await expect(page.getByRole("button", { name: "Find a case", exact: true })).toBeVisible();

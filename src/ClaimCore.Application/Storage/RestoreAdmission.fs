@@ -695,10 +695,14 @@ module internal RestoreAdmission =
                         do! OwnerAdmission.require connection token
                         let! installation = Baseline.require connection token
                         let! pending = RegisterMaintenanceStore.reopenPending connection token
+                        let! primary = WitnessPrimary.read connection token
+
+                        do!
+                            DatabaseSession.read witness token (fun target ->
+                                WitnessCluster.requireIndependent primary.SystemId target token)
 
                         if pending then
                             do! RegisterMaintenanceStore.requireActive handle connection token
-                            let! primary = WitnessPrimary.read connection token
 
                             let! current =
                                 DatabaseSession.rows

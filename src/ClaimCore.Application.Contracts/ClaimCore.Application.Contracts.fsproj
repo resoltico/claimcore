@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <Compile Include="QueryFields.fs" />
     <Compile Include="Paging.fs" />
     <Compile Include="Requests.fs" />
     <Compile Include="ChangeReferences.fs" />

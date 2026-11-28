@@ -55,7 +55,10 @@ let tests =
                 let paid = original |> add (entry 1 PaymentDirection.Paid "2026-11-03" "120" "EUR")
                 Expect.equal (FinancialPosition.netIn eur paid) (total "120") "Exact overpayment"
                 Expect.equal (CaseProgress.ofFinancial paid) CaseProgress.Overpaid "Overpaid"
-                Expect.isTrue (FinancialPosition.needsReview paid) "Overpayment needs review"
+
+                Expect.isTrue
+                    ((FinancialAssessment.ofPosition None paid).NeedsReview)
+                    "Overpayment needs review"
 
                 let returned =
                     paid |> add (entry 2 PaymentDirection.Returned "2026-11-06" "20" "EUR")
@@ -69,7 +72,7 @@ let tests =
                 Expect.equal returned.PaymentCount 2L "Both entries remain current"
 
                 Expect.isFalse
-                    (FinancialPosition.needsReview returned)
+                    ((FinancialAssessment.ofPosition None returned).NeedsReview)
                     "Exact payable needs no review"
 
                 let zero = FinancialPosition.undecided |> decide "0" "EUR"
@@ -121,7 +124,7 @@ let tests =
                         "A net return is signed"
 
                     Expect.isTrue
-                        (FinancialPosition.needsReview both)
+                        ((FinancialAssessment.ofPosition None both).NeedsReview)
                         "A negative bucket requires review"
 
                     let remaining = FinancialPosition.remove returned both |> accepted

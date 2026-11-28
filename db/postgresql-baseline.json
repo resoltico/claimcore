@@ -3,7 +3,7 @@
     {
       "major": 19,
       "minimumMinor": 0,
-      "containerImage": "postgres:19.0@sha256:aaa10f7ba7328b4a221a6c3184d83eef885bd16bf1f6de864757863156b0a4d1"
+      "containerImage": "postgres:19.0@sha256:4ea94de574c17f0372722806c949757050fbb1cd7648410fe45d6bba275cc00e"
     }
   ],
   "initdbArguments": "--auth-host=scram-sha-256 --encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8"

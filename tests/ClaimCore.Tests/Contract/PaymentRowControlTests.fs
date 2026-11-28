@@ -26,7 +26,7 @@ let private fullyPaid tasks =
     { ResponseExamples.caseRead with
         Snapshot = snapshot
         Advice = advice
-        Headline = CaseHeadline.Paid
+        Headline = CaseHeadline.PayableCovered
         Work = Inputs.workView snapshot.State
         Stages = DomainInputs.stageDisplay snapshot.State
         LatestPayments = [ state.Payments[operation 3].Value.Entry |> Option.get ]

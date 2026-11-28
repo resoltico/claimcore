@@ -111,11 +111,15 @@ supplied bindings.
 Input `choicesFrom` names a Core lookup. In the HUMAN results table, each
 selectable row carries `choice: { value, label }`. The `label` is a core `PresentedMessage`
 with named arguments. Keep a submitted value when it is missing from the loaded choices and show
-`label.choiceNotListed`. An operation that requires an entry declares `selection: { promptId, from }`.
-Use the prompt and the case-scoped list named by `from`, and offer rows that carry the operation. `choicesWhen` is an array of
-`{input, value, choices, messageId}` conditions; intersect every matching condition with the offered
-choices. The optional Core message ID explains a restriction. Choice hints do not replace server
-admission. Removing a recognized stored role remains possible even if assigning it would now be refused.
+`label.choiceNotListed`. When `retainedChoiceLabel` is set, offer the supplied seed with that label
+if the seed is absent from the lookup. During payment correction this permits retaining the entry's
+recorded payee after party removal. Input metadata names required declaration-level pairs through
+`pairedWith`. Payment correction can change the amount or currency independently.
+An operation that requires an entry declares `selection: { promptId, from }`. Use the prompt and
+the case-scoped list named by `from`, and offer rows that carry the operation. Intersect the
+offered choices with each applicable `choicesWhen` condition. Its optional Core message explains
+the restriction. The server checks admission at preview and execution. Removing a recognized
+stored role remains possible even if assigning it would now be refused.
 
 A `Link` carries `endpoint` and an object `input`. Follow its supplied input through that endpoint's
 typed request boundary. Generic HUMAN arrays use shared structural bounds; response byte bounds still
@@ -236,15 +240,24 @@ input tokens. Use structured codes and actions for automation; do not parse tran
 
 ### Case and payment contracts
 
-Case receipts expose `payments`, an ordered list of entry differences. `case.correctPayment` binds
-the selected `paymentId` and one case revision, then returns both removed and recorded differences
-in one accepted operation. DATA payment-page items expose `actions`, the list of task IDs available
-for the selected entry. Removal and correction are independently available.
+Case receipts expose `payments`, an ordered list of entry differences, and `balances`, exact
+per-currency net differences from the accepted case revision. Activity attaches each transfer to
+its payment effect and each operation's changed balances to the case effect. A missing endpoint
+means the currency had no current entries at that revision. A recorded net of zero is present.
+Current disclosure permissions and erasure govern both the entry differences and balances.
+
+`case.correctPayment` binds the selected `paymentId` and reviewed case revision. Send the facts
+to change. Amount and currency can be edited independently. Omit an input to keep its value.
+Send null to clear the reference or payee. You can keep a payee removed from the case's party list.
+A changed payee must be a current party on the same case.
+An effective no-op is refused. The accepted operation removes the former entry and records the
+replacement in order. DATA payment page items carry independent correction and removal actions.
 
 Use `receivedDate` for the date the office received the claim. Registration facts other than the
 reference are optional. Claimed money is an optional pair. Party rows and edits use the supplied
 collection and binding declarations. Payment entries carry direction, their own money,
-evidence reference and payee ID. Reference queries resolve earlier spellings under current read access.
+evidence reference and payee ID. Exact case-reference queries match the issued reference
+case-insensitively under current read access.
 
 The case handling status is open or closed. Close takes a required outcome and an optional note.
 Reopen takes a reason. Observation-time case summaries support business date filters, grouping and
@@ -351,10 +364,10 @@ pinned runtime requests a full device flush for the file where supported and fal
 dispatch. These guarantees rely on the platform, browser, filesystem and storage honouring the
 requests. Abrupt-process checks do not establish behaviour after hardware power loss.
 
-The Web build uses its own browser recovery database. It preserves saved identities across
-reloads of this build and leaves any earlier browser recovery database untouched. Keep the
-operation IDs of unconfirmed changes before replacing a build so you can check them directly
-against the installation that received them.
+The Web client preserves saved operation identities across reloads in its browser recovery database.
+It reports recognized incompatible recovery stores and leaves them intact. Record the operation IDs of
+unconfirmed changes before replacing a build, then confirm outcomes against the installation
+that received each change.
 
 ### Operation lookup
 
@@ -418,6 +431,37 @@ CSV cells beginning with formula-trigger characters are prefixed, including afte
 Preserve that prefix when passing exports to spreadsheet software. CSV is not a new authorization or
 retention boundary: exported copies remain the recipient's responsibility after source erasure.
 
+### Financial CSV rows
+
+Cases DATA keeps one item and one cursor position per case. Its `contributions` array contains at
+most one object for each currency, sorted by code. Cases CSV expands each selected case to one
+row per currency. A case with no contributions has one row with blank currency and amounts.
+Stable `caseId` identifies the case independently of the display reference. Repeated metadata
+belongs to the case. The `claimed`, `payable` and `netPaid` columns apply only to that row's
+currency. An empty amount contributes nothing. Zero contributes to both the sum and its count.
+
+To reconcile the same selection, authority and business observation against `case.summary`,
+derive month keys from `registeredOn`, `receivedOn` or `closedOn`. Group by `outcome`,
+`responsible.actorId`, or the published days-open bands using `daysOpen`. Blank keys form the
+report's missing groups. Count distinct case IDs per group and distinct IDs with each measure
+present per currency. Sum exact decimal amounts within their currency. `latestTransferDate`
+is the latest date among current payments and returns.
+
+For example, suppose case A contributes claimed EUR 0, payable EUR 0 and net USD 0. Case B
+has no money. Cases CSV emits these three rows (excerpt).
+
+```csv
+caseId,currency,claimed,payable,netPaid
+00000000-0000-4000-8000-000000000001,EUR,0,0,
+00000000-0000-4000-8000-000000000001,USD,,,0
+00000000-0000-4000-8000-000000000002,,,,
+```
+
+Activity CSV adds `beforeCurrency` and `afterCurrency` to monetary difference rows. A claim
+or payable can change currencies. Absent endpoints have blank currency and amount. An admitted
+negative net is written as a canonical signed number. Spreadsheet formula protection still applies
+to free-text values such as references.
+
 ### Bounded CSV download
 
 `POST /api/export` is a separate media contract. Its closed `query` selects `case.list`,
@@ -472,10 +516,10 @@ For the business workflow and terminology, see [Case work](case-work.md) and the
 
 ### Option syntax
 
-CLI existing-case reads and actions accept `--case-id UUID` as an alternative to a reference operand.
-References that look like UUIDs remain references. Grant/revoke ID selectors select case scope;
-`ROLE@REFERENCE` retains reference semantics. ID-based erasure previews the authoritative reference
-and confirms that reference before sending the identical prepared operation.
+CLI existing-case reads and actions accept the issued reference as an operand, or select the Case ID
+with `--case-id UUID`. For grant and revoke commands, use the Case ID selector or supply the issued
+reference in `ROLE@REFERENCE`. ID-based erasure previews the authoritative reference and confirms
+that reference before sending the identical prepared operation.
 
 Copied ledger action hints use `--preview`; operational hints use `--dry-run`. Hints retain the
 supplied binding and do not allocate an operation ID or refresh a reviewed version. Private text is
