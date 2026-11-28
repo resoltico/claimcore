@@ -272,6 +272,13 @@ it("resumes the same request after Escape and remount, isolated by requester and
   );
   await confirm("End my ClaimCore browser sessions");
   await screen.findByText(/Repeat it using the same request ID/u);
+  const dialog = screen.getByRole("dialog");
+  await waitFor(() => {
+    expect(
+      within(dialog).getByRole("button", { name: "Resume unconfirmed termination" }),
+    ).toBeEnabled();
+    expect(dialog.contains(dialog.ownerDocument.activeElement)).toBe(true);
+  });
   await userEvent.keyboard("{Escape}");
   await waitFor(() => {
     expect(screen.queryByRole("dialog")).toBeNull();
