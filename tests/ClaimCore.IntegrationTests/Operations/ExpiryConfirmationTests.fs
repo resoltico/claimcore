@@ -82,8 +82,9 @@ let private confirmed () =
                         (1L),
                         None,
                         (Some(
-                            reviewedFamilySequence
+                            reviewedErasureToken
                                 fixture.Store
+                                fixture.Owner
                                 (CaseSelector.Id((caseReceipt erased).CaseId))
                         ))
                     ))

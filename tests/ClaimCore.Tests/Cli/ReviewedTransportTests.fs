@@ -696,7 +696,7 @@ let tests =
                                 "10000000-0000-4000-8000-000000000001"
                                 "--expected-revision"
                                 "1"
-                                "--expected-family-sequence"
+                                "--erasure-review-token"
                                 "1"
                                 "--confirm"
                                 "CC-55KW-SSJ4-8HMS-G1BH-73"
@@ -769,7 +769,7 @@ let tests =
                                                     ),
                                                     7L,
                                                     None,
-                                                    Some 11L
+                                                    Some "11"
                                                 ))
                                                 "The supplied ID and reviewed versions survive; no reference rebinding"
 
@@ -920,7 +920,7 @@ let tests =
                                         "10000000-0000-4000-8000-000000000001"
                                         "--expected-revision"
                                         "7"
-                                        "--expected-family-sequence"
+                                        "--erasure-review-token"
                                         "11"
                                         "--confirm"
                                         (if scenario = "wrong confirmation" then

@@ -29,7 +29,7 @@ type TaskDeclaration =
         Family: ActFamily
         Consequence: Consequence
         Review: TaskReview
-        ReviewsFamilySequence: bool
+        RequiresErasureReview: bool
         Execution: TaskExecution
         // Potential capability needs; input-dependent requirements stay with the task.
         Capabilities: Capability list
@@ -58,7 +58,7 @@ module TaskDeclaration =
         match declaration.Target, declaration.Creates with
         | ActSubject.Case, true -> BindingShape.CaseNew
         | ActSubject.Case, false when binds InputTarget.PaymentId -> BindingShape.CasePayment
-        | ActSubject.Case, false when declaration.ReviewsFamilySequence -> BindingShape.CaseErase
+        | ActSubject.Case, false when declaration.RequiresErasureReview -> BindingShape.CaseErase
         | ActSubject.Case, false -> BindingShape.Case
         | ActSubject.Work, _ -> BindingShape.Work
         | ActSubject.Reminder, true -> BindingShape.ReminderNew

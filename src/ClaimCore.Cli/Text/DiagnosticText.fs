@@ -81,7 +81,8 @@ module internal DiagnosticText =
                     |> Option.map (requiredRoles rendering >> CliMessage.NextAskRoles)
                     |> Option.defaultValue CliMessage.NextAskAccess
                 )
-            | RecommendedAction.ReviewLatest ->
+            | RecommendedAction.ReviewLatest
+            | RecommendedAction.RefreshPrecondition ->
                 Some(
                     reference
                     |> Option.map (

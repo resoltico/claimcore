@@ -28,7 +28,7 @@ import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { productMetadata } from "../protocol/productMetadata";
 import { isCaseAct, type ActKind } from "../operation/metadata";
-import { type Route } from "../routing/routes";
+import { usableSelectionId, type Route } from "../routing/routes";
 import type { PeoplePanel as PeoplePanelType } from "../features/people/PeoplePanel";
 import type { CaseDetail as CaseDetailType } from "../features/case/CaseDetail";
 import { ReminderQueue } from "../features/work/ReminderQueue";
@@ -78,21 +78,46 @@ type EditorRoute = Extract<Route, { screen: "caseAct" }>;
 type EditorSelectionProps = {
   current: CurrentCase;
   route: EditorRoute;
-  onReady: (value: { current: CurrentCase; action: OperationAffordance }) => void;
+  onExact: (value: { current: CurrentCase; action: OperationAffordance }) => void;
+  onChoose: (current: CurrentCase, action: OperationAffordance) => void;
   onClose: () => void;
   onUnavailable: () => void;
 };
+const matchesSelection = (
+  binding: OperationAffordance["binding"],
+  identity: { memberName: string } | null,
+  selection: EditorRoute["selection"],
+  chooser: boolean,
+): boolean => {
+  if (identity === null) {
+    return selection === undefined && !chooser;
+  }
+  const fields: Readonly<Record<string, unknown>> = binding;
+  const id = fields[identity.memberName];
+  return (
+    usableSelectionId(id) &&
+    (chooser ? selection === undefined : selection?.kind === "selected" && selection.id === id)
+  );
+};
+
 const matchesEditorAction = (
   action: Affordance,
   route: EditorRoute,
+  current: CurrentCase,
+  chooser = false,
 ): action is OperationAffordance => {
   if (action.task !== route.act || !isOperationAffordance(action) || action.blocked !== null) {
     return false;
   }
-  const binding: Readonly<Record<string, unknown>> = action.binding;
-  return Object.entries(route.binding ?? {}).every(
-    ([key, value]) =>
-      Object.hasOwn(binding, key) && JSON.stringify(binding[key]) === JSON.stringify(value),
+  const { binding } = action;
+  const declaration = operationTask(action.task).binding;
+  return (
+    declaration !== null &&
+    binding.kind === declaration.kind &&
+    "target" in binding &&
+    binding.target.kind === "ID" &&
+    binding.target.caseId === current.subject.caseId &&
+    matchesSelection(binding, declaration.identity, route.selection, chooser)
   );
 };
 type EntrySelectionSource = {
@@ -129,18 +154,20 @@ type EntryPage = NonNullable<ReturnType<typeof entrySelectionPage>>;
 type EntryQuery = ReturnType<typeof useEndpointPage<EntrySelectionSource, Affordance, EntryPage>>;
 
 const entrySelection = (page: EntryQuery, current: CurrentCase, route: EditorRoute) => {
-  const exact = route.binding !== undefined;
+  const exact = route.selection?.kind === "selected";
   const matching = page.items.filter((candidate): candidate is OperationAffordance =>
-    matchesEditorAction(candidate, route),
+    matchesEditorAction(candidate, route, current, !exact),
   );
-  const outdated =
-    page.page !== null && page.page.document.subject.revision !== current.subject.revision;
+  const subject = page.page?.document.subject;
+  const wrongCase = subject !== undefined && subject.caseId !== current.subject.caseId;
+  const outdated = subject !== undefined && subject.revision !== current.subject.revision;
   return {
     exact,
-    action: exact ? matching[0] : undefined,
-    outdated,
+    action: exact && !wrongCase ? matching[0] : undefined,
+    outdated: outdated && !wrongCase,
     unavailable:
-      !page.loading && page.cursor === null && matching.length === 0 && page.message === null,
+      wrongCase ||
+      (!page.loading && page.cursor === null && matching.length === 0 && page.message === null),
   };
 };
 
@@ -158,8 +185,8 @@ const EntryChoiceRows = ({
   page,
   route,
   current,
-  onReady,
-}: Pick<EditorSelectionProps, "route" | "current" | "onReady"> & {
+  onChoose,
+}: Pick<EditorSelectionProps, "route" | "current" | "onChoose"> & {
   page: EntryPage | null;
 }) => {
   const p = usePresentation();
@@ -168,7 +195,9 @@ const EntryChoiceRows = ({
       return null;
     }
     const rows = content.rows.flatMap((row) => {
-      const offered = row.actions?.find((candidate) => matchesEditorAction(candidate, route));
+      const offered = row.actions?.find((candidate) =>
+        matchesEditorAction(candidate, route, current, true),
+      );
       return offered === undefined ? [] : [{ ...row, actions: [offered] }];
     });
     return rows.length === 0 ? null : (
@@ -178,13 +207,13 @@ const EntryChoiceRows = ({
           timeZone={page.basis.timeZone}
           renderControls={(row) => {
             const offered = row.actions?.[0];
-            return offered !== undefined && matchesEditorAction(offered, route) ? (
+            return offered !== undefined && matchesEditorAction(offered, route, current, true) ? (
               <Button
                 className="data-table-recommended"
                 variant="secondary"
                 compact
                 onPress={() => {
-                  onReady({ current, action: offered });
+                  onChoose(current, offered);
                 }}
               >
                 {renderCatalogKey(p, offered.shortLabelId ?? offered.labelId)}
@@ -200,7 +229,8 @@ const EntryChoiceRows = ({
 export const EntrySelection = ({
   current,
   route,
-  onReady,
+  onExact,
+  onChoose,
   onClose,
   onUnavailable,
   revalidate,
@@ -224,13 +254,13 @@ export const EntrySelection = ({
     if (outdated) {
       revalidate();
     } else if (action !== undefined) {
-      onReady({ current, action });
+      onExact({ current, action });
     } else if (unavailable) {
       onUnavailable();
     } else if (exact && !page.loading && page.message === null && page.cursor !== null) {
       void page.load(page.cursor);
     }
-  }, [outdated, action, current, onReady, onUnavailable, revalidate, exact, page, unavailable]);
+  }, [outdated, action, current, onExact, onUnavailable, revalidate, exact, page, unavailable]);
   if (unavailable) {
     return null;
   }
@@ -279,7 +309,7 @@ export const EntrySelection = ({
         page={outdated || exact ? null : page.page}
         route={route}
         current={current}
-        onReady={onReady}
+        onChoose={onChoose}
       />
       {page.cursor === null || exact ? null : (
         <Button
@@ -295,14 +325,41 @@ export const EntrySelection = ({
   );
 };
 
+const selectCurrentEditor = (current: CurrentCase, route: EditorRoute, direct: boolean) => {
+  if (!direct) {
+    return null;
+  }
+  const action = allActions(current).find((candidate): candidate is OperationAffordance =>
+    matchesEditorAction(candidate, route, current),
+  );
+  return action === undefined ? null : { current, action };
+};
+
+const editorEntry = (route: EditorRoute & { act: ActKind }, current: boolean) => {
+  const definition = operationTask(route.act);
+  const requiresIdentity = Boolean(definition.binding?.identity);
+  const admissible = current && route.selection?.kind !== "invalid";
+  const picker = admissible ? definition.selection : null;
+  return {
+    direct:
+      admissible &&
+      (requiresIdentity ? route.selection?.kind === "selected" : route.selection === undefined),
+    picker,
+    unavailableWithoutMatch: current && picker === null,
+    autoReview: requiresIdentity && !definition.inputs.some((input) => input.source === "AUTHORED"),
+  };
+};
+
 const RoutableCaseEditor = ({
   route,
   current,
   revalidate,
   onClose,
+  onChoose,
   onUnavailable,
   onObserved,
   disclosureAvailable,
+  currentForEntry,
   committed,
   setLocked,
 }: EditorCallbacks & {
@@ -310,37 +367,35 @@ const RoutableCaseEditor = ({
   current: CurrentCase;
   revalidate: () => void;
   onClose: () => void;
+  onChoose: EditorSelectionProps["onChoose"];
   onUnavailable: () => void;
   onObserved: (value: CurrentCase) => void;
   disclosureAvailable: boolean;
+  currentForEntry: boolean;
 }) => {
   const [opened, setOpened] = useState<{
     current: CurrentCase;
     action: OperationAffordance;
   } | null>(null);
-  const definition = operationTask(route.act);
-  const candidates = allActions(current);
-  const action = candidates.find((candidate): candidate is OperationAffordance =>
-    matchesEditorAction(candidate, route),
-  );
-  const direct = definition.selection === null || route.binding !== undefined;
-  const selection = opened ?? (direct && action !== undefined ? { current, action } : null);
+  const entry = editorEntry(route, currentForEntry);
+  const selection = opened ?? selectCurrentEditor(current, route, entry.direct);
   if (opened === null && selection !== null) {
     setOpened(selection);
   }
-  const unavailable = selection === null && definition.selection === null;
+  const unavailable = selection === null && entry.unavailableWithoutMatch;
   useEffect(() => {
     if (unavailable) {
       onUnavailable();
     }
   }, [onUnavailable, unavailable]);
   if (selection === null) {
-    return definition.selection === null ? null : (
+    return entry.picker === null ? null : (
       <EntrySelection
-        declaration={definition.selection}
+        declaration={entry.picker}
         route={route}
         current={current}
-        onReady={setOpened}
+        onExact={setOpened}
+        onChoose={onChoose}
         onClose={onClose}
         onUnavailable={onUnavailable}
         revalidate={revalidate}
@@ -353,8 +408,8 @@ const RoutableCaseEditor = ({
       current={selection.current}
       initialAct={route.act}
       affordance={selection.action}
-      {...(selection.action.binding.kind === "CASE" ? { binding: selection.action.binding } : {})}
-      autoReview={Object.keys(route.binding ?? {}).some((key) => key !== "kind")}
+      binding={selection.action.binding}
+      autoReview={entry.autoReview}
       disclosureAvailable={disclosureAvailable}
       onCaseObserved={onObserved}
       onClose={onClose}
@@ -474,18 +529,23 @@ const CaseRoute = ({
       ? {
           key: operationKey,
           act,
-          render: (current, revalidate, onUnavailable, available, onObserved) => (
+          onClose: () => {
+            caseNavigation.closeAct(route.target);
+          },
+          render: (current, revalidate, onUnavailable, available, onObserved, currentForEntry) => (
             <RoutableCaseEditor
               key={operationKey}
               route={{ ...route, act }}
               current={current}
               revalidate={revalidate}
               onUnavailable={onUnavailable}
+              onChoose={caseNavigation.openAct}
               onObserved={onObserved}
               onClose={() => {
                 caseNavigation.closeAct(route.target);
               }}
               disclosureAvailable={available}
+              currentForEntry={currentForEntry}
               setLocked={setLocked}
               committed={committed}
             />

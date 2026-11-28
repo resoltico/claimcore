@@ -83,7 +83,12 @@ let private binding (model: Oracle.Model) stale witness =
             |> List.tryHead
             |> Option.defaultValue (ClaimCore.Tests.TaskBuilders.operation 999)
         )
-    | BindingShape.CaseErase -> Binding.CaseErase(target, expected, model.Sequence)
+    | BindingShape.CaseErase ->
+        Binding.CaseErase(
+            target,
+            expected,
+            ErasureReview.Accepted(model.Sequence, String.replicate 64 "0")
+        )
     | _ -> failtest "The sequence vocabulary contains only case tasks."
 
 let private decide number sequence (current: CaseFamily) model stale (witness: Oracle.Witness) =
@@ -316,7 +321,7 @@ let private availabilityProperty =
                             Binding.CaseErase(
                                 CaseSelector.Id actual.Id,
                                 actual.Case.Revision,
-                                actual.Sequence
+                                ErasureReview.Accepted(actual.Sequence, String.replicate 64 "0")
                             )
                         | _ -> Binding.Case(CaseSelector.Id actual.Id, actual.Case.Revision)
 

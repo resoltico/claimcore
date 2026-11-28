@@ -48,6 +48,7 @@ let private caseReply =
         PartyOffers = []
         RelatedCases = RelatedCaseLinks.empty
         FamilySequence = Sequence.create 1L |> Option.get
+        ErasureReviewToken = None
         LatestPayments = []
         PaymentPayees = []
         Mine = false
@@ -108,7 +109,7 @@ let private caseReply =
                             Binding.CaseErase(
                                 CaseSelector.Id current.CaseId,
                                 current.Revision,
-                                Sequence.first
+                                ErasureReview.Token "synthetic-review"
                             )
                         else
                             Binding.Case(CaseSelector.Id current.CaseId, current.Revision)

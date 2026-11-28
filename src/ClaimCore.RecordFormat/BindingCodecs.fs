@@ -94,8 +94,18 @@ module BindingCodecs =
         |> build
         |> named "Binding.CASE.payment"
 
+    let erasureReviewToken = boundedText 1 ErasureReview.MaximumTokenCharacters
+
+    let private commitment =
+        patternedText
+            ErasureReview.CommitmentCharacters
+            ErasureReview.CommitmentCharacters
+            "^[0-9a-f]{64}$"
+            None
+
     let caseErase =
-        (record (fun target revision sequence -> Binding.CaseErase(target, revision, sequence))
+        (record (fun target revision sequence digest ->
+            Binding.CaseErase(target, revision, ErasureReview.Accepted(sequence, digest)))
         : Fields<Binding, _>)
         |> fixedField "kind" "CASE"
         |> field
@@ -113,9 +123,41 @@ module BindingCodecs =
         |> field
             "expectedFamilySequence"
             (function
-            | Binding.CaseErase(_, _, sequence) -> sequence
+            | Binding.CaseErase(_, _, ErasureReview.Accepted(sequence, _)) -> sequence
             | _ -> mismatch ())
             positiveSequence
+        |> field
+            "reviewCommitment"
+            (function
+            | Binding.CaseErase(_, _, ErasureReview.Accepted(_, digest)) -> digest
+            | _ -> mismatch ())
+            commitment
+        |> build
+        |> named "RetainedBinding.CASE.erase"
+
+    let private eraseReview =
+        (record (fun target revision token ->
+            Binding.CaseErase(target, revision, ErasureReview.Token token))
+        : Fields<Binding, _>)
+        |> fixedField "kind" "CASE"
+        |> field
+            "target"
+            (function
+            | Binding.CaseErase(target, _, _) -> target
+            | _ -> mismatch ())
+            caseSelector
+        |> field
+            "expectedRevision"
+            (function
+            | Binding.CaseErase(_, revision, _) -> revision
+            | _ -> mismatch ())
+            (version 1L)
+        |> field
+            "erasureReviewToken"
+            (function
+            | Binding.CaseErase(_, _, ErasureReview.Token token) -> token
+            | _ -> mismatch ())
+            erasureReviewToken
         |> build
         |> named "Binding.CASE.erase"
 
@@ -356,7 +398,7 @@ module BindingCodecs =
         | BindingShape.PeopleNew -> peopleNew
         | BindingShape.People -> people
 
-    let private select shape =
+    let private select codec shape =
         branch
             id
             (fun value ->
@@ -364,12 +406,15 @@ module BindingCodecs =
                     Some value
                 else
                     None)
-            (forShape shape)
+            codec
 
     let forDeclaration declaration =
         match TaskDeclaration.bindingShapes declaration with
         | [ shape ] -> forShape shape
-        | shapes -> choice "Binding.PEOPLE.recover" (List.map select shapes)
+        | shapes ->
+            choice
+                "Binding.PEOPLE.recover"
+                (List.map (fun shape -> select (forShape shape) shape) shapes)
 
     let forValue = BindingShape.ofValue >> forShape
 
@@ -390,4 +435,19 @@ module BindingCodecs =
             with :? System.ArgumentException ->
                 false
 
-    let binding = choice "Binding" (BindingShape.all |> List.map select)
+    let binding =
+        choice
+            "RetainedBinding"
+            (BindingShape.all |> List.map (fun shape -> select (forShape shape) shape))
+
+    let reviewBinding =
+        choice
+            "Binding"
+            (BindingShape.all
+             |> List.map (fun shape ->
+                 select
+                     (if shape = BindingShape.CaseErase then
+                          eraseReview
+                      else
+                          forShape shape)
+                     shape))

@@ -25,6 +25,21 @@ module internal TimelineHistory =
         |> SHA256.HashData
         |> Convert.ToHexStringLower
 
+    let sealCursor (tx: ReadTx) actor scope range position =
+        let canonical = Cursors.encodeTimeline tx.InstallationId scope range position
+        let payload = System.Buffers.Text.Base64Url.DecodeFromChars(canonical.AsSpan())
+        tx.Cipher.SealCursor("case-timeline", ActorId.value actor, payload)
+
+    let openCursor (tx: ReadTx) actor scope (token: string) =
+        if token.Length > Paging.MaximumTimelineCursorCharacters then
+            Error Refusal.InvalidCursor
+        else
+            match tx.Cipher.OpenCursor("case-timeline", ActorId.value actor, token) with
+            | Some payload ->
+                let canonical = System.Buffers.Text.Base64Url.EncodeToString payload
+                Cursors.decodeTimeline tx.InstallationId scope canonical
+            | None -> Error Refusal.InvalidCursor
+
     let belongs parent filter (entry: StoredEffect) =
         entry.Change.Aggregate = AggregateReference.Family parent
         && (filter

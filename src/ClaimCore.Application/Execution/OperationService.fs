@@ -73,12 +73,12 @@ module internal OperationService =
                     | Binding.Case(target, expected)
                     | Binding.CasePayment(target, expected, _)
                     | Binding.CaseErase(target, expected, _) ->
-                        Some(target, Some ChangeEntity.Case, expected)
-                    | Binding.Work(target, expected) ->
-                        Some(target, Some ChangeEntity.Work, expected)
+                        Some(target, ChangeEntity.Case, expected)
+                    | Binding.Work(target, expected) -> Some(target, ChangeEntity.Work, expected)
                     | Binding.Reminder(target, id, expected) ->
-                        Some(target, Some(ChangeEntity.Reminder id), expected)
-                    | Binding.Party(target, _, expected) -> Some(target, None, expected)
+                        Some(target, ChangeEntity.Reminder id, expected)
+                    | Binding.Party(target, id, expected) ->
+                        Some(target, ChangeEntity.Party id, expected)
                     | _ -> None
 
                 match selected with
@@ -279,7 +279,18 @@ module internal OperationService =
                                     OperationReview.Task = plan.Frame.Declaration.Id
                                     Target = target
                                     References = references
-                                    Binding = plan.Frame.Binding
+                                    Binding =
+                                        match binding with
+                                        | Binding.CaseErase(_, _, ErasureReview.Token token) ->
+                                            match plan.Frame.Binding with
+                                            | Binding.CaseErase(target, revision, _) ->
+                                                Binding.CaseErase(
+                                                    target,
+                                                    revision,
+                                                    ErasureReview.Token token
+                                                )
+                                            | _ -> invalidOp "Reviewed erasure lost its binding."
+                                        | _ -> plan.Frame.Binding
                                     Changes = descriptions
                                     Opening = None
                                     ChangesOwnSignInIdentity = changesOwnSignInIdentity

@@ -461,11 +461,10 @@ let private bounded (database: PostgresFixture.Database) =
                 ))
                 token
 
-        let! acquired =
-            acquire database caseId (Binding.Case(target, expected.Snapshot.Revision))
+        let reviewed () =
+            reviewedErasureToken fixture.Store fixture.Owner target |> ErasureReview.Token
 
-        let stale =
-            Binding.CaseErase(target, expected.Snapshot.Revision, acquired.Facts.Sequence)
+        let stale = Binding.CaseErase(target, expected.Snapshot.Revision, reviewed ())
 
         let! _ = addNote 7000
 
@@ -480,14 +479,11 @@ let private bounded (database: PostgresFixture.Database) =
             (ExecuteResult.Rejected(Refusal.Case CaseRefusal.FamilyChanged))
             "An unacquired child still fences a stale erasure review"
 
-        let! fresh =
-            acquire database caseId (Binding.Case(target, expected.Snapshot.Revision))
-
         let! _ =
             execute
                 7002
                 "case.erase"
-                (Binding.CaseErase(target, expected.Snapshot.Revision, fresh.Facts.Sequence))
+                (Binding.CaseErase(target, expected.Snapshot.Revision, reviewed ()))
                 Map.empty
 
         let! erased = current database caseId

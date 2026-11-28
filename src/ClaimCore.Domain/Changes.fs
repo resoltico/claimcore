@@ -284,6 +284,7 @@ type ChangeEntity =
     | Case
     | Work
     | Reminder of ReminderId
+    | Party of PartyId
 
 module ChangeEntity =
     let partKind =
@@ -291,12 +292,14 @@ module ChangeEntity =
         | ChangeEntity.Case -> PartKind.Case
         | ChangeEntity.Work -> PartKind.Work
         | ChangeEntity.Reminder _ -> PartKind.Reminder
+        | ChangeEntity.Party _ -> PartKind.Party
 
     let partId caseId =
         function
         | ChangeEntity.Case
         | ChangeEntity.Work -> CaseId.value caseId
         | ChangeEntity.Reminder id -> ReminderId.value id
+        | ChangeEntity.Party id -> PartyId.value id
 
 /// A conflict continuation retains the observed upper revision, even if later changes are accepted.
 type ChangeRange =

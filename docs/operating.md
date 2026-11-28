@@ -141,7 +141,7 @@ workload and host capacity.
 Use matching service, browser and CLI builds. Initialize an empty database with the current
 [SQL baseline](../db/baseline.sql) and provision a matching independent [recovery
 witness](../db/witness.sql). The [installation format](../src/ClaimCore.RecordFormat/InstallationFormat.fs)
-declares public format 12 and its compatibility identity. The service and owner commands check the
+declares public format 13 and its compatibility identity. The service and owner commands check the
 identity and exact baseline before accessing register data. The identity also binds ledger roots and
 the witness. Restore backups using matching builds and keys. Operator commands report
 `SCHEMA_MISMATCH` for an incompatible register and `WITNESS_MISMATCH` for an incompatible witness.

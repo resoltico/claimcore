@@ -165,17 +165,54 @@ const detailFor = (snapshot: RevisionConflictSnapshot) => {
   }
   return snapshot.latest.current.history === "FULL" ? "CURRENT" : "SUMMARY";
 };
+const ConflictActions = ({
+  model,
+  latest,
+  onClose,
+}: {
+  model: Pick<OperationModel, "busy" | "revalidating" | "revalidateDisclosure" | "reviewLatest">;
+  latest: RevisionConflictSnapshot["latest"];
+  onClose: () => void;
+}) => {
+  const p = usePresentation();
+  if (latest === null) {
+    return (
+      <button type="button" disabled={model.revalidating} onClick={model.revalidateDisclosure}>
+        {p.text("ui.reloadCurrentCase")}
+      </button>
+    );
+  }
+  if (latest.revision === null) {
+    return (
+      <button type="button" onClick={onClose}>
+        {p.text("ui.returnToCase")}
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="primary"
+      disabled={model.busy}
+      onClick={() => void model.reviewLatest()}
+    >
+      {p.text("ui.conflict.reviewLatest")}
+    </button>
+  );
+};
 const conflictDocument = (snapshot: RevisionConflictSnapshot) =>
   snapshot.diagnostic?.document ?? null;
 export const ConflictChanges = ({
   model,
   snapshot,
+  onClose,
 }: {
   model: Pick<
     OperationModel,
     "busy" | "revalidating" | "invalidateDisclosure" | "revalidateDisclosure" | "reviewLatest"
   >;
   snapshot: RevisionConflictSnapshot;
+  onClose: () => void;
 }) => {
   const p = usePresentation();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -193,7 +230,7 @@ export const ConflictChanges = ({
   return (
     <section className="revision-conflict" aria-labelledby={title}>
       <h2 ref={heading} id={title} tabIndex={-1}>
-        {p.text("label.caseChanged")}
+        {p.text("label.recordChanged")}
       </h2>
       <p>{p.text("ui.conflict.kept")}</p>
       {snapshot.latest === null ? null : (
@@ -220,20 +257,7 @@ export const ConflictChanges = ({
         />
       )}
       {model.revalidating ? <p role="status">{p.text("ui.conflict.loading")}</p> : null}
-      {snapshot.latest === null ? (
-        <button type="button" disabled={model.revalidating} onClick={model.revalidateDisclosure}>
-          {p.text("ui.reloadCurrentCase")}
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="primary"
-          disabled={model.busy || snapshot.latest.revision === null}
-          onClick={() => void model.reviewLatest()}
-        >
-          {p.text("ui.conflict.reviewLatest")}
-        </button>
-      )}
+      <ConflictActions model={model} latest={snapshot.latest} onClose={onClose} />
     </section>
   );
 };

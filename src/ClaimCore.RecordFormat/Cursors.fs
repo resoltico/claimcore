@@ -613,21 +613,20 @@ module Cursors =
         function
         | None -> JsonValue.Null
         | Some range ->
-            let entity, reminder =
+            let entity, identity =
                 match range.Entity with
                 | ChangeEntity.Case -> "CASE", None
                 | ChangeEntity.Work -> "WORK", None
-                | ChangeEntity.Reminder id -> "REMINDER", Some id
+                | ChangeEntity.Reminder id -> "REMINDER", Some(ReminderId.format id)
+                | ChangeEntity.Party id -> "PARTY", Some(PartyId.format id)
 
             JsonValue.Object
                 [
                     "actualRevision", JsonValue.Integer(Revision.value range.ActualRevision)
                     "entity", JsonValue.String entity
                     "expectedRevision", JsonValue.Integer(Revision.value range.ExpectedRevision)
-                    "reminderId",
-                    reminder
-                    |> Option.map (ReminderId.format >> JsonValue.String)
-                    |> Option.defaultValue JsonValue.Null
+                    "id",
+                    identity |> Option.map JsonValue.String |> Option.defaultValue JsonValue.Null
                 ]
 
     let private readChangeRange =
@@ -636,13 +635,15 @@ module Cursors =
         | JsonValue.Object [ "actualRevision", JsonValue.Integer actual
                              "entity", JsonValue.String entity
                              "expectedRevision", JsonValue.Integer expected
-                             "reminderId", reminder ] ->
+                             "id", identity ] ->
             let target =
-                match entity, reminder with
+                match entity, identity with
                 | "CASE", JsonValue.Null -> Some ChangeEntity.Case
                 | "WORK", JsonValue.Null -> Some ChangeEntity.Work
                 | "REMINDER", JsonValue.String raw ->
                     uuid ReminderId.create raw |> Option.map ChangeEntity.Reminder
+                | "PARTY", JsonValue.String raw ->
+                    uuid PartyId.create raw |> Option.map ChangeEntity.Party
                 | _ -> None
 
             match target, Revision.create expected, Revision.create actual with

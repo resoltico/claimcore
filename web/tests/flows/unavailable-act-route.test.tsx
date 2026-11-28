@@ -64,7 +64,7 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
       regions: [...caseIdentityScreen.regions, ...[]],
     },
   );
-  const { view, get, preview, execute } = mount(closed, "case.close");
+  const { get, preview, execute } = mount(closed, "case.close");
   expect(
     await screen.findByRole("heading", {
       name: (_name, element) => element.id === "case-detail-title",
@@ -72,11 +72,10 @@ it("keeps the workspace and withholds an unoffered action without reconstructing
     }),
   ).toBeVisible();
   expect(casesBreadcrumb()).toBeVisible();
-  expect(view.container.querySelector(".case-action-refusal")).toHaveTextContent(
-    "This action is not currently offered for this case.",
-  );
+  const callout = await screen.findByRole("alert");
+  expect(callout).toHaveTextContent("This action is not currently offered for this case.");
+  expect(within(callout).getByRole("button", { name: "Return to case" })).toBeVisible();
   const user = userEvent.setup();
-  const callout = view.container.querySelector<HTMLElement>(".case-action-refusal")!;
   await user.click(within(callout).getByRole("button", { name: "More actions" }));
   expect(screen.getByRole("menuitem", { name: /Reopen/u })).toBeVisible();
   await user.keyboard("{Escape}");

@@ -1,5 +1,6 @@
 import { parseReminderPageQuery } from "./reminderQuery";
-import { isObject } from "../protocol/client";
+import { isCaseAct } from "../operation/metadata";
+import { operationTask } from "../protocol/taskCatalog";
 import type { CaseSelector } from "@contracts/client";
 export type Route =
   | { screen: "cases"; query: string }
@@ -13,7 +14,7 @@ export type Route =
       screen: "caseAct";
       target: CaseSelector;
       act: string;
-      binding?: Readonly<Record<string, unknown>>;
+      selection?: { kind: "selected"; id: string } | { kind: "invalid" };
     }
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
@@ -51,37 +52,49 @@ export const peopleHistoryPath = (actorId: string): string =>
 export const casePath = (caseId: string): string => `/cases/id/${encodeURIComponent(caseId)}`;
 export const referencePath = (reference: string): string =>
   `/cases/reference/${referenceSegment(reference)}`;
-/** Route selection carries identity fields; current Core affordances supply reviewed versions. */
+const selectionBinding = (act: string) => (isCaseAct(act) ? operationTask(act).binding : null);
+
+export const usableSelectionId = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u.test(value) &&
+  value !== "00000000-0000-0000-0000-000000000000";
+
+/** Only a declared row identity belongs in the route. Reviewed facts come from current controls. */
 export const actPath = (
   target: CaseSelector,
   act: string,
   binding?: Readonly<Record<string, unknown>>,
 ): string => {
   const path = `${target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference)}/acts/${encodeURIComponent(act)}`;
-  if (binding === undefined) {
+  const declaration = selectionBinding(act);
+  if (binding === undefined || declaration === null || declaration.identity === null) {
     return path;
   }
-  const selection = Object.fromEntries(
-    Object.entries(binding).filter(
-      ([key]) => !["target", "expectedRevision", "expectedFamilySequence"].includes(key),
-    ),
-  );
-  return `${path}?${new URLSearchParams({ binding: JSON.stringify(selection) })}`;
+  const key = declaration.identity.memberName;
+  const id = binding[key];
+  const value = binding["kind"] === declaration.kind && usableSelectionId(id) ? id : "";
+  return `${path}?${new URLSearchParams({ [key]: value })}`;
 };
+
+const readSelection = (
+  act: string,
+  query: string,
+): Extract<Route, { screen: "caseAct" }>["selection"] => {
+  const fields = [...new URLSearchParams(query)];
+  if (fields.length === 0) {
+    return undefined;
+  }
+  const [key, id] = fields[0]!;
+  const identity = selectionBinding(act)?.identity;
+  return fields.length === 1 && key === identity?.memberName && usableSelectionId(id)
+    ? { kind: "selected", id }
+    : { kind: "invalid" };
+};
+
 const caseActRoute = (target: CaseSelector, segment: string, query: string): Route => {
   const act = decodeURIComponent(segment);
-  const values = new URLSearchParams(query).getAll("binding");
-  if (values.length === 0) {
-    return { screen: "caseAct", target, act };
-  }
-  if (values.length !== 1) {
-    return { screen: "missing" };
-  }
-  const selected: unknown = JSON.parse(values[0]!);
-  if (!isObject(selected)) {
-    return { screen: "missing" };
-  }
-  return { screen: "caseAct", target, act, binding: selected };
+  const selection = readSelection(act, query);
+  return { screen: "caseAct", target, act, ...(selection === undefined ? {} : { selection }) };
 };
 const caseRoute = (segments: string[], query: string): Route => {
   if (segments.length === 2 && segments[1] === "new") {

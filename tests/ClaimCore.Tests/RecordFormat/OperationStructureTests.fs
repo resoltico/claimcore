@@ -32,7 +32,7 @@ let tests =
                                 BindingShape.CaseNew, "Binding.CASE.new"
                                 BindingShape.Case, "Binding.CASE"
                                 BindingShape.CasePayment, "Binding.CASE.payment"
-                                BindingShape.CaseErase, "Binding.CASE.erase"
+                                BindingShape.CaseErase, "RetainedBinding.CASE.erase"
                                 BindingShape.Work, "Binding.WORK"
                                 BindingShape.ReminderNew, "Binding.REMINDER.new"
                                 BindingShape.Reminder, "Binding.REMINDER"

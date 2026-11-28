@@ -266,10 +266,12 @@ module ResponseCodecs =
                 changedAt
                 recordedBy
                 family
+                erasureReview
                 relatedCases ->
                 {
                     RelatedCases = defaultArg relatedCases RelatedCaseLinks.empty
                     FamilySequence = family
+                    ErasureReviewToken = erasureReview
                     Snapshot =
                         {
                             CaseId = id
@@ -326,6 +328,10 @@ module ResponseCodecs =
         |> field "changedAt" _.ChangedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "familySequence" _.FamilySequence ResponseScalars.sequence
+        |> optionalField
+            "erasureReviewToken"
+            _.ErasureReviewToken
+            ClaimCore.RecordFormat.BindingCodecs.erasureReviewToken
         |> optionalField
             "relatedCases"
             (fun reply ->

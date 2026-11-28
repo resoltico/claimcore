@@ -10,9 +10,7 @@ type BindingBasis = Readonly<{
   selection?: Extract<OperationBinding, { kind: "WORK" }>["target"];
   values: Readonly<Record<string, string | number | undefined>>;
 }>;
-type RevisionDeclaration = NonNullable<
-  NonNullable<OperationTaskDefinition["binding"]>["revision" | "family"]
->;
+type RevisionDeclaration = NonNullable<NonNullable<OperationTaskDefinition["binding"]>["revision"]>;
 const bindingRevision = (field: RevisionDeclaration, basis: BindingBasis): number => {
   const value = Object.hasOwn(basis.values, field.input)
     ? basis.values[field.input]
@@ -43,13 +41,15 @@ export const initialSubmissionBinding = (
     }
     binding["target"] = basis.selection;
   }
-  for (const [member, field] of [
-    ["expectedRevision", plan.revision],
-    ["expectedFamilySequence", plan.family],
-  ] as const) {
-    if (field !== null) {
-      binding[member] = bindingRevision(field, basis);
+  if (plan.revision !== null) {
+    binding["expectedRevision"] = bindingRevision(plan.revision, basis);
+  }
+  if (plan.erasureReview !== null) {
+    const token = basis.values[plan.erasureReview];
+    if (typeof token !== "string") {
+      throw new Error("A current erasure review is required.");
     }
+    binding["erasureReviewToken"] = token;
   }
   if (plan.identity !== null) {
     const value = basis.values[plan.identity.input];

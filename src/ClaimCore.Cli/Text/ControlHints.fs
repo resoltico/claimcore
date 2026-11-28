@@ -44,12 +44,13 @@ module internal ControlHints =
                 version InputTarget.ExpectedRevision revision
                 target InputTarget.PaymentId, OperationId.format payment
             ]
-        | Binding.CaseErase(value, revision, family) ->
+        | Binding.CaseErase(value, revision, ErasureReview.Token token) ->
             selection value
             @ [
                 version InputTarget.ExpectedRevision revision
-                target InputTarget.ExpectedFamilySequence, Sequence.format family
+                target InputTarget.ErasureReviewToken, token
             ]
+        | Binding.CaseErase(_, _, ErasureReview.Accepted _) -> []
         | Binding.Work(value, revision) ->
             selection value @ [ version InputTarget.ExpectedWorkRevision revision ]
         | Binding.PartyNew value

@@ -62,26 +62,18 @@ module internal ReviewDocumentParts =
             | Binding.Case(_, revision)
             | Binding.CasePayment(_, revision, _) ->
                 [ reviewed InputTarget.ExpectedRevision revision ]
-            | Binding.CaseErase(_, revision, sequence) ->
-                [
-                    reviewed InputTarget.ExpectedRevision revision
-                    ScreenEntries.value
-                        "expectedFamilySequence"
-                        (TaskInputPresentation.messageKey
-                            (TaskInputId.Target InputTarget.ExpectedFamilySequence)
-                            "label")
-                        Prominence.Detail
-                        (PresentedValue.Identifier(Sequence.format sequence))
-                ]
+            | Binding.CaseErase(_, revision, _) ->
+                [ reviewed InputTarget.ExpectedRevision revision ]
             | Binding.Work(_, revision) -> [ reviewed InputTarget.ExpectedWorkRevision revision ]
             | Binding.Reminder(_, _, revision) ->
                 [ reviewed InputTarget.ExpectedReminderRevision revision ]
+            | Binding.Party(_, _, revision) ->
+                [ reviewed InputTarget.ExpectedPartyRevision revision ]
             | Binding.People(_, revision) -> [ reviewed InputTarget.ExpectedRevision revision ]
             | Binding.CaseNew _
             | Binding.PeopleNew _
             | Binding.ReminderNew _
             | Binding.PartyNew _
-            | Binding.Party _
             | Binding.AttachmentNew _
             | Binding.Attachment _
             | Binding.NoteNew _

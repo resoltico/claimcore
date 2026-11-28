@@ -413,18 +413,18 @@ let tests =
                     for value in
                         [
                             ""
-                            ",\"expectedFamilySequence\":null"
-                            ",\"expectedFamilySequence\":0"
-                            ",\"expectedFamilySequence\":9007199254740992"
-                            ",\"expectedFamilySequence\":1e0"
+                            ",\"erasureReviewToken\":null"
+                            ",\"erasureReviewToken\":0"
+                            ",\"erasureReviewToken\":9007199254740992"
+                            ",\"erasureReviewToken\":\"\""
                         ] do
                         Expect.isError
                             (decode (erase value))
-                            "Erasure requires a positive exact family sequence"
+                            "Erasure requires a bounded string token"
 
                     Expect.isOk
-                        (decode (erase ",\"expectedFamilySequence\":2"))
-                        "Independent reviewed family input")
+                        (decode (erase ",\"erasureReviewToken\":\"synthetic-review\""))
+                        "Independent review token")
             testCase
                 "typed offline APIs preserve supplied People and erasure preconditions"
                 (fun () ->
@@ -457,10 +457,6 @@ let tests =
                         Expect.isSome
                             (OperationSubmission.syntax (person value))
                             "Invalid People metadata is retained"
-
-                        Expect.isSome
-                            (OperationSubmission.syntax (case (Some value)))
-                            "Invalid family metadata is retained"
 
                         let envelope =
                             {
@@ -500,14 +496,13 @@ let tests =
                                         CaseSelector.Reference "CC-CFH6-9SPS-62Q5-QJRF-24",
                                         None,
                                         None,
-                                        Some value
+                                        Some(if value = 0L then "" else String.replicate 156 "x")
                                     )
                                 Inputs = Map.empty
                             }
 
-                        Expect.isSome
-                            (OperationSubmission.syntaxDraft draft
-                             |> Result.defaultWith (fun _ -> failtest "Draft syntax"))
+                        Expect.isError
+                            (OperationSubmission.syntaxDraft draft)
                             "Supplied draft family metadata is checked"
 
                     Expect.isNone
@@ -515,11 +510,11 @@ let tests =
                         "Positive existing revision"
 
                     Expect.isNone
-                        (OperationSubmission.syntax (case (Some 1L)))
-                        "Positive family basis"
+                        (OperationSubmission.syntax (case (Some "synthetic-review")))
+                        "Nonempty review token"
 
-                    Expect.isError
-                        (OperationSubmission.admit
+                    let missingReview =
+                        OperationSubmission.admit
                             {
                                 SubmissionEnvelope.OperationId = id
                                 Task = TaskId.ofLiteral "case.erase"
@@ -531,8 +526,23 @@ let tests =
                                         None
                                     )
                                 Inputs = Map.empty
-                            })
-                        "Complete erasure requires its basis"
+                            }
+                        |> accepted
+
+                    Expect.equal
+                        missingReview.Operation
+                        (Error(
+                            Refusal.invalidInput (
+                                InputTarget.ErasureReviewToken,
+                                Violation.TextRequired
+                            )
+                        ))
+                        "A typed complete erasure without its token cannot be submitted"
+
+                    Expect.isError
+                        (decode
+                            """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CC-CFH6-9SPS-62Q5-QJRF-24"},"expectedRevision":1},"inputs":{}}""")
+                        "The public wire shape requires the erasure token"
 
                     let creation =
                         ClaimCore.TestSupport.Submissions.create

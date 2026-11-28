@@ -19,14 +19,13 @@ let declaration =
               operation
               caseTarget
               revision
-              required (target InputTarget.ExpectedFamilySequence)
+              required (target InputTarget.ErasureReviewToken) |> bound
           ] with
-        ReviewsFamilySequence = true
+        RequiresErasureReview = true
     }
 
 let private capability = List.exactlyOne declaration.Capabilities
 
-type private Command = { FamilySequence: Sequence }
 let check (_: InputMap) = []
 
 let private gate (state: DecisionFacts) =
@@ -40,12 +39,16 @@ let availability environment state binding =
 
 let decide context environment (state: DecisionFacts option) binding (_: InputMap) =
     match state, binding with
-    | Some state, Binding.CaseErase(_, _, sequence) ->
-        let command = { FamilySequence = sequence }
-
+    | Some state, Binding.CaseErase(_, _, review) ->
         CaseRules.admit context environment state binding capability gate
         |> Result.bind (fun () ->
-            if command.FamilySequence <> state.Sequence then
+            if
+                not (
+                    match review with
+                    | ErasureReview.Accepted(sequence, _) -> sequence = state.Sequence
+                    | ErasureReview.Token _ -> false
+                )
+            then
                 Error(Refusal.Case CaseRefusal.FamilyChanged)
             else
                 let value =

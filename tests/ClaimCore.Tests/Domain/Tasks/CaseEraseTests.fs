@@ -77,7 +77,11 @@ let tests =
                                 current
                                 environment
                                 (Some(DecisionFacts.fromReplay state))
-                                (Binding.CaseErase(target state, revision, sequence))
+                                (Binding.CaseErase(
+                                    target state,
+                                    revision,
+                                    ErasureReview.Accepted(sequence, String.replicate 64 "0")
+                                ))
                                 InputMap.empty
 
                         if number = Revision.Maximum then
@@ -106,7 +110,11 @@ let tests =
                         (context 3)
                         environment
                         (Some(DecisionFacts.fromReplay state))
-                        (Binding.CaseErase(target state, state.Case.Revision, before.Sequence))
+                        (Binding.CaseErase(
+                            target state,
+                            state.Case.Revision,
+                            ErasureReview.Accepted(before.Sequence, String.replicate 64 "0")
+                        ))
                         InputMap.empty
                     |> expectRefusal (Refusal.Case CaseRefusal.FamilyChanged)
 
@@ -115,7 +123,11 @@ let tests =
                             (context 3)
                             environment
                             (Some(DecisionFacts.fromReplay state))
-                            (Binding.CaseErase(target state, state.Case.Revision, state.Sequence))
+                            (Binding.CaseErase(
+                                target state,
+                                state.Case.Revision,
+                                ErasureReview.Accepted(state.Sequence, String.replicate 64 "0")
+                            ))
                             InputMap.empty
                         |> accepted
 
@@ -147,7 +159,11 @@ let tests =
                             (context 3)
                             environment
                             (Some(DecisionFacts.fromReplay state))
-                            (Binding.CaseErase(target state, state.Case.Revision, state.Sequence))
+                            (Binding.CaseErase(
+                                target state,
+                                state.Case.Revision,
+                                ErasureReview.Accepted(state.Sequence, String.replicate 64 "0")
+                            ))
                             InputMap.empty
                         |> accepted
                         |> apply state
@@ -156,7 +172,11 @@ let tests =
                         (context 4)
                         environment
                         (Some(DecisionFacts.fromReplay after))
-                        (Binding.CaseErase(target after, after.Case.Revision, after.Sequence))
+                        (Binding.CaseErase(
+                            target after,
+                            after.Case.Revision,
+                            ErasureReview.Accepted(after.Sequence, String.replicate 64 "0")
+                        ))
                         InputMap.empty
                     |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)))
         ]

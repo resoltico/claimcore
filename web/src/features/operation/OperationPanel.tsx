@@ -261,7 +261,14 @@ const EnterOperation = (props: Props) => {
   return (
     <>
       {model.conflict === null ? null : (
-        <ConflictChanges key={model.conflict.identity.id} model={model} snapshot={model.conflict} />
+        <ConflictChanges
+          key={model.conflict.identity.id}
+          model={model}
+          snapshot={model.conflict}
+          onClose={() => {
+            requestClose(model, props.onClose);
+          }}
+        />
       )}
       <OperationForm {...props} onAct={requestChange} />
     </>
@@ -420,9 +427,7 @@ const OperationFooter = ({
 };
 const FreshPrecondition = ({ model }: { model: OperationModel }) => {
   const p = usePresentation();
-  const changed = ["diagnostic.FAMILY_CHANGED", "diagnostic.ACTOR_CHANGED"].includes(
-    model.rejection?.advice.message.messageId ?? "",
-  );
+  const changed = model.rejection?.advice.action === "REFRESH_PRECONDITION";
   return changed ? (
     <button
       type="button"

@@ -8,6 +8,7 @@ import { acceptedSubject, workRequest } from "./work-workflow";
 import { fillNamedField } from "./typed-entry";
 import { expectCaseReadsSettled } from "./case-readiness";
 import { noHorizontalOverflow } from "./layout-support";
+import { actPath } from "../src/routing/routes";
 
 test("corrects selected payment atomically with both identities in receipt timeline and CSV @engine", async ({
   page,
@@ -36,24 +37,44 @@ test("corrects selected payment atomically with both identities in receipt timel
   }
   const payments = page.locator('.case-detail .case-payments[data-region="PAYMENTS"]');
   let writes = 0;
+  let previews = 0;
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/api/operation.execute") {
+    const endpoint = new URL(request.url()).pathname;
+    if (endpoint === "/api/operation.execute") {
       writes += 1;
+    } else if (endpoint === "/api/operation.preview") {
+      previews += 1;
     }
   });
-  await payments
-    .locator("tbody tr")
-    .filter({ hasText: "100.00 EUR" })
-    .locator("button[aria-haspopup]")
-    .click();
-  await page.getByRole("menuitem", { name: "Correct payment entry", exact: true }).click();
+
+  const chooserPath = actPath(target, "case.correctPayment");
+  const exactPath = actPath(target, "case.correctPayment", {
+    kind: "CASE",
+    paymentId: old.paymentId,
+  });
   const dialog = page.getByRole("dialog");
   const editAmount = dialog.getByRole("checkbox", { name: "Change Paid amount", exact: true });
-  const reload = dialog.getByRole("button", { name: "Reload current case", exact: true });
-  await expect(editAmount.or(reload)).toBeVisible();
-  if (await reload.isVisible()) {
-    await reload.click();
-  }
+  const choose = async () => {
+    await expect(dialog.getByText("Choose the payment entry to correct.")).toBeVisible();
+    await dialog
+      .getByRole("row")
+      .filter({ hasText: "100.00 EUR" })
+      .getByRole("button", { name: "Correct payment entry", exact: true })
+      .click();
+    await expect(page).toHaveURL((url) => url.pathname + url.search === exactPath);
+    await expect(editAmount).toBeVisible();
+  };
+
+  await page.goto(chooserPath);
+  await choose();
+  await page.goBack();
+  await expect(page).toHaveURL((url) => url.pathname + url.search === chooserPath);
+  await choose();
+  await page.reload();
+  await expect(page).toHaveURL((url) => url.pathname + url.search === exactPath);
+  await expect(editAmount).toBeVisible();
+  expect(previews).toBe(0);
+  expect(writes).toBe(0);
   await expect(dialog.getByRole("textbox", { name: "Payment ID", exact: true })).toHaveCount(0);
   await editAmount.check();
   await expect(
@@ -81,6 +102,7 @@ test("corrects selected payment atomically with both identities in receipt timel
   const review = (await preview.json()) as ResponseFor<"operation.preview", "HUMAN">;
   expect(JSON.stringify(review)).toContain(old.paymentId);
   expect(JSON.stringify(review)).toContain(frozen.operationId);
+  expect(previews).toBe(1);
   expect(writes).toBe(0);
   await expectAccessible(page);
   const executed = page.waitForResponse(

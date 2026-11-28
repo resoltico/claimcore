@@ -30,13 +30,10 @@ module internal TimelineQueries =
                     Capability.ReadHistory
                     (Scope.Case parent.CaseId)
                 ->
-                let scope = binding parent.CaseId view.Actor.Actor.Value.ActorId request.Filter
+                let requester = view.Actor.Actor.Value.ActorId
+                let scope = binding parent.CaseId requester request.Filter
 
-                match
-                    QueryResults.cursor
-                        (Cursors.decodeTimeline services.InstallationId scope)
-                        request.AfterCursor
-                with
+                match QueryResults.cursor (openCursor tx requester scope) request.AfterCursor with
                 | Error refusal -> return Outcome.Rejected refusal
                 | Ok position ->
                     let before = position |> Option.map _.BeforePosition
@@ -84,12 +81,7 @@ module internal TimelineQueries =
                                     Items = items
                                     NextCursor =
                                         page.Next
-                                        |> Option.map (
-                                            Cursors.encodeTimeline
-                                                services.InstallationId
-                                                scope
-                                                range
-                                        )
+                                        |> Option.map (sealCursor tx requester scope range)
                                 })
                             |> Result.map Outcome.Succeeded
                             |> Result.defaultWith Outcome.Failed

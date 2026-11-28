@@ -134,6 +134,7 @@ let internal retainedText () =
                         PartyOffers = []
                         RelatedCases = RelatedCaseLinks.empty
                         FamilySequence = Sequence.create 1L |> Option.get
+                        ErasureReviewToken = None
                         LatestPayments = []
                         PaymentPayees = []
                         Mine = false

@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "Atkal atļaut šīs anulētās lietas apstrādi. Tās atvērtais vai slēgtais statuss nemainās.",
-    "source": "c48d44c1b7c1"
+    "text": "Atjaunojiet lietas statusu, kāds tas bija pirms anulēšanas.",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "Atcelt atgādinājumu",
@@ -2947,20 +2947,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "Kopš dzēšanas pārskatīšanas ir mainījusies lieta, tās darbs, piezīmes, atgādinājumi vai maksājumi. Pārskatiet visu lietu vēlreiz.",
-    "source": "14a2c7cc75ea"
+    "text": "Dzēšanas pārskats vairs nav aktuāls. Atveriet pašreizējo lietu un pārskatiet dzēšanu vēlreiz.",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "Pārskatītā lietas kopuma versija",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "Dzēšanas pārskata marķieris",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "Izmantojiet case.get norādīto kopuma secību lietai, kuru pārskatījāt dzēšanai.",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "Izmantojiet dzēšanas pārskata marķieri, kas saņemts, nolasot pašreizējo lietu.",
+    "source": "3bd321be769e"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "Pirms dzēšanas pārskatiet lietu un visu tās darbu, piezīmes, atgādinājumus un maksājumus.",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "Nolasiet lietu vēlreiz, lai saņemtu jaunu marķieri.",
+    "source": "3295efe5f5f4"
   },
   "diagnostic.CASE_ID_REQUIRED": {
     "text": "Ievadiet netukšu lietas UUID.",
@@ -3094,9 +3094,9 @@
     "text": "Atrodiet un turpiniet lietu apstrādi, kam nepieciešama uzmanība.",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "Lieta ir mainījusies",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "Šis ieraksts ir mainīts",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "Nav neizskatītu piekļuves pieprasījumu.",

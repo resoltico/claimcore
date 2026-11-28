@@ -308,6 +308,7 @@ type CaseReadModel =
     {
         RelatedCases: RelatedCaseLinks
         FamilySequence: Sequence
+        ErasureReviewToken: string option
         Snapshot: CaseSnapshot
         LatestPayments: PaymentEntry list
         PaymentPayees: PaymentPayee list

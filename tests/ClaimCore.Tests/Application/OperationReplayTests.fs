@@ -1101,7 +1101,7 @@ let tests =
                             (Binding.CaseErase(
                                 CaseSelector.Id id,
                                 family.Case.Revision,
-                                family.Sequence
+                                ErasureReview.Accepted(family.Sequence, String.replicate 64 "0")
                             ))
                             InputMap.empty
 
@@ -1246,7 +1246,7 @@ let caseReferenceEvidence =
                             (Binding.CaseErase(
                                 CaseSelector.Id caseId,
                                 family.Case.Revision,
-                                family.Sequence
+                                ErasureReview.Accepted(family.Sequence, String.replicate 64 "0")
                             ))
                             InputMap.empty
 

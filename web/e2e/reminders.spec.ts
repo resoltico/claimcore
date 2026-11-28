@@ -741,7 +741,7 @@ test("a reminder revision change after compound preview refuses both effects wit
   const conflict = page.getByRole("dialog").locator(".revision-conflict");
   await expect(
     conflict.getByRole("heading", {
-      name: "This case has changed",
+      name: "This record has changed",
       exact: true,
     }),
   ).toBeVisible();

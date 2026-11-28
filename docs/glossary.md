@@ -34,7 +34,8 @@ Intentional identical-language cognates are Spanish Cursor, Auditor, Total and R
 Name, Person, Code and Version. Automated catalog checks and screenshots establish structure and
 rendering, not linguistic approval. Human review records should identify the language, English source
 and contexts reviewed. Executable localization journeys cover case work, reviews, RTL layouts
-and expanded text.
+and expanded text. The erasure review, reinstatement and revision-conflict copy added for format 13
+has machine-assisted translations pending fluent review.
 
 ## People, access and tasks
 

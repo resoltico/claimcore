@@ -74,6 +74,17 @@ let internal scalarEvidence () =
 
             results.Add(refused outcome)
 
+        let! noErasureReview =
+            execute
+                actor
+                (Submissions.createRaw
+                    "case.erase"
+                    (id fixture 489)
+                    (OperationBinding.Case(caseTarget fixture "REACH-1", 1L, None, None))
+                    Map.empty)
+
+        results.Add(refused noErasureReview)
+
         let! workOpening = execute actor (openRequest fixture 490 "REACH-WORK")
         accepted workOpening |> ignore
 
@@ -623,22 +634,12 @@ let internal identityEvidence fixture actor =
         accepted child |> ignore
         let! familyChanged = execute actor erase
 
-        let! invalidFamily =
-            execute
-                actor
-                (Submissions.createRaw
-                    "case.erase"
-                    (id fixture 900106)
-                    (OperationBinding.Case(caseTarget fixture "REACH-1", 1L, None, Some 0L))
-                    Map.empty)
-
         return
             [
                 refused conflict
                 refused revision
                 refused actorChanged
                 refused familyChanged
-                refused invalidFamily
             ],
             reader
     }

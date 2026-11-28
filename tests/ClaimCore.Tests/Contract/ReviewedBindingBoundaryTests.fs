@@ -17,7 +17,7 @@ let tests =
                 CaseSelector.Reference "CC-MPF7-EW0T-0XTQ-PS3F-23",
                 revision,
                 None,
-                Some 1L
+                Some "synthetic-review"
             )
 
         for revision in [ -1L; Revision.Maximum + 1L; Int64.MaxValue ] do

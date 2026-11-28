@@ -539,6 +539,9 @@ module TimelineCodecs =
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "items" _.Items (list Paging.MaximumTimelinePageSize timelineEntry)
-        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumTimelineCursorCharacters))
         |> build
         |> named "CaseTimelinePage"

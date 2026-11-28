@@ -73,7 +73,7 @@ export const rebasedOperationBinding = (
   currentActions: ReadonlyArray<Affordance>,
 ): OperationBinding => {
   const { binding } = input;
-  if ("expectedFamilySequence" in binding) {
+  if ("erasureReviewToken" in binding) {
     const current = currentActions.find(
       (action) => action.task === input.task && action.blocked === null,
     );
@@ -82,7 +82,7 @@ export const rebasedOperationBinding = (
       !isOperationAffordance(current) ||
       current.task !== input.task ||
       current.binding.kind !== "CASE" ||
-      !("expectedFamilySequence" in current.binding)
+      !("erasureReviewToken" in current.binding)
     ) {
       throw new Error("A fresh reviewed action is required.");
     }
@@ -90,14 +90,14 @@ export const rebasedOperationBinding = (
       ...binding,
       target,
       expectedRevision: current.binding.expectedRevision,
-      expectedFamilySequence: current.binding.expectedFamilySequence,
+      erasureReviewToken: current.binding.erasureReviewToken,
     };
   }
   return "target" in binding && "expectedRevision" in binding
     ? { ...binding, target, expectedRevision: revision }
     : binding;
 };
-const sameChild = (left: OperationBinding, right: OperationBinding): boolean => {
+export const sameChild = (left: OperationBinding, right: OperationBinding): boolean => {
   if ("partyId" in left) {
     return "partyId" in right && left.partyId === right.partyId;
   }

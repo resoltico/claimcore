@@ -169,7 +169,11 @@ let private lifecycle (database: PostgresFixture.Database) =
             Submissions.create
                 "case.erase"
                 (id fixture 21)
-                (Binding.CaseErase(CaseSelector.Id parent, Revision.first, current.FamilySequence))
+                (Binding.CaseErase(
+                    CaseSelector.Id parent,
+                    Revision.first,
+                    ErasureReview.Token current.ErasureReviewToken.Value
+                ))
                 Map.empty
 
         let! stale = Service.executeSubmission services staleErase token

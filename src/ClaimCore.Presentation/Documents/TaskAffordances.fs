@@ -46,14 +46,6 @@ module TaskAffordances =
             identity
             family
 
-    let caseAction task id revision family seeds editable choices =
-        offered
-            task
-            (Some(binding task (Some(CaseSelector.Id id)) (Some revision) None (Some family)))
-            seeds
-            editable
-            choices
-
     let attachmentAdd id =
         let task = ClientCompositions.attachmentEntry
 

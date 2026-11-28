@@ -266,7 +266,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
     binding: {
       kind: "CASE",
       target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
-      expectedFamilySequence: 4,
+      erasureReviewToken: "synthetic-review-4",
       expectedRevision: 1,
     },
     inputs: {},
@@ -286,7 +286,7 @@ it("renders the Core-authored erasure meaning and external-copy limitation", () 
           {
             kind: "CASE",
             target: { kind: "REFERENCE", caseReference: "CC-55KW-SSJ4-8HMS-G1BH-73" },
-            expectedFamilySequence: 4,
+            erasureReviewToken: "synthetic-review-4",
             expectedRevision: 1,
           },
           {},

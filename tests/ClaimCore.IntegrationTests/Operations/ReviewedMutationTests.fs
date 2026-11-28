@@ -321,7 +321,7 @@ let private familyReview (database: PostgresFixture.Database) =
                                 (target),
                                 (Revision.value current.Snapshot.Revision),
                                 None,
-                                (Some(Sequence.value current.FamilySequence))
+                                current.ErasureReviewToken
                             ))
                             (Map.empty))
                 | other -> return failtestf "Review: %A" other
@@ -482,7 +482,7 @@ let private familyReview (database: PostgresFixture.Database) =
         let changedBinding =
             match erase.Envelope.Binding with
             | OperationBinding.Case(target, revision, payment, _) ->
-                OperationBinding.Case(target, revision, payment, Some 1L)
+                OperationBinding.Case(target, revision, payment, Some "different-review")
             | _ -> failtest "Erasure binding required"
 
         let changedBasis =
@@ -523,8 +523,12 @@ let private familyReview (database: PostgresFixture.Database) =
             rewrite database erased.Position.Sequence (fun retained ->
                 let binding =
                     match retained.Root.Structure.Binding with
-                    | Binding.CaseErase(target, revision, _) ->
-                        Binding.CaseErase(target, revision, CaseFixtures.sequence 1L)
+                    | Binding.CaseErase(target, revision, ErasureReview.Accepted(_, commitment)) ->
+                        Binding.CaseErase(
+                            target,
+                            revision,
+                            ErasureReview.Accepted(Sequence.first, commitment)
+                        )
                     | _ -> failtest "Erasure binding required"
 
                 rehashed

@@ -9,7 +9,10 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Json
 
+open System
+open System.Diagnostics
 open System.Text
+open System.Threading.Tasks
 open System.Text.Json
 open Expecto
 open ClaimCore.Application
@@ -159,6 +162,24 @@ let private retainedHistory (database: PostgresFixture.Database) =
                         ))
                     )
                 ))
+
+        let admission =
+            Microsoft.Extensions.DependencyInjection
+                .ServiceProviderServiceExtensions.GetRequiredService<
+                ClaimCore.Server.PrincipalAdmission
+             >(
+                host.Services
+            )
+
+        let release = Stopwatch.StartNew()
+
+        while admission.ActivePartitions <> 0 && release.Elapsed < TimeSpan.FromSeconds 5. do
+            do! Task.Delay 10
+
+        Expect.equal
+            admission.ActivePartitions
+            0
+            "The completed response releases request admission"
 
         let! status, response = host.Call("operation.execute", httpRequest changed, csrf)
 

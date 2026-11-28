@@ -74,8 +74,8 @@ let private case (core: ServiceContext) ids number revision taskName values =
             OperationBinding.CaseNew revision, values
         else
             let family =
-                if declaration.ReviewsFamilySequence then
-                    Some(StoreFixtures.reviewedFamilySequence core.Store target)
+                if declaration.RequiresErasureReview then
+                    Some(StoreFixtures.reviewedErasureToken core.Store core.Principal target)
                 else
                     None
 
@@ -616,11 +616,22 @@ let tests =
                         |> Option.get
 
                     let birthCursor =
-                        ClaimCore.RecordFormat.Cursors.encodeTimeline
-                            database.Fixture.InstallationId
-                            scope
-                            (Some birthRange)
-                            before
+                        core.Store.Read
+                            {
+                                CancellationToken = token
+                                Work =
+                                    fun tx ->
+                                        System.Threading.Tasks.Task.FromResult(
+                                            TimelineHistory.sealCursor
+                                                tx
+                                                owner.ActorId
+                                                scope
+                                                (Some birthRange)
+                                                before
+                                        )
+                            }
+                        |> get
+                        |> required
 
                     let birthPage = page core target None (Some birthCursor) 50
 
@@ -897,7 +908,7 @@ let tests =
                                 ]))
                     |> ignore
 
-                    execute stewardCore (case (core) (ids) (31) (3L) "case.erase" (Map.empty))
+                    execute stewardCore (case stewardCore (ids) (31) (3L) "case.erase" (Map.empty))
                     |> ignore
 
                     let erased = collect core target None

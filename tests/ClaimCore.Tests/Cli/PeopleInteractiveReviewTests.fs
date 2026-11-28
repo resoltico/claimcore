@@ -324,8 +324,10 @@ let tests =
                             "case"
                             "erase"
                             "CC-55KW-SSJ4-8HMS-G1BH-73"
-                            "--expected-family-sequence"
-                            "10"
+                            "--expected-revision"
+                            "1"
+                            "--erasure-review-token"
+                            "synthetic-review"
                         ]
                     ] do
                     Expect.isNone

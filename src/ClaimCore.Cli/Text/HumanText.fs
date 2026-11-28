@@ -33,7 +33,7 @@ module internal HumanText =
         function
         | HumanRejection.Input(value, issues) ->
             advice rendering value @ (issues |> List.map (issue rendering))
-        | HumanRejection.Conflict(value, _, document) ->
+        | HumanRejection.Conflict(value, actual, document) ->
             let render =
                 if
                     document.Links
@@ -43,7 +43,11 @@ module internal HumanText =
                 else
                     ViewText.renderDocument
 
-            advice rendering value @ render details rendering document
+            advice rendering value
+            @ [
+                ReplyTextFormat.line rendering "label.revisionLabel" (Revision.format actual)
+            ]
+            @ render details rendering document
         | HumanRejection.Refused value -> advice rendering value
 
     let read details (rendering: RenderingContext) (reply: HumanReadReply) =

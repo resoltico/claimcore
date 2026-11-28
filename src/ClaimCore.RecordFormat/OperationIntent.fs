@@ -103,6 +103,29 @@ module OperationIntent =
             | None -> normalized
         | _ -> normalized
 
+    let reviewCommitment (token: string) =
+        token
+        |> System.Text.Encoding.UTF8.GetBytes
+        |> SHA256.HashData
+        |> Convert.ToHexStringLower
+
+    let private intentBinding =
+        function
+        | Binding.CaseErase(selector, revision, review) ->
+            let digest =
+                match review with
+                | ErasureReview.Token token -> reviewCommitment token
+                | ErasureReview.Accepted(_, commitment) -> commitment
+
+            JsonValue.Object
+                [
+                    "kind", JsonValue.String "CASE"
+                    "target", BindingCodecs.caseSelector.Write selector
+                    "expectedRevision", JsonValue.Integer(Revision.value revision)
+                    "reviewCommitment", JsonValue.String digest
+                ]
+        | binding -> BindingCodecs.binding.Write binding
+
     let canonical (declaration: TaskDeclaration) supplied (inputs: InputMap) resolve =
         let scalarValues = values resolve declaration.Inputs inputs.Values
 
@@ -121,7 +144,7 @@ module OperationIntent =
         JsonValue.Object
             [
                 "task", JsonValue.String(TaskId.token declaration.Id)
-                "binding", BindingCodecs.binding.Write(resolveBinding resolve supplied)
+                "binding", intentBinding (resolveBinding resolve supplied)
                 "inputs", InputMapCodecs.stored.Write normalized
             ]
         |> CanonicalWriter.bytes

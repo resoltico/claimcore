@@ -140,8 +140,9 @@ the action was done or use today's business date. A completion date cannot be in
 Deadlines completed by their due date show Met. Later completions show Missed. **Complete and plan
 next action** records both changes together. Reopening a completed or cancelled action requires a date.
 
-Closing or voiding preserves pending actions. Reopening or reinstating restores their relevance with the
-same dates. Complete/cancel can clean up actions on a closed active case. Erasure clears work and reminders.
+Closing or voiding preserves pending actions and their dates. Reopening a closed case or
+reinstating a previously open case returns pending actions to active queues. A previously closed
+case stays closed after reinstatement. Complete/cancel can clean up actions on a closed active case. Erasure clears work and reminders.
 
 ## Add and review notes
 
@@ -249,17 +250,16 @@ basis or withdraw the decision while keeping payment entries. A refused correcti
 ## Case stewardship
 
 A Data steward can **Void case record**, **Reinstate case record** or **Erase case** when offered. Void records an entry-error reason
-and stops business work while preserving contents. Reinstate records a reason and resumes it. Each
+and stops business work while preserving contents. Reinstate records a reason and restores the previous open or closed handling. Each
 accepted reason remains attached to its own receipt and full history entry, including after later
 changes; current rights and case erasure control disclosure.
 
-Erase permanently clears saved business contents, including earlier facts, payments, work, reminders
+Erase permanently clears saved business contents, including earlier facts, payments, work, reminders,
 notes, attachments, parties and related-case links. The issued Case ID and reference remain. Read the
 consequence and type the shown reference to confirm.
-Erasure also freezes the reviewed case-family sequence. Changes to any owned work, note, reminder or
-payment invalidate that review even when the case fact version stays unchanged. Review again explicitly
-before another attempt. Unrelated cases and account changes do not change this family sequence;
-current permission checks still apply.
+The erasure review covers owned work, notes, reminders, parties, attachments and retained relationships
+even when the case revision stays fixed. If the review becomes stale, read the current case and
+review the erasure again. Confirmation also checks current permission.
 Erasing either case closes the relationship and clears its retained target and note, including
 a link detached before erasure. An authorized source handler can detach an active link using
 its handle when the target is inaccessible. Free text authored independently on another case

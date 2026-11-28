@@ -62,7 +62,7 @@ let private readFixture (store: IStore) work =
     |> _.GetAwaiter().GetResult()
     |> Result.defaultWith (fun failure -> failtestf "Fixture review failed: %A" failure)
 
-let internal reviewedFamilySequence store target =
+let internal reviewedErasureToken store principal target =
     readFixture store (fun tx ->
         task {
             let! current =
@@ -70,11 +70,19 @@ let internal reviewedFamilySequence store target =
                 | CaseSelector.Id id -> FamilyReads.findCase tx id
                 | CaseSelector.Reference reference -> FamilyReads.findCaseByReference tx reference
 
-            match current with
-            | Some current ->
+            let! access = ExecutionEnvironment.requester tx principal
+
+            match current, access.Actor with
+            | Some current, Some actor ->
                 let! position = FamilyReads.caseFamilySequence tx current.CaseId
-                return Sequence.value position
-            | None -> return 1L // Syntactically valid wrong-target negative controls still reach disclosure policy.
+
+                return!
+                    CaseFamilyAcquisition.issueErasureReview
+                        tx
+                        current.CaseId
+                        actor.ActorId
+                        position
+            | _ -> return "unavailable-review"
         })
 
 let internal caseTarget (fixture: Fixture) name =
@@ -124,7 +132,7 @@ let internal requestAs
                 target,
                 revision,
                 None,
-                Some(reviewedFamilySequence fixture.Store target)
+                Some(reviewedErasureToken fixture.Store fixture.Owner target)
             ),
             values
         | BindingShape.CasePayment ->

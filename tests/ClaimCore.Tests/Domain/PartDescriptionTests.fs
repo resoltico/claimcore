@@ -514,7 +514,10 @@ let tests =
                             (Binding.CaseErase(
                                 target historical,
                                 historical.Case.Revision,
-                                historical.Sequence
+                                ErasureReview.Accepted(
+                                    historical.Sequence,
+                                    String.replicate 64 "0"
+                                )
                             ))
                             InputMap.empty
                         |> accepted

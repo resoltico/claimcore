@@ -73,13 +73,13 @@ const caseAct = async (
   authored: Pick<CaseSubmission, "task" | "inputs">,
 ) => {
   const target = { kind: "REFERENCE" as const, caseReference: reference };
-  let family: number | undefined;
+  let family: string | undefined;
   if (authored.task === "case.erase") {
     const observed = await request(page, "case.get", { target });
     if (observed.outcome.kind !== "SUCCEEDED") {
       throw new Error("E2E_MATRIX_ERASURE_REVIEW_UNAVAILABLE");
     }
-    family = observed.outcome.data.familySequence;
+    family = observed.outcome.data.erasureReviewToken;
   }
   return execute(page, {
     ...authored,
@@ -95,7 +95,7 @@ const caseAct = async (
             kind: "CASE",
             target,
             expectedRevision: revision,
-            ...(family === undefined ? {} : { expectedFamilySequence: family }),
+            ...(family === undefined ? {} : { erasureReviewToken: family }),
           },
   } as CaseSubmission);
 };

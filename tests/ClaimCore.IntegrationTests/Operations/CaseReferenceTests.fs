@@ -166,7 +166,7 @@ let private issuedIdentity (database: PostgresFixture.Database) =
                     byId,
                     2L,
                     None,
-                    Some(reviewedFamilySequence fixture.Store byId)
+                    Some(reviewedErasureToken fixture.Store fixture.Owner byId)
                 ))
                 Map.empty
 

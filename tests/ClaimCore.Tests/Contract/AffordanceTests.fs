@@ -13,11 +13,9 @@ let private parent =
     CaseId.create (Guid.Parse "10000000-0000-4000-8000-000000000001") |> Option.get
 
 let private action () =
-    TaskAffordances.caseAction
+    TaskAffordances.offered
         (TaskId.ofLiteral "case.close")
-        parent
-        Revision.first
-        Sequence.zero
+        (Some(Binding.Case(CaseSelector.Id parent, Revision.first)))
         Map.empty
         []
         Map.empty
@@ -276,11 +274,9 @@ let tests =
                     "A document control cannot bypass its declaration"
 
                 let other =
-                    TaskAffordances.caseAction
+                    TaskAffordances.offered
                         (TaskId.ofLiteral "case.reopen")
-                        parent
-                        Revision.first
-                        Sequence.zero
+                        (Some(Binding.Case(CaseSelector.Id parent, Revision.first)))
                         Map.empty
                         []
                         Map.empty

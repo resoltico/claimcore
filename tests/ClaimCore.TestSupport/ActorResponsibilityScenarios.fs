@@ -180,8 +180,11 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                     (Binding.CaseErase(
                         CaseSelector.Id created[3],
                         Revision.first,
-                        reviewedFamilySequence fixture.Store (CaseSelector.Id created[3])
-                        |> CaseFixtures.sequence
+                        reviewedErasureToken
+                            fixture.Store
+                            fixture.Owner
+                            (CaseSelector.Id created[3])
+                        |> ErasureReview.Token
                     ))
                     Map.empty)
 

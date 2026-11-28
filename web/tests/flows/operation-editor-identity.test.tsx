@@ -233,7 +233,7 @@ it("re-previews the same authored revision after preview loss despite a changed 
   expect(nextCommand).toEqual(firstCommand);
   expect(nextId).not.toBe(firstId);
   expect(sentDraft(1).binding.expectedRevision).toBe(1);
-  expect(await screen.findByText("This case has changed")).toBeVisible();
+  expect(await screen.findByText("This record has changed")).toBeVisible();
 });
 const paidCase: CurrentCase = caseDocumentInput({
   subject: { ...caseSubject, caseId: "20000000-0000-4000-8000-000000000001", revision: 1 },

@@ -235,6 +235,7 @@ let tests =
                         PartyOffers = []
                         RelatedCases = RelatedCaseLinks.empty
                         FamilySequence = Sequence.create 1L |> Option.get
+                        ErasureReviewToken = None
                         Snapshot =
                             {
                                 CaseId =

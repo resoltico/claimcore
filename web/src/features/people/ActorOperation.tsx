@@ -68,6 +68,7 @@ export const ActorOperation = ({
         </>
       ) : null}
       <OperationPanel
+        actPickerLabel={p.text("label.accessChange")}
         model={model}
         {...(target.mode === "bound" && target.person !== null ? { person: target.person } : {})}
         current={null}

@@ -181,19 +181,28 @@ changes select an actor ID and require `binding.expectedRevision`. Acquire the p
 of a case or person uses an explicit zero revision and no new-target selector. ClaimCore assigns
 the permanent case reference at acceptance. Record external identifiers in business fields such as
 policy number or insurer claim reference. Creating a reminder or note selects its parent case, without a
-child identity or child revision. Binding schemas distinguish case, reviewed-family case, payment
+child identity or child revision. Binding schemas distinguish case, reviewed erasure, payment
 selection, work, reminder, note and person shapes. A nonledger command control supplies its typed
 request directly.
 CLI automation supplies reviewed version flags where the task declares them; interactive commands can
 acquire and freeze those preconditions for review.
 
-Case erasure additionally requires `binding.expectedFamilySequence`, acquired from DATA `case.get`'s
-`familySequence` or the supplied HUMAN erase action. CLI automation supplies
-`--expected-family-sequence`. Keep the case selection, installation, root version and family sequence
-from the same review. `ACTOR_CHANGED` and `FAMILY_CHANGED` require explicit fresh review, preserving
-authored input; never refresh and execute automatically. Exact accepted retries retain their original
-binding, including these preconditions. The exact operation request is specified by OpenAPI; use
-`claimcore schema operation.preview request` or `claimcore schema operation.execute request` to inspect it.
+Case erasure requires `binding.erasureReviewToken` from the authorized DATA `case.get` reply or
+HUMAN erase control. CLI automation supplies `--erasure-review-token` alongside `--expected-revision`.
+Freeze the selection, case revision and token through preview and confirmation. Each read issues a
+fresh token bound to the requester, installation and case. Treat tokens as opaque and keep them out
+of URLs and logs. `REFRESH_PRECONDITION` calls for a fresh read and explicit review.
+The original requester can retry an accepted erasure with the same operation ID, revision and token
+even after erasure or encryption generation rotation. Current authority and the settlement window
+still apply.
+Use `claimcore schema operation.preview request` or `claimcore schema operation.execute request`
+to inspect the submission schema.
+
+Revision conflicts report the actual revision and authorized changes for the reviewed record. Case
+actions including payment corrections use the case revision. Work, reminders and parties use
+their own revisions. A readable empty range is an empty page. A withheld range indicates that
+history access is unavailable. Follow the supplied cursor to continue the frozen range under
+current access and erasure rules.
 
 The DATA opening preview identifies an `OPENING` target and supplies typed `opening` changes.
 The accepted opening supplies the Case ID and permanent reference. Preserve the same inputs and
@@ -205,8 +214,8 @@ and two decimal check digits. Exact selectors require the hyphens and validate t
 ASCII letter case is ignored for exact reference identity. Partial search accepts fragments.
 
 Typed offline checks apply the same ranges and applicability rules to supplied preconditions.
-Draft syntax may omit metadata for later explicit acquisition; complete erasure input requires its
-family basis. Offline syntax does not establish current state, authorization or acceptance.
+Draft syntax may omit metadata for later explicit acquisition; complete erasure input requires the
+reviewed case revision and the opaque erasure-review token. Offline syntax does not establish current state, authorization or acceptance.
 
 ```sh
 claimcore help case record-payment

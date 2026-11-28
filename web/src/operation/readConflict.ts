@@ -1,6 +1,10 @@
+import type { HumanDocument } from "@contracts/client";
 import { apiEndpoints, requestEndpoint, resultNotice } from "../api/service";
+import { allActions, isOperationAffordance } from "./affordances";
+import { sameChild } from "./operationConflict";
 import { hasDocumentSubject } from "../protocol/types";
 
+import type { ApiResult, ServiceResponse } from "../protocol/types";
 import { isDisclosureRefused } from "../api/outcomes";
 import type { OperationAction, OperationEffect, ConflictObservation } from "./operationTypes";
 type Effect = Extract<OperationEffect, { kind: "READ_CONFLICT" }>;
@@ -18,22 +22,11 @@ const incomplete: Failed = {
   refused: false,
 };
 
-const partyRevision = (current: ConflictObservation["current"], partyId: string) =>
-  current.screen.regions
-    .flatMap((region) => (region.content.kind === "TABLE" ? region.content.rows : []))
-    .flatMap((row) => row.actions)
-    .flatMap((action) => {
-      const binding = action?.binding;
-      return binding?.kind === "PARTY" && "partyId" in binding && binding.partyId === partyId
-        ? [binding.expectedRevision]
-        : [];
-    })[0];
-
 const reminderRevision = async (
   effect: Effect,
   reminderId: string,
   signal: AbortSignal,
-): Promise<number | Failed> => {
+): Promise<number | null | Failed> => {
   const result = await requestEndpoint(
     apiEndpoints.reminderGet,
     effect.identity.credential,
@@ -41,10 +34,15 @@ const reminderRevision = async (
     signal,
   );
   if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
+    if (isDisclosureRefused(result)) {
+      return null;
+    }
     return { kind: "failed", notice: resultNotice(result), refused: isDisclosureRefused(result) };
   }
   return (
-    result.value.outcome.document.actions.flatMap(({ binding }) =>
+    allActions(result.value.outcome.document).flatMap(({ task, binding, blocked }) =>
+      task === effect.source.prepared.input.task &&
+      blocked === null &&
       binding.kind === "REMINDER" &&
       "reminderId" in binding &&
       binding.reminderId === reminderId &&
@@ -52,8 +50,48 @@ const reminderRevision = async (
       binding.target.caseId === effect.target.caseId
         ? [binding.expectedRevision]
         : [],
-    )[0] ?? incomplete
+    )[0] ?? null
   );
+};
+
+const paymentRevision = async (
+  effect: Effect,
+  paymentId: string,
+  signal: AbortSignal,
+): Promise<number | null | Failed> => {
+  let cursor: string | null = null;
+  do {
+    const result: ApiResult<ServiceResponse<typeof apiEndpoints.casePayments>> =
+      // oxlint-disable-next-line eslint/no-await-in-loop -- The current page supplies the next cursor.
+      await requestEndpoint(
+        apiEndpoints.casePayments,
+        effect.identity.credential,
+        { target: effect.target, ...(cursor === null ? {} : { cursor }) },
+        signal,
+      );
+    if (result.kind !== "outcome" || result.value.outcome.kind !== "SUCCEEDED") {
+      return isDisclosureRefused(result)
+        ? null
+        : { kind: "failed", notice: resultNotice(result), refused: false };
+    }
+    const document: HumanDocument = result.value.outcome.document;
+    if (!hasDocumentSubject(document, "CASE") || document.subject.caseId !== effect.target.caseId) {
+      return incomplete;
+    }
+    const match = allActions(document).find(
+      ({ task, blocked, binding }) =>
+        task === effect.source.prepared.input.task &&
+        blocked === null &&
+        binding.kind === "CASE" &&
+        "paymentId" in binding &&
+        binding.paymentId === paymentId,
+    );
+    if (match !== undefined && "expectedRevision" in match.binding) {
+      return match.binding.expectedRevision;
+    }
+    cursor = document.nextCursor;
+  } while (cursor !== null && !signal.aborted);
+  return null;
 };
 
 const observe = async (
@@ -67,16 +105,25 @@ const observe = async (
   if (current.disclosure !== "CURRENT") {
     return incomplete;
   }
-  const { binding } = effect.source.prepared.input;
-  let revision: number | Failed = current.subject.revision;
-  if (binding.kind === "WORK") {
-    revision = current.subject.workRevision;
-  } else if ("partyId" in binding) {
-    revision = partyRevision(current, binding.partyId) ?? incomplete;
-  } else if ("reminderId" in binding) {
+  const { task, binding } = effect.source.prepared.input;
+  const matching = allActions(current).find(
+    (action) =>
+      action.task === task &&
+      action.blocked === null &&
+      isOperationAffordance(action) &&
+      action.binding.kind === binding.kind &&
+      sameChild(binding, action.binding),
+  );
+  let revision: number | null | Failed = null;
+  if ("reminderId" in binding) {
     revision = await reminderRevision(effect, binding.reminderId, signal);
-  } else if (binding.kind === "PARTY" || binding.kind === "REMINDER") {
-    return incomplete;
+  } else if (matching !== undefined && "expectedRevision" in matching.binding) {
+    revision = matching.binding.expectedRevision;
+  } else if ("paymentId" in binding) {
+    revision = await paymentRevision(effect, binding.paymentId, signal);
+  }
+  if (revision === null) {
+    return { kind: "observed", value: { current, revision: null } };
   }
   if (typeof revision !== "number") {
     return revision;

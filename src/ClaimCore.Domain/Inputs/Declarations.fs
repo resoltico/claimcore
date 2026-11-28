@@ -77,7 +77,7 @@ module TaskInputDeclaration =
         let source =
             match input with
             | TaskInputId.Target InputTarget.OperationId -> InputSource.OperationIdentity
-            | TaskInputId.Target(InputTarget.ExpectedFamilySequence | InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.ExpectedPartyRevision) ->
+            | TaskInputId.Target(InputTarget.ExpectedRevision | InputTarget.ExpectedWorkRevision | InputTarget.ExpectedReminderRevision | InputTarget.ExpectedPartyRevision) ->
                 InputSource.ExpectedRevision
             | _ -> InputSource.Authored
 

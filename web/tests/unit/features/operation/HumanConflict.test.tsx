@@ -86,7 +86,7 @@ const snapshot: RevisionConflictSnapshot = {
     kind: "CONFLICT",
     advice: {
       message: {
-        messageId: "label.caseChanged",
+        messageId: "label.recordChanged",
         arguments: [],
       },
       action: "REVIEW_LATEST",
@@ -142,7 +142,7 @@ it("uses the supplied conflict document and replaces full history with a tighten
   );
   vi.stubGlobal("fetch", fetch);
   const actions = model();
-  render(<ConflictChanges model={actions} snapshot={snapshot} />);
+  render(<ConflictChanges model={actions} snapshot={snapshot} onClose={vi.fn()} />);
   expect(screen.getByText("Core original full history Ω")).toBeVisible();
   await userEvent.click(
     screen.getByRole("button", {
@@ -168,7 +168,7 @@ it("clears disclosed conflict history on a definite HUMAN rejection without inte
           kind: "REFUSED",
           advice: {
             message: {
-              messageId: "label.caseChanged",
+              messageId: "label.recordChanged",
               arguments: [],
             },
             action: "READ_CURRENT",
@@ -177,7 +177,7 @@ it("clears disclosed conflict history on a definite HUMAN rejection without inte
       }),
     ),
   );
-  render(<ConflictChanges model={model()} snapshot={snapshot} />);
+  render(<ConflictChanges model={model()} snapshot={snapshot} onClose={vi.fn()} />);
   await userEvent.click(
     screen.getByRole("button", {
       name: "Load more",

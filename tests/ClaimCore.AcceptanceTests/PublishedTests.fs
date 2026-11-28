@@ -59,8 +59,8 @@ let private verbArguments verb (bytes: byte array) =
     @ revision
     @ (if verb = "erase" then
            [
-               "--expected-family-sequence"
-               binding.GetProperty("expectedFamilySequence").GetRawText()
+               "--erasure-review-token"
+               binding.GetProperty("erasureReviewToken").GetString() |> nonNull
            ]
        else
            [])
@@ -430,8 +430,8 @@ let private stewardship (fixture: PublishedFixture.Fixture) caseId reference =
                 let input = document["input"] |> nonNull
                 let binding = input["binding"] |> nonNull
 
-                binding["expectedFamilySequence"] <-
-                    JsonValue.Create(observed.GetProperty("familySequence").GetInt64())
+                binding["erasureReviewToken"] <-
+                    JsonValue.Create(observed.GetProperty("erasureReviewToken").GetString())
 
                 Encoding.UTF8.GetBytes(document.ToJsonString())
             else
@@ -801,3 +801,6 @@ let nativeRelatedDirections = CliNativeOutput.publishedRelatedDirections
 
 [<Tests>]
 let lifecycleEmptyView = CliCaseWork.lifecycleEmptyView
+
+[<Tests>]
+let partyConflict = CliCaseWork.partyConflict

@@ -216,9 +216,8 @@ let tests =
                 | other -> failtestf "Expected accepted preview: %A" other
 
                 let sequence =
-                    reviewedFamilySequence fixture.Store (CaseSelector.Id parent)
-                    |> Sequence.create
-                    |> Option.get
+                    reviewedErasureToken fixture.Store fixture.Owner (CaseSelector.Id parent)
+                    |> ErasureReview.Token
 
                 let erase =
                     Submissions.create

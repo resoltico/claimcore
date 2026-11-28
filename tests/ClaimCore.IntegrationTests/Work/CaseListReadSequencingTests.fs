@@ -326,8 +326,9 @@ let tests =
                         let family =
                             if taskName = "case.erase" then
                                 Some(
-                                    StoreFixtures.reviewedFamilySequence
+                                    StoreFixtures.reviewedErasureToken
                                         core.Store
+                                        core.Principal
                                         (CaseSelector.Reference exactReference)
                                 )
                             else

@@ -224,7 +224,17 @@ module internal Engine =
                                     accepted
                                     (OperationIntent.hash declaration binding inputs resolve)
                                 ->
-                                return Error(ExecutionStop.AlreadyAccepted record)
+                                match binding, record.Root.Header.Authority, access.Actor with
+                                | Binding.CaseErase _, Authority.Actor original, Some requester when
+                                    original <> requester.ActorId
+                                    ->
+                                    return
+                                        Error(
+                                            ExecutionStop.Refused(
+                                                Refusal.Access AccessRefusal.ResourceUnavailable
+                                            )
+                                        )
+                                | _ -> return Error(ExecutionStop.AlreadyAccepted record)
                             | Some _ ->
                                 return Error(ExecutionStop.Refused Refusal.IdempotencyConflict)
                     | None when Sequence.value head.Sequence >= Sequence.Maximum ->
@@ -330,7 +340,41 @@ module internal Engine =
                                         (Some inputs)
                                         (Some operation)
 
-                                match snapshot.Decide decision resolvedBinding inputs with
+                                let! decisionBinding =
+                                    task {
+                                        match resolvedBinding, access.Actor, snapshot.State with
+                                        | Binding.CaseErase(CaseSelector.Id caseId,
+                                                            revision,
+                                                            ErasureReview.Token token),
+                                          Some requester,
+                                          AggregateState.Family(Some family) when
+                                            family.Id = caseId
+                                            && (snapshot.Availability resolvedBinding)
+                                                .Blocked.IsNone
+                                            ->
+                                            let! reviewed =
+                                                CaseFamilyAcquisition.admitErasureReview
+                                                    tx
+                                                    caseId
+                                                    requester.ActorId
+                                                    token
+
+                                            return
+                                                match reviewed with
+                                                | Some sequence ->
+                                                    Binding.CaseErase(
+                                                        CaseSelector.Id caseId,
+                                                        revision,
+                                                        ErasureReview.Accepted(
+                                                            sequence,
+                                                            OperationIntent.reviewCommitment token
+                                                        )
+                                                    )
+                                                | None -> resolvedBinding
+                                        | _ -> return resolvedBinding
+                                    }
+
+                                match snapshot.Decide decision decisionBinding inputs with
                                 | Error rejected -> return Error(rejection binding rejected)
                                 | Ok changes ->
                                     match (snapshot.Availability resolvedBinding).Blocked with
@@ -348,7 +392,8 @@ module internal Engine =
                                             | Ok after, Ok descriptions ->
                                                 let plan =
                                                     {
-                                                        Frame = frame
+                                                        Frame =
+                                                            { frame with Binding = decisionBinding }
                                                         Before = snapshot.State
                                                         After = after
                                                         Origins = snapshot.Origins

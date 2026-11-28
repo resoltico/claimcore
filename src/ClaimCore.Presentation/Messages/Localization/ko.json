@@ -166,8 +166,8 @@
     "source": "d28eb327714f"
   },
   "task.case.reinstate.meaning": {
-    "text": "무효 처리된 청구 건의 업무를 다시 허용합니다. 진행 중 또는 종료 상태는 바뀌지 않습니다.",
-    "source": "c48d44c1b7c1"
+    "text": "사건을 무효 처리하기 전의 진행 또는 종결 상태로 복원합니다.",
+    "source": "91fba3c074d8"
   },
   "task.reminder.cancel.label": {
     "text": "후속 조치 취소",
@@ -2828,20 +2828,20 @@
     "source": "357d6749b470"
   },
   "diagnostic.FAMILY_CHANGED": {
-    "text": "삭제 검토 후 이 청구 건 또는 작업, 메모, 후속 조치, 지급이 변경되었습니다. 청구 건 전체를 다시 검토하세요.",
-    "source": "14a2c7cc75ea"
+    "text": "삭제 검토가 더 이상 유효하지 않습니다. 현재 사건을 조회하고 삭제를 다시 검토하세요.",
+    "source": "557a2c5fec7b"
   },
-  "field.expectedFamilySequence.hint": {
-    "text": "삭제하기 전에 청구 건과 모든 작업, 메모, 후속 조치, 지급을 검토하세요.",
-    "source": "930c5b2e0f56"
+  "field.erasureReviewToken.hint": {
+    "text": "새 토큰을 받으려면 사건을 다시 조회하세요.",
+    "source": "3295efe5f5f4"
   },
-  "field.expectedFamilySequence.label": {
-    "text": "검토한 청구 건 전체 버전",
-    "source": "07dc0be65cf6"
+  "field.erasureReviewToken.label": {
+    "text": "삭제 검토 토큰",
+    "source": "2dfc6a6b977f"
   },
-  "field.expectedFamilySequence.rule": {
-    "text": "삭제를 위해 검토한 청구 건에 대해 case.get이 제공한 가족 시퀀스를 사용하세요.",
-    "source": "8d258a9cf42b"
+  "field.erasureReviewToken.rule": {
+    "text": "현재 사건 조회에서 받은 삭제 검토 토큰을 사용하세요.",
+    "source": "3bd321be769e"
   },
   "change.CASE.recorded": {
     "text": "청구 건 사실 기록됨",
@@ -2959,9 +2959,9 @@
     "text": "주의가 필요한 청구 건 업무를 찾아 이어서 처리하세요.",
     "source": "758595a14f42"
   },
-  "label.caseChanged": {
-    "text": "이 청구 건이 변경되었습니다",
-    "source": "ae4ec9da2e36"
+  "label.recordChanged": {
+    "text": "이 기록이 변경되었습니다",
+    "source": "77ee8a08f97c"
   },
   "label.noAccessRequests": {
     "text": "대기 중인 접근 요청이 없습니다.",

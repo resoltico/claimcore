@@ -23,7 +23,7 @@
 CREATE EXTENSION pg_trgm WITH SCHEMA public VERSION '1.6';
 
 CREATE SCHEMA claimcore;
-COMMENT ON SCHEMA claimcore IS 'claimcore-format-12-payment-corrections';
+COMMENT ON SCHEMA claimcore IS 'claimcore-format-13-erasure-review';
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
 
 -- PostgreSQL already guarantees well-formed UTF-8 and excludes U+0000. I-JSON also excludes
@@ -43,7 +43,7 @@ CREATE TABLE claimcore.baseline_identity (
 
 CREATE TABLE claimcore.installation (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    installation_format smallint NOT NULL CHECK (installation_format = 12),
+    installation_format smallint NOT NULL CHECK (installation_format = 13),
     installation_id uuid NOT NULL
         CHECK (installation_id <> '00000000-0000-0000-0000-000000000000'),
     -- Immutable canonical IANA identifier, validated by the administration tool.
@@ -135,7 +135,7 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash)=32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash)=32),
-    installation_format smallint NOT NULL CHECK (installation_format=12),
+    installation_format smallint NOT NULL CHECK (installation_format=13),
     operation_id uuid NOT NULL UNIQUE CHECK (operation_id<>'00000000-0000-0000-0000-000000000000'),
     actor_id uuid CHECK (actor_id<>'00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z' AND TIMESTAMPTZ '9999-12-31T23:59:59.999999Z'),
@@ -594,7 +594,7 @@ DECLARE head claimcore.ledger_head%ROWTYPE; item jsonb; n integer;
 BEGIN
     SELECT * INTO STRICT head FROM claimcore.ledger_head WHERE singleton FOR UPDATE;
     IF p_sequence<>head.sequence+1 OR p_previous_hash<>head.entry_hash THEN RAISE EXCEPTION 'operation does not extend the current head' USING ERRCODE='CC001'; END IF;
-    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>12
+    IF p_installation IS DISTINCT FROM (SELECT installation_id FROM claimcore.installation) OR p_format<>13
        OR NOT claimcore.json_shape(p_structure,ARRAY['binding','retained']) OR jsonb_typeof(p_structure->'binding') IS DISTINCT FROM 'object' OR jsonb_typeof(p_structure->'retained') IS DISTINCT FROM 'object'
        OR jsonb_typeof(p_effects) IS DISTINCT FROM 'array' OR jsonb_typeof(p_compartments) IS DISTINCT FROM 'array'
        OR jsonb_array_length(p_effects) NOT BETWEEN 1 AND 50 OR jsonb_array_length(p_compartments)>2 THEN
@@ -698,27 +698,39 @@ BEGIN
 END;
 $$;
 
+-- One selection owns the relationship dependencies covered by either endpoint.
+CREATE FUNCTION claimcore.erasure_relationships(case_identity uuid)
+RETURNS SETOF claimcore.ledger_link_dependencies
+LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
+    SELECT d.* FROM claimcore.ledger_link_dependencies d
+      WHERE case_identity IN (d.source_case_id,d.target_case_id);
+$$;
+
 -- An old eraser cannot clear private data accepted after its frontier.
 CREATE FUNCTION claimcore.clear_owner(target_kind text,target_id uuid)
 RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE frontier bigint; erase_index integer; erased bigint; covered bigint;
+DECLARE frontier bigint; erase_index integer; erased bigint; covered bigint; removed_dependencies bigint;
 BEGIN
     SELECT operation_sequence,effect_index INTO frontier,erase_index FROM claimcore.ledger_effects
       WHERE erases_kind=target_kind AND erases_id=target_id ORDER BY operation_sequence DESC,effect_index DESC LIMIT 1;
     IF frontier IS NULL THEN RAISE EXCEPTION 'owner has no accepted erasure' USING ERRCODE='CC002'; END IF;
     IF target_kind='FAMILY' THEN
         UPDATE claimcore.ledger_compartments c SET payload=NULL,nonce=NULL,nonce_fingerprint=NULL,relationship_cleared=true
-          FROM claimcore.ledger_link_dependencies d
+          FROM claimcore.erasure_relationships(target_id) d
           WHERE (c.operation_sequence,c.ordinal)=(d.operation_sequence,d.ordinal)
-            AND target_id IN (d.source_case_id,d.target_case_id)
             AND (d.operation_sequence,d.effect_index)<(frontier,erase_index)
             AND c.payload IS NOT NULL;
         GET DIAGNOSTICS covered=ROW_COUNT;
         INSERT INTO claimcore.ledger_link_coverage VALUES(frontier,erase_index,covered)
           ON CONFLICT (operation_sequence,effect_index) DO NOTHING;
         DELETE FROM claimcore.ledger_link_dependencies d
-          WHERE target_id IN (d.source_case_id,d.target_case_id)
+          USING claimcore.erasure_relationships(target_id) covered_dependency
+          WHERE (d.operation_sequence,d.ordinal)=(covered_dependency.operation_sequence,covered_dependency.ordinal)
             AND (d.operation_sequence,d.effect_index)<(frontier,erase_index);
+        GET DIAGNOSTICS removed_dependencies=ROW_COUNT;
+        IF removed_dependencies<>covered THEN
+            RAISE EXCEPTION 'relationship clearance does not cover its dependencies' USING ERRCODE='CC002';
+        END IF;
         UPDATE claimcore.case_links SET target_case_id=NULL,note=NULL
           WHERE (source_case_id=target_id OR target_case_id=target_id)
             AND target_case_id IS NOT NULL;
@@ -1345,6 +1357,7 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request, claimcore.digest_
 GRANT EXECUTE ON FUNCTION claimcore.reserve_encryptions(uuid,bigint) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.advance_expiry_frontier(bigint) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.erasure_relationships(uuid) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.clear_owner(text,uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;

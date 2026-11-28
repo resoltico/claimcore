@@ -1,6 +1,8 @@
 namespace ClaimCore.Application.Storage
 
 open System
+open System.Buffers.Binary
+open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.Domain.Aggregates
 open ClaimCore.Domain.Changes
@@ -603,3 +605,72 @@ module internal CaseFamilyAcquisition =
             | _ -> emptySelection
 
         readFamily { selected with Operation = operation } tx id
+
+
+    let private erasureScope (tx: ReadTx) caseId =
+        task {
+            let! rows =
+                DatabaseSession.rows
+                    tx.Connection
+                    """SELECT d.operation_sequence,d.ordinal,latest.operation_sequence,latest.effect_index,latest.revision
+                       FROM claimcore.erasure_relationships($1) d
+                       JOIN claimcore.ledger_effects origin
+                         ON (origin.operation_sequence,origin.effect_index)=(d.operation_sequence,d.effect_index)
+                       CROSS JOIN LATERAL (
+                           SELECT e.operation_sequence,e.effect_index,e.revision
+                           FROM claimcore.ledger_effects e
+                           WHERE e.part_kind=origin.part_kind AND e.part_id=origin.part_id
+                           ORDER BY e.revision DESC LIMIT 1
+                       ) latest
+                       ORDER BY d.operation_sequence,d.ordinal"""
+                    [| box (CaseId.value caseId) |]
+                    tx.CancellationToken
+
+            use hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
+            let frame = Array.zeroCreate<byte> 32
+
+            for row in rows do
+                BinaryPrimitives.WriteInt64BigEndian(frame.AsSpan(0, 8), unbox row[0])
+                BinaryPrimitives.WriteInt32BigEndian(frame.AsSpan(8, 4), unbox row[1])
+                BinaryPrimitives.WriteInt64BigEndian(frame.AsSpan(12, 8), unbox row[2])
+                BinaryPrimitives.WriteInt32BigEndian(frame.AsSpan(20, 4), unbox row[3])
+                BinaryPrimitives.WriteInt64BigEndian(frame.AsSpan(24, 8), unbox row[4])
+                hash.AppendData frame
+
+            return hash.GetHashAndReset()
+        }
+
+    let issueErasureReview (tx: ReadTx) caseId requester sequence =
+        task {
+            let! scope = erasureScope tx caseId
+            let plain = Array.zeroCreate<byte> 40
+            BinaryPrimitives.WriteInt64BigEndian(plain.AsSpan(0, 8), Sequence.value sequence)
+            scope.CopyTo(plain, 8)
+
+            return
+                tx.Cipher.SealCursor(
+                    "case-erasure-review/" + CaseId.format caseId,
+                    ActorId.value requester,
+                    plain
+                )
+        }
+
+    let admitErasureReview (tx: ReadTx) caseId requester token =
+        task {
+            match
+                tx.Cipher.OpenCursor(
+                    "case-erasure-review/" + CaseId.format caseId,
+                    ActorId.value requester,
+                    token
+                )
+            with
+            | Some plain when plain.Length = 40 ->
+                let! observed = erasureScope tx caseId
+
+                if CryptographicOperations.FixedTimeEquals(observed, plain.AsSpan(8)) then
+                    return
+                        BinaryPrimitives.ReadInt64BigEndian(plain.AsSpan(0, 8)) |> Sequence.create
+                else
+                    return None
+            | _ -> return None
+        }

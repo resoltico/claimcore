@@ -38,6 +38,7 @@ export type OperationFormProps = {
   current: CurrentCase | null;
   offered: ReadonlyArray<string>;
   onAct: (kind: string) => void;
+  actPickerLabel?: string;
   onClose?: () => void;
   formId?: string;
   onMount?: (form: HTMLFormElement) => void;
@@ -128,10 +129,10 @@ export const OperationForm = (props: OperationFormProps) => {
       }}
     >
       <OperationErrors model={model} />
-      {model.entry.subject === "CASE" || offered.length < 2 ? null : (
+      {props.actPickerLabel === undefined || offered.length < 2 ? null : (
         <Select
           id="act-picker"
-          label={p.text("label.accessChange")}
+          label={props.actPickerLabel}
           value={model.entry.kind}
           disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
           options={offered.map((act) => ({

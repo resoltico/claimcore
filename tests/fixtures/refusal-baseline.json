@@ -53,6 +53,10 @@
         {
           "field": "expectedRevision",
           "code": "EXPECTED_REVISION_RANGE"
+        },
+        {
+          "field": "erasureReviewToken",
+          "code": "TEXT_REQUIRED"
         }
       ]
     },
@@ -672,23 +676,13 @@
     },
     {
       "code": "ACTOR_CHANGED",
-      "action": "ReviewLatest",
+      "action": "RefreshPrecondition",
       "target": null
     },
     {
       "code": "FAMILY_CHANGED",
-      "action": "ReviewLatest",
+      "action": "RefreshPrecondition",
       "target": null
-    },
-    {
-      "code": "INVALID_INPUT",
-      "action": "CorrectInput",
-      "issues": [
-        {
-          "field": "expectedFamilySequence",
-          "code": "EXPECTED_REVISION_RANGE"
-        }
-      ]
     },
     {
       "code": "INVALID_INPUT",

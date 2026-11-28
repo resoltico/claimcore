@@ -176,3 +176,57 @@ it.each([false, true])(
     expect(execute).not.toHaveBeenCalled();
   },
 );
+
+it("a new workspace read replaces an operation observation even at the same revision", async () => {
+  const scoped = caseDocumentInput(
+    { subject: before.subject, history: "NONE" },
+    disclosureScreen("OPERATION_OBSERVATION_CANARY"),
+  );
+  const refreshed = caseDocumentInput(
+    { subject: before.subject, history: "NONE" },
+    disclosureScreen("REFRESHED_SAME_REVISION"),
+  );
+  mockEndpoint("case.get")
+    .mockResolvedValueOnce({
+      kind: "outcome",
+      status: 200,
+      value: humanReadReply("case.get", before),
+    })
+    .mockResolvedValue({
+      kind: "outcome",
+      status: 200,
+      value: humanReadReply("case.get", refreshed),
+    });
+  const user = userEvent.setup();
+  const props = {
+    target: { kind: "ID", caseId: before.subject.caseId } as const,
+    definition: definition.catalog,
+    onBack: vi.fn(),
+    onAct: vi.fn(),
+    operation: {
+      key: "case-selection",
+      act: "case.close" as const,
+      render: (
+        _current: CurrentCase,
+        _refresh: () => void,
+        _unavailable: () => void,
+        _available: boolean,
+        observe: (value: CurrentCase) => void,
+      ) => (
+        <button
+          onClick={() => {
+            observe(scoped);
+          }}
+        >
+          Observe case
+        </button>
+      ),
+    },
+  };
+  const { rerender } = render(<CaseDetail {...props} reloadSignal={0} />);
+  await user.click(await screen.findByRole("button", { name: "Observe case" }));
+  await screen.findByText("OPERATION_OBSERVATION_CANARY");
+  rerender(<CaseDetail {...props} reloadSignal={1} />);
+  await screen.findByText("REFRESHED_SAME_REVISION");
+  expect(screen.queryByText("OPERATION_OBSERVATION_CANARY")).toBeNull();
+});
