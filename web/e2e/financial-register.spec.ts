@@ -19,6 +19,7 @@ import {
   login,
 } from "./session-helpers";
 import { acceptedSubject, workRequest } from "./work-workflow";
+import { chooseOption } from "./workspace-navigation";
 
 // Secondary-principal OIDC callbacks carry private credential evidence.
 test.use({ trace: "off" });
@@ -600,10 +601,9 @@ test("reconciles three cases through DATA, CLI CSV and the exact Chromium meter"
     }
     await editPayee.check();
     const payeeControl = correctionEditor.getByRole("combobox", { name: "Payee", exact: true });
-    await payeeControl.click();
-    await expect(
-      page.getByRole("option", { name: "Keep current selection", exact: true }),
-    ).toBeVisible();
+    await expect(payeeControl).toHaveText("Keep current selection");
+    await chooseOption(page, payeeControl, recipient.partyId);
+    await expect(payeeControl).toHaveText("Keep current selection");
 
     const clearedId = mintOperationId();
     const cleared = await change(
