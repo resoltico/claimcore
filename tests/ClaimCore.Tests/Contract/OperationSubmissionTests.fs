@@ -513,8 +513,8 @@ let tests =
                         (OperationSubmission.syntax (case (Some "synthetic-review")))
                         "Nonempty review token"
 
-                    Expect.isError
-                        (OperationSubmission.admit
+                    let missingReview =
+                        OperationSubmission.admit
                             {
                                 SubmissionEnvelope.OperationId = id
                                 Task = TaskId.ofLiteral "case.erase"
@@ -526,8 +526,23 @@ let tests =
                                         None
                                     )
                                 Inputs = Map.empty
-                            })
-                        "Complete erasure requires its basis"
+                            }
+                        |> accepted
+
+                    Expect.equal
+                        missingReview.Operation
+                        (Error(
+                            Refusal.invalidInput (
+                                InputTarget.ErasureReviewToken,
+                                Violation.TextRequired
+                            )
+                        ))
+                        "A typed complete erasure without its token cannot be submitted"
+
+                    Expect.isError
+                        (decode
+                            """{"operationId":"019aa6a0-0000-7000-8000-000000000001","task":"case.erase","binding":{"kind":"CASE","target":{"kind":"REFERENCE","caseReference":"CC-CFH6-9SPS-62Q5-QJRF-24"},"expectedRevision":1},"inputs":{}}""")
+                        "The public wire shape requires the erasure token"
 
                     let creation =
                         ClaimCore.TestSupport.Submissions.create

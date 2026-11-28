@@ -53,6 +53,10 @@
         {
           "field": "expectedRevision",
           "code": "EXPECTED_REVISION_RANGE"
+        },
+        {
+          "field": "erasureReviewToken",
+          "code": "TEXT_REQUIRED"
         }
       ]
     },

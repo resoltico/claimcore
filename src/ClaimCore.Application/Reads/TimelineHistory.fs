@@ -31,7 +31,7 @@ module internal TimelineHistory =
         tx.Cipher.SealCursor("case-timeline", ActorId.value actor, payload)
 
     let openCursor (tx: ReadTx) actor scope (token: string) =
-        if token.Length > Cursors.MaximumTokenCharacters then
+        if token.Length > Paging.MaximumTimelineCursorCharacters then
             Error Refusal.InvalidCursor
         else
             match tx.Cipher.OpenCursor("case-timeline", ActorId.value actor, token) with

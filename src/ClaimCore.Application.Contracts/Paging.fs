@@ -21,6 +21,10 @@ module Paging =
     [<Literal>]
     let MaximumActorCursorCharacters = 512
 
+    /// The opaque timeline cursor includes authenticated encryption framing and a revision range.
+    [<Literal>]
+    let MaximumTimelineCursorCharacters = 640
+
     /// Full timeline values and generic detail views must fit the bounded response envelope.
     [<Literal>]
     let MaximumTimelinePageSize = 10

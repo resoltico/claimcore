@@ -386,7 +386,10 @@ module RequestCodecs =
             })
         : Fields<CaseTimelineRequest, _>)
         |> flatten id timelineSelectionFields
-        |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumActorCursorCharacters)
+        |> optionalField
+            "cursor"
+            _.AfterCursor
+            (boundedText 1 Paging.MaximumTimelineCursorCharacters)
         |> optionalField
             "limit"
             (fun request -> Some request.Limit)

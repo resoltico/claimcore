@@ -360,6 +360,12 @@ module OperationSubmission =
                         token.Length >= 1 && token.Length <= ErasureReview.MaximumTokenCharacters
                         ->
                         Ok(Binding.CaseErase(selection, expected, ErasureReview.Token token))
+                    | None, None ->
+                        Error(
+                            issue
+                                (TaskInputId.Target InputTarget.ErasureReviewToken)
+                                Violation.TextRequired
+                        )
                     | _ -> Error SubmissionProblem.Shape
                 elif payment.IsNone && family.IsNone then
                     Ok(Binding.Case(selection, expected))

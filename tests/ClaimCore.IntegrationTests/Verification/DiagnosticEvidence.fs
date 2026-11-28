@@ -74,6 +74,17 @@ let internal scalarEvidence () =
 
             results.Add(refused outcome)
 
+        let! noErasureReview =
+            execute
+                actor
+                (Submissions.createRaw
+                    "case.erase"
+                    (id fixture 489)
+                    (OperationBinding.Case(caseTarget fixture "REACH-1", 1L, None, None))
+                    Map.empty)
+
+        results.Add(refused noErasureReview)
+
         let! workOpening = execute actor (openRequest fixture 490 "REACH-WORK")
         accepted workOpening |> ignore
 

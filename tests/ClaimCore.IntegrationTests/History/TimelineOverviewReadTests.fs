@@ -616,11 +616,22 @@ let tests =
                         |> Option.get
 
                     let birthCursor =
-                        ClaimCore.RecordFormat.Cursors.encodeTimeline
-                            database.Fixture.InstallationId
-                            scope
-                            (Some birthRange)
-                            before
+                        core.Store.Read
+                            {
+                                CancellationToken = token
+                                Work =
+                                    fun tx ->
+                                        System.Threading.Tasks.Task.FromResult(
+                                            TimelineHistory.sealCursor
+                                                tx
+                                                owner.ActorId
+                                                scope
+                                                (Some birthRange)
+                                                before
+                                        )
+                            }
+                        |> get
+                        |> required
 
                     let birthPage = page core target None (Some birthCursor) 50
 

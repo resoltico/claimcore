@@ -138,7 +138,10 @@ module EndpointDeclarations =
             query
                 QueryTaskId.CaseTimeline
                 (caseTarget :: optional TaskInputId.TimelineFilter :: page)
-                ordinaryPage
+                (paging
+                    Paging.MaximumTimelineCursorCharacters
+                    Paging.MaximumPageSize
+                    Paging.DefaultPageSize)
                 true
             query QueryTaskId.CaseAttachments [ caseTarget ] None false
             query

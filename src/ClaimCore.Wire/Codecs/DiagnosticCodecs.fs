@@ -218,7 +218,10 @@ module DiagnosticCodecs =
                 "entries"
                 _.Entries
                 (list RevisionConflictInfo.MaximumChanges TimelineCodecs.timelineEntry)
-            |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+            |> field
+                "nextCursor"
+                _.NextCursor
+                (nullable (boundedText 1 Paging.MaximumTimelineCursorCharacters))
             |> build
             |> named "ConflictChangePage"
 
