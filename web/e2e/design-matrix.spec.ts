@@ -513,6 +513,8 @@ test.describe("adopted work surface design matrix", () => {
     await editPayee.check();
     await expect(payee).toBeVisible();
     expect(await workFrame(dialog)).toEqual(selectionFrame);
+    await editPayee.uncheck();
+    await expect(payee).toHaveCount(0);
     await page.keyboard.press("Escape");
     await expect(page).toHaveURL(caseUrl);
     await expect(page.locator("main h1")).toBeFocused();
