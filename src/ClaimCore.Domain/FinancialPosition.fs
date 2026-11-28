@@ -25,11 +25,15 @@ module CurrencyPaymentTotals =
         |> Result.defaultWith (fun _ ->
             invalidOp "Non-negative payment buckets have a bounded difference.")
 
-type PaymentTotals =
+type PayableComparison =
     {
         Payable: Money
         NetPaid: DecimalTotal
     }
+
+module PayableComparison =
+    let noPaymentDue comparison =
+        Money.value comparison.Payable = 0M && comparison.NetPaid = DecimalTotal.zero
 
 /// Current payments are retained as exact, non-negative buckets by currency and direction.
 type FinancialPosition =
@@ -83,7 +87,7 @@ module FinancialPosition =
         |> Option.map CurrencyPaymentTotals.net
         |> Option.defaultValue DecimalTotal.zero
 
-    let totals (position: FinancialPosition) =
+    let comparePayable (position: FinancialPosition) =
         position.Decision
         |> Option.map (fun decision ->
             let payable = Decision.payable decision
@@ -93,12 +97,8 @@ module FinancialPosition =
                 NetPaid = netIn (Money.currencyValue payable) position
             })
 
-    let needsReview (position: FinancialPosition) =
-        (totals position
-         |> Option.exists (fun totals ->
-             totals.NetPaid > DecimalTotal.ofAmount (Money.amount totals.Payable)))
-        || position.CurrencyTotals
-           |> Map.exists (fun _ totals -> CurrencyPaymentTotals.net totals < DecimalTotal.zero)
+    let actualBalances (position: FinancialPosition) =
+        position.CurrencyTotals |> Map.map (fun _ -> CurrencyPaymentTotals.net)
 
     let private adjust combine issue direction money totals =
         let currency = Money.currencyValue money

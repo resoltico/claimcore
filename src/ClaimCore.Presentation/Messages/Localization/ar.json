@@ -834,9 +834,20 @@
     "text": "تم المحو",
     "source": "1c9a70fabcb6"
   },
-  "headline.PAID.label": {
-    "text": "مدفوع",
-    "source": "fb81b961af45"
+  "headline.NO_PAYMENT_DUE.label": {
+    "text": "لا توجد دفعة مستحقة",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "headline.PAYABLE_COVERED.label": {
+    "text": "المبلغ المستحق مغطى",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "headline.OVERPAID.label": {
+    "text": "مدفوع زائد",
+    "source": "c93dce4211a4",
+    "machineMade": true
   },
   "headline.UNDECIDED.label": {
     "text": "دون قرار",
@@ -1664,8 +1675,9 @@
     "source": "30ba702eee51"
   },
   "caseStage.PAID.label": {
-    "text": "مدفوع",
-    "source": "fb81b961af45"
+    "text": "تغطية المبلغ المستحق",
+    "source": "5ad88498af13",
+    "machineMade": true
   },
   "caseStage.CLOSED.label": {
     "text": "مغلق",
@@ -2794,8 +2806,9 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "دُفع {paid} من {payable}",
-    "source": "6c78ba810cb0"
+    "text": "صافي المدفوع {paid} من {payable}",
+    "source": "56460f70ab2f",
+    "machineMade": true
   },
   "progress.PARTLY_PAID.label": {
     "text": "مدفوع جزئيًا",
@@ -3102,8 +3115,9 @@
     "source": "480d7f933767"
   },
   "task.case.correctPayment.meaning": {
-    "text": "استبدل قيد الدفع المسجّل بالخطأ بالتاريخ والاتجاه والمبلغ والمرجع والمستفيد الصحيحين. يحدّد الإيصال القيدين.",
-    "source": "a892687bc3b6"
+    "text": "غيّر البيانات المختارة في قيد الدفعة. اترك البيانات التي تريد الإبقاء عليها دون إدخال، بما فيها المستفيد الأصلي بعد إزالته. امسح المرجع أو المستفيد صراحةً. يحدّد الإيصال القيدين.",
+    "source": "cc5e912ffeda",
+    "machineMade": true
   },
   "task.case.correctPayment.done": {
     "text": "تم تصحيح قيد الدفعة.",
@@ -4864,6 +4878,51 @@
   "label.sessionRetirementConfirmed": {
     "text": "تأكدت إزالة نتائج إنهاء الجلسات المنتهية الصلاحية.",
     "source": "f5bdfec416d5",
+    "machineMade": true
+  },
+  "label.noPaymentDue": {
+    "text": "لا توجد دفعة مستحقة",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "label.paymentCoverage": {
+    "text": "تغطية الدفعات",
+    "source": "6be717107bb3",
+    "machineMade": true
+  },
+  "label.payableCovered": {
+    "text": "المبلغ المستحق مغطى",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "label.paymentOverpayment": {
+    "text": "دفع زائد",
+    "source": "c401c8b19b9c",
+    "machineMade": true
+  },
+  "label.paymentNegativeBalance": {
+    "text": "رصيد سالب",
+    "source": "416ff745db5a",
+    "machineMade": true
+  },
+  "label.settledWithoutCoverage": {
+    "text": "تمت التسوية دون تغطية المبلغ المستحق",
+    "source": "a9326845d984",
+    "machineMade": true
+  },
+  "label.paymentsNeedReview": {
+    "text": "الدفعات تحتاج إلى مراجعة",
+    "source": "089412a8dedd",
+    "machineMade": true
+  },
+  "label.keepCurrentSelection": {
+    "text": "الإبقاء على الاختيار الحالي",
+    "source": "d64220d1c205",
+    "machineMade": true
+  },
+  "label.latestTransferDate": {
+    "text": "تاريخ آخر تحويل",
+    "source": "86ea49748782",
     "machineMade": true
   }
 }

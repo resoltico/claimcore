@@ -252,8 +252,7 @@ module internal Advice =
                                 PartyOffers = partyOffers
                                 ChangedAt = changedAt
                                 RecordedBy = recordedBy
-                                Headline =
-                                    CaseHeadline.ofState (CaseWorkReads.facts record work).State
+                                Headline = CaseHeadline.ofCase record.Snapshot.State
                                 Attention =
                                     CaseAttention.at
                                         work.Basis.BusinessDate

@@ -248,6 +248,17 @@ let private run engine =
         values["CLAIMCORE_WEB_E2E_PRINCIPALS_FILE"] <-
             Path.Combine(fixture.Directory, "principals.json")
 
+        if engine = "chromium" then
+            values["CLAIMCORE_WEB_E2E_CLI_FILE"] <-
+                FixtureFiles.text
+                    fixture.Directory
+                    "financial-cli.json"
+                    (JsonSerializer.Serialize
+                        {|
+                            cli = fixture.Cli
+                            environment = fixture.Environment
+                        |})
+
         let arguments =
             [ "exec"; "--"; "playwright"; "test" ]
             @ (spec |> Option.toList)

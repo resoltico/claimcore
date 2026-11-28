@@ -5,7 +5,6 @@ open ClaimCore.Application.Execution
 open ClaimCore.Application
 
 open System
-open System.Globalization
 open System.Reflection
 open System.Security.Cryptography
 open System.Text
@@ -18,9 +17,7 @@ open ClaimCore.Application.Contracts
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier =
-        "claimcore-format-"
-        + InstallationFormat.Current.ToString(CultureInfo.InvariantCulture)
+    let identifier = InstallationFormat.Identity
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()
@@ -63,7 +60,9 @@ module internal Baseline =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT identifier,script_sha256 FROM claimcore.baseline_identity"
+                    """SELECT identifier,script_sha256,
+                              pg_catalog.obj_description(pg_catalog.to_regnamespace('claimcore'),'pg_namespace')
+                       FROM claimcore.baseline_identity"""
                     [||]
                     token
 
@@ -71,6 +70,7 @@ module internal Baseline =
             | [ row ] when
                 DatabaseSession.value<string> 0 row = identifier
                 && DatabaseSession.value<byte array> 1 row = digest
+                && DatabaseSession.optional<string> 2 row = Some identifier
                 ->
                 return ()
             | _ -> return raise (OperatorFaultException OperatorFault.SchemaMismatch)

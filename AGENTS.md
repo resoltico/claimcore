@@ -1,6 +1,6 @@
 # Coding-agent instructions
 
-Baseline revision: 2026-11-16
+Baseline revision: 2026-11-28
 
 Shared engineering and conduct rules for every project. Apply them in proportion to the task, within the authorized scope and higher-priority instructions. Sections on interfaces, storage, human-language text and the changelog apply wherever the project has such a part; a command-line tool has an interface. Establish project-specific constraints and checks from their sources, not assumptions.
 
@@ -38,6 +38,10 @@ Before adding code, abstractions, dependencies, options, checks or documents:
 - Share an abstraction only when it reduces total complexity without coupling responsibilities that change independently. Similar code or wording does not make a shared contract.
 
 Compatibility is a commitment to identified consumers that the project declares, such as a stable interface or a supported upgrade path for stored data. Without one, make clean breaks: replace directly and update every consumer, with no shims, aliases, deprecation periods or migrations. A version that cannot read existing stored data refuses it visibly and never misreads or silently discards it. Honour declared commitments, coordinate their rollout, and break them only when authorized.
+
+For a project-owned public compatibility number that advances on incompatible releases, use the last stable release actually published on the applicable release line as the numbering baseline. For a contract delivered only through deployments, use the last deployment made available for supported use. Apply the declared numbering scheme to the cumulative change for the next release and keep the provisional public number through further unreleased revisions. Honour externally assigned versions and compatibility commitments made to prerelease or deployment consumers.
+
+Where incompatible development or prerelease builds share a provisional public number and can interact or read one another's data, distinguish the builds at the compatibility boundary and verify that unsupported variants are refused.
 
 Before removing anything, understand what uses it and what it protects; missing search hits or tests do not prove it unused. Keep required protections, and remove what the task demonstrably makes obsolete.
 

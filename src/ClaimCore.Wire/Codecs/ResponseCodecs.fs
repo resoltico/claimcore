@@ -697,11 +697,12 @@ module ResponseCodecs =
     let position = LedgerCodecs.position
 
     let private reviewChanges =
-        (record (fun lifecycle fields payments ->
+        (record (fun lifecycle fields payments balances ->
             {
                 CaseReviewChanges.Lifecycle = lifecycle
                 Fields = fields
                 Payments = payments
+                Balances = balances
             })
         : Fields<CaseReviewChanges, _>)
         |> field "lifecycle" _.Lifecycle (nullable LedgerCodecs.lifecycleChange)
@@ -709,7 +710,8 @@ module ResponseCodecs =
             "fields"
             _.Fields
             (list (Vocabulary.all BusinessField.vocabulary).Length TimelineCodecs.fieldDifference)
-        |> field "payments" _.Payments (nullable PaymentCodecs.changes)
+        |> field "payments" _.Payments (list 2 PaymentCodecs.entryDifference)
+        |> field "balances" _.Balances (PaymentCodecs.balances 0)
         |> build
         |> named "CaseReviewChanges"
 

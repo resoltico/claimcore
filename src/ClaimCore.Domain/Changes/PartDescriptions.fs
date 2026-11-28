@@ -68,21 +68,6 @@ module PartDescriptions =
         (notes: Map<NoteId, NoteValue>)
         (changes: PartChange list)
         =
-        let totals content =
-            content
-            |> Option.bind (fun (content: CaseContent) -> FinancialPosition.totals content.Finance)
-
-        let beforeTotals =
-            before |> Option.bind (fun state -> state.Case.Value.Content) |> totals
-
-        let afterTotals =
-            changes
-            |> List.tryPick (fun change ->
-                match change.Value with
-                | PartValue.Case value -> Some(totals value.Content)
-                | _ -> None)
-            |> Option.defaultValue beforeTotals
-
         changes
         |> List.map (fun change ->
             let prior = before
@@ -128,17 +113,7 @@ module PartDescriptions =
                                 prior |> Option.bind (fun state -> Map.tryFind id state.Payments))
                             |> Option.map _.Value
 
-                        Ok(
-                            PartDescription.Payment(
-                                PaymentDescription.describe
-                                    before
-                                    value
-                                    {
-                                        Before = beforeTotals
-                                        After = afterTotals
-                                    }
-                            )
-                        )
+                        Ok(PartDescription.Payment(PaymentDescription.describe before value))
                     | PartValue.Work value ->
                         let before = prior |> Option.bind _.Work |> Option.bind _.Value
                         Ok(PartDescription.Work(WorkDescription.describe before value))
@@ -227,26 +202,6 @@ module PartDescriptions =
         let prior (change: PartChange) =
             Map.tryFind (change.Kind, change.PartId) previous
 
-        let caseTotals (change: PartChange option) =
-            change
-            |> Option.bind (fun change ->
-                match change.Value with
-                | PartValue.Case value ->
-                    value.Content
-                    |> Option.bind (fun content -> FinancialPosition.totals content.Finance)
-                | _ -> None)
-
-        let beforeTotals =
-            previous
-            |> Map.values
-            |> Seq.tryFind (fun change -> change.Kind = PartKind.Case)
-            |> caseTotals
-
-        let afterTotals =
-            changes
-            |> List.tryFind (fun change -> change.Kind = PartKind.Case)
-            |> caseTotals
-
         changes
         |> List.map (fun change ->
             let before = prior change
@@ -276,17 +231,7 @@ module PartDescriptions =
                                 | PartValue.Payment value -> Some value
                                 | _ -> None)
 
-                        Ok(
-                            PartDescription.Payment(
-                                PaymentDescription.describe
-                                    prior
-                                    value
-                                    {
-                                        Before = beforeTotals
-                                        After = afterTotals
-                                    }
-                            )
-                        )
+                        Ok(PartDescription.Payment(PaymentDescription.describe prior value))
                     | PartValue.Work value ->
                         let prior =
                             before
@@ -422,6 +367,10 @@ module PartDescriptions =
                     @ (value.Disposition |> Option.map TimelineChange.Disposition |> Option.toList)
                     @ (value.Fields |> List.map TimelineChange.CaseField)
                     @ (value.Money |> List.map TimelineChange.CaseMoney)
+                    @ (if value.Balances.IsEmpty then
+                           []
+                       else
+                           [ TimelineChange.Balances value.Balances ])
                 )
             | PartDescription.Payment value ->
                 let payment =
@@ -432,18 +381,7 @@ module PartDescriptions =
                         else
                             PaymentDifference.Recorded entry)
 
-                let items =
-                    match payment with
-                    | None -> Ok []
-                    | Some payment ->
-                        PaymentCollectionDifference.create
-                            [ payment ]
-                            value.Totals.Before
-                            value.Totals.After
-                        |> Result.map (TimelineChange.Payments >> List.singleton)
-                        |> Result.mapError (fun _ -> RecordViolation.InvalidPaymentState)
-
-                PartKind.Payment, items
+                PartKind.Payment, Ok(payment |> Option.map TimelineChange.Payment |> Option.toList)
             | PartDescription.Work value ->
                 let responsibility =
                     match value.Responsible with

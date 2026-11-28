@@ -6,6 +6,8 @@ open System.Threading
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.RecordFormat
 
 /// Provider identity is taken from a connected primary, independent of the last checkpoint.
 type internal WitnessPrimary =
@@ -53,27 +55,40 @@ module internal WitnessPrimary =
         }
 
 module internal WitnessCluster =
-    let isIndependent mainSystemId connection token =
+    let private admission mainSystemId connection token =
         task {
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT system_identifier<>$1 AND NOT pg_catalog.pg_is_in_recovery() AND current_setting('fsync')='on' FROM pg_catalog.pg_control_system()"
+                    """SELECT pg_catalog.obj_description(pg_catalog.to_regnamespace('claimcore_witness'),'pg_namespace'),
+                              system_identifier<>$1 AND NOT pg_catalog.pg_is_in_recovery() AND current_setting('fsync')='on'
+                       FROM pg_catalog.pg_control_system()"""
                     [| box mainSystemId |]
                     token
 
-            return DatabaseSession.value<bool> 0 (List.exactlyOne rows)
+            let row = List.exactlyOne rows
+
+            let compatible =
+                DatabaseSession.optional<string> 0 row = Some InstallationFormat.Identity
+
+            return compatible, DatabaseSession.value<bool> 1 row
+        }
+
+    let isIndependent mainSystemId connection token =
+        task {
+            let! compatible, independent = admission mainSystemId connection token
+            return compatible && independent
         }
 
     let requireIndependent mainSystemId connection token =
         task {
-            let! independent = isIndependent mainSystemId connection token
+            let! compatible, independent = admission mainSystemId connection token
 
             if not independent then
-                raise (
-                    OperatorFaultException
-                        ClaimCore.Application.Contracts.OperatorFault.ConnectionFileInvalid
-                )
+                raise (OperatorFaultException OperatorFault.ConnectionFileInvalid)
+
+            if not compatible then
+                raise (OperatorFaultException OperatorFault.WitnessMismatch)
         }
 
 /// No case, actor, or disclosure content enters these calls.

@@ -23,13 +23,14 @@ module ReceiptCodecs =
                     (function
                     | SnapshotDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    ((record (fun state disposition reopenReason fields payment ->
+                    ((record (fun state disposition reopenReason fields payment balances ->
                         {
                             DisclosedCaseReceipt.State = state
                             Disposition = disposition
                             ReopenReason = reopenReason
                             RecordedFields = fields
                             Payments = payment
+                            Balances = balances
                         })
                      : Fields<DisclosedCaseReceipt, _>)
                      |> field "state" _.State ResponseCodecs.liveState
@@ -41,10 +42,8 @@ module ReceiptCodecs =
                          (list
                              (Vocabulary.all BusinessField.vocabulary).Length
                              (VocabularyCodec.create BusinessField.vocabulary))
-                     |> field
-                         "payments"
-                         _.Payments
-                         (list 2 ClaimCore.RecordFormat.FinancialCodecs.difference))
+                     |> field "payments" _.Payments (list 2 PaymentCodecs.entryDifference)
+                     |> field "balances" _.Balances (PaymentCodecs.balances 0))
                 unitVariant "WITHHELD" SnapshotDisclosure.Withheld
                 unitVariant "ERASED" SnapshotDisclosure.Erased
             ]

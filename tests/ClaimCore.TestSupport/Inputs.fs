@@ -64,11 +64,7 @@ let workView (state: CaseState<CaseFields>) : CaseWorkView =
 
 /// A complete transport fixture; policy tests assert literal reasons from the actual service.
 let caseAdvice state =
-    let headline =
-        state
-        |> CaseState.map (fun (fields: CaseFields) ->
-            fields.Status, CaseProgress.ofFinancial fields.Finance)
-        |> CaseHeadline.ofState
+    let headline = CaseHeadline.ofCase state
 
     let blocked =
         (ClaimCore.Domain.Tasks.Registry.clientDeclarations

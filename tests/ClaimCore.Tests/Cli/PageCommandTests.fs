@@ -21,30 +21,11 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
-        ClosureOutcome = None
         CaseSummaryFacts.Parties =
             Map.ofList
                 [
                     PartyRole.Claimant, [ DomainInputs.name "Synthetic, \"quoted\"\r\nclaimant" ]
                     PartyRole.Insurer, [ DomainInputs.name "Synthetic insurer" ]
-                ]
-        Fields =
-            Map.ofList
-                [
-                    BusinessField.ClaimedAmount,
-                    Some(
-                        CaseFieldValue.Business(
-                            Admitted.Amount(Amount.parse "1000.00" |> CaseBuilders.accepted)
-                        )
-                    )
-                    BusinessField.ClaimedCurrency,
-                    Some(
-                        CaseFieldValue.Business(
-                            Admitted.Currency(Currency.parse "EUR" |> CaseBuilders.accepted)
-                        )
-                    )
-                    BusinessField.PayableAmount, None
-                    BusinessField.PayableCurrency, None
                 ]
     }
 
@@ -60,9 +41,17 @@ let private parties claimant insurer =
 
 let private row reference =
     {
-        NetPaid = None
+        Contributions = []
+        Grouping =
+            {
+                RegisteredOn = CalendarDate.ofDate DomainInputs.workBasis.BusinessDate
+                ReceivedOn = None
+                ClosedOn = None
+                DaysOpen = 0
+                Outcome = None
+            }
         PaymentCount = 0L
-        LastPaymentDate = None
+        LatestTransferDate = None
         CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
         Reference = DomainInputs.reference reference
         Revision = CaseFixtures.revision 1L
@@ -394,32 +383,24 @@ let tests =
                     "No client-side filtering")
             testCase "CSV exports paid amount entry count and last payment date" (fun () ->
                 let original = row "PAY-CSV"
-                let payable = DomainInputs.money "100" "EUR"
 
-                let values =
-                    facts.Fields
-                    |> Map.add
-                        BusinessField.PayableAmount
-                        (Some(CaseFieldValue.Business(Admitted.Amount(Money.amount payable))))
-                    |> Map.add
-                        BusinessField.PayableCurrency
-                        (Some(
-                            CaseFieldValue.Business(Admitted.Currency(Money.currencyValue payable))
-                        ))
+                let total text =
+                    DecimalTotal.parse text |> CaseBuilders.accepted
 
                 let exported =
                     { original with
                         Headline = CaseHeadline.PartlyPaid
-                        NetPaid =
-                            Some
+                        Contributions =
+                            [
                                 {
-                                    Payable = DomainInputs.money "100" "EUR"
-                                    NetPaid =
-                                        DecimalTotal.parse "60.25" |> Result.toOption |> Option.get
+                                    Currency = Currency.parse "EUR" |> CaseBuilders.accepted
+                                    Claimed = Some(total "1000")
+                                    Payable = Some(total "100")
+                                    NetPaid = Some(total "60.25")
                                 }
+                            ]
                         PaymentCount = 2L
-                        LastPaymentDate = Some(DomainInputs.date "2026-08-21")
-                        State = CaseState.Active { facts with Fields = values }
+                        LatestTransferDate = Some(DomainInputs.date "2026-08-21")
                     }
 
                 let bytes =
@@ -431,7 +412,7 @@ let tests =
                 let columns = List.zip rows[0] rows[1] |> Map.ofList
                 Expect.equal columns["netPaid"] "60.25" "Exact canonical paid amount"
                 Expect.equal columns["paymentCount"] "2" "Entry count"
-                Expect.equal columns["lastPaymentDate"] "2026-08-21" "Canonical payment date"
+                Expect.equal columns["latestTransferDate"] "2026-08-21" "Canonical payment date"
 
                 Expect.isFalse
                     (Map.containsKey "paymentDate" columns)
@@ -459,17 +440,21 @@ let tests =
                                 CaseCsv.csvHeader
                                 (CaseCsv.csvRows DomainInputs.workBasis [ exported ])
 
-                        let cells = (parseCsv bytes)[1]
-
-                        Expect.equal cells[0] reference "Issued case references are preserved"
+                        let parsed = parseCsv bytes
+                        let cells = List.zip parsed[0] parsed[1] |> Map.ofList
 
                         Expect.equal
-                            cells[6]
+                            cells["caseReference"]
+                            reference
+                            "Issued case references are preserved"
+
+                        Expect.equal
+                            cells["claimants"]
                             ("'" + claimant)
                             "Claimant protection precedes quoting"
 
                         Expect.equal
-                            cells[7]
+                            cells["insurers"]
                             ("'" + insurer)
                             "Insurer protection uses the same rule")
             testCase
@@ -584,7 +569,26 @@ let tests =
                             CaseCsv.csvHeader
                             (CaseCsv.csvRows
                                 DomainInputs.workBasis
-                                [ row "CC-QH77-QTC2-NDWY-RKXP-15"; erased ])
+                                [
+                                    { row "CC-QH77-QTC2-NDWY-RKXP-15" with
+                                        Contributions =
+                                            [
+                                                {
+                                                    Currency =
+                                                        Currency.parse "EUR"
+                                                        |> CaseBuilders.accepted
+                                                    Claimed =
+                                                        Some(
+                                                            DecimalTotal.parse "1000"
+                                                            |> CaseBuilders.accepted
+                                                        )
+                                                    Payable = None
+                                                    NetPaid = None
+                                                }
+                                            ]
+                                    }
+                                    erased
+                                ])
 
                     Expect.isFalse
                         (bytes.Length >= 3 && bytes[0..2] = [| 0xEFuy; 0xBBuy; 0xBFuy |])
@@ -599,6 +603,7 @@ let tests =
                     Expect.equal
                         parsed[0]
                         [
+                            "caseId"
                             "caseReference"
                             "revision"
                             "workRevision"
@@ -607,13 +612,17 @@ let tests =
                             "attention"
                             "claimants"
                             "insurers"
-                            "state.fields.claimedAmount"
-                            "state.fields.claimedCurrency"
-                            "state.fields.payableAmount"
-                            "state.fields.payableCurrency"
+                            "registeredOn"
+                            "receivedOn"
+                            "closedOn"
+                            "daysOpen"
+                            "outcome"
+                            "currency"
+                            "claimed"
+                            "payable"
                             "netPaid"
                             "paymentCount"
-                            "lastPaymentDate"
+                            "latestTransferDate"
                             "responsible.actorId"
                             "responsible.displayName.value"
                             "responsible.displayName.kind"
@@ -632,6 +641,7 @@ let tests =
                     Expect.equal
                         parsed[1]
                         [
+                            "20000000-0000-4000-8000-000000000001"
                             "CC-QH77-QTC2-NDWY-RKXP-15"
                             "1"
                             "0"
@@ -640,9 +650,13 @@ let tests =
                             ""
                             "Synthetic, \"quoted\"\r\nclaimant"
                             "Synthetic insurer"
-                            "1000"
-                            "EUR"
+                            "2026-08-31"
                             ""
+                            ""
+                            "0"
+                            ""
+                            "EUR"
+                            "1000"
                             ""
                             ""
                             "0"
@@ -665,6 +679,7 @@ let tests =
                     Expect.equal
                         parsed[2]
                         [
+                            "20000000-0000-4000-8000-000000000002"
                             "CC-Z399-4K58-1T11-N5NF-88"
                             "9"
                             "0"
@@ -673,6 +688,10 @@ let tests =
                             ""
                             ""
                             ""
+                            "2026-08-31"
+                            ""
+                            ""
+                            "0"
                             ""
                             ""
                             ""

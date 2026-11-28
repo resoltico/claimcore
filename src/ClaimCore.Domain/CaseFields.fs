@@ -632,6 +632,7 @@ type PaymentEntry =
         }
 
 module PaymentEntry =
+    let internal withId id (entry: PaymentEntry) = { entry with Id = id }
     let id (entry: PaymentEntry) = entry.Id
     let date (entry: PaymentEntry) = entry.Date
     let money (entry: PaymentEntry) = entry.Money

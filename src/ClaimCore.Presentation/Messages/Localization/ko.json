@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "이 청구 건의 현재 및 보관된 세부 정보, 지급, 작업, 후속 조치, 메모, 첨부 파일을 영구 삭제합니다. 참조 번호와 변경 기록은 남습니다. 다른 곳에 있는 사본에는 영향을 주지 않습니다.",
-    "source": "8bf54b53220a"
+    "text": "운영 등록부에서 청구 건의 비공개 세부 정보와 관련 청구 건 링크 대상 및 메모를 영구 삭제합니다. 청구 건 ID, 참조번호 및 변경 기록은 남습니다. 다른 곳에 보관된 사본에는 영향을 주지 않습니다.",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "프로필 영구 삭제",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "알고 있는 등록 정보를 입력하여 청구 건을 여세요. 청구 건 참조번호를 비워 두면 자동으로 배정됩니다. 등록부에서 허용하는 경우 사용자 지정 참조번호를 입력할 수 있습니다.",
-    "source": "debda0b6773d",
+    "text": "알고 있는 등록 정보를 입력해 청구 건을 등록합니다. ClaimCore가 영구 참조번호를 부여합니다.",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "유효한 청구 건 참조를 사용하세요. 사용자 지정 참조는 ASCII 문자로 시작하며 문자, 숫자 및 그룹 사이의 하이픈 한 개를 포함하여 최대 32자입니다. CC- 접두사는 시스템 배정 참조에 사용됩니다.",
-    "source": "f856f6f13ef0",
+    "text": "ClaimCore에서 발급한 청구 건 참조번호 전체를 검사 숫자까지 포함하여 사용하세요.",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -833,9 +834,20 @@
     "text": "영구 삭제됨",
     "source": "1c9a70fabcb6"
   },
-  "headline.PAID.label": {
-    "text": "지급됨",
-    "source": "fb81b961af45"
+  "headline.NO_PAYMENT_DUE.label": {
+    "text": "지급할 금액 없음",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "headline.PAYABLE_COVERED.label": {
+    "text": "지급 예정액 충족",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "headline.OVERPAID.label": {
+    "text": "초과 지급",
+    "source": "c93dce4211a4",
+    "machineMade": true
   },
   "headline.UNDECIDED.label": {
     "text": "미결정",
@@ -1086,8 +1098,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "영구 삭제되었습니다. 청구 건 참조만 남습니다.",
-    "source": "e63410fae906"
+    "text": "청구 건이 영구 삭제되었습니다. 청구 건 ID, 참조번호 및 변경 기록은 남습니다.",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "무효 처리됨",
@@ -1409,12 +1422,14 @@
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "첨부 파일 다운로드",
-    "source": "ba23685b28f6"
+    "text": "첨부 파일 다운로드 허용",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "첨부 파일 미리보기",
-    "source": "01b3a2e62a0d"
+    "text": "첨부 파일 미리 보기 허용",
+    "source": "5e82512366e5",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "내보내기",
@@ -1525,8 +1540,9 @@
     "source": "30ba702eee51"
   },
   "caseStage.PAID.label": {
-    "text": "지급됨",
-    "source": "fb81b961af45"
+    "text": "지급 예정액 충족 여부",
+    "source": "5ad88498af13",
+    "machineMade": true
   },
   "caseStage.CLOSED.label": {
     "text": "종결됨",
@@ -1677,13 +1693,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "ASCII 문자를 1자 이상 {maximumCharacters}자 이하로 사용하세요. 사용자 지정 참조는 문자로 시작하며 문자, 숫자와 그룹 사이의 하이픈 한 개를 사용합니다. CC- 접두사는 시스템 배정 참조에 사용됩니다.",
-    "source": "e7fc63264856",
+    "text": "최대 {maximumCharacters}자의 ASCII 문자로 이루어진 발급된 청구 건 참조번호 전체를 검사 숫자 두 자리까지 포함하여 사용하세요.",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "사용자 지정 참조는 정정하거나 삭제한 후에도 예약된 상태로 유지됩니다. 개인정보를 포함하지 마세요.",
-    "source": "4936b3dc4560",
+    "text": "청구 건을 등록할 때 발급된 참조번호를 입력하세요.",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1988,8 +2004,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "청구 건 참조와 하이픈을 확인하세요. 사용자 지정 참조는 문자로 시작하고 문자, 숫자, 하이픈을 합쳐 32자 이내로 입력하세요. CC- 접두사는 예약되어 있습니다.",
-    "source": "00e1c36eb2e1",
+    "text": "하이픈과 검사 숫자를 포함한 청구 건 참조번호 전체를 확인하세요.",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2053,8 +2069,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "현재 및 보관된 청구 건 세부 정보, 지급, 작업, 후속 조치, 메모를 영구 삭제합니다. 참조 번호와 변경 기록은 남습니다. 다른 곳에 있는 사본에는 영향을 주지 않습니다.",
-    "source": "0e447a932597"
+    "text": "운영 등록부에서 비공개 세부 정보, 첨부 파일, 관련 청구 건 링크 대상과 메모를 영구 삭제합니다. 청구 건 ID, 참조번호 및 변경 기록은 남습니다. 다른 곳에 보관된 사본에는 영향을 주지 않습니다.",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "계정이 등록되었습니다.",
@@ -2654,8 +2671,9 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "{payable} 중 {paid} 지급됨",
-    "source": "6c78ba810cb0"
+    "text": "순지급액 {paid} / 지급 예정액 {payable}",
+    "source": "56460f70ab2f",
+    "machineMade": true
   },
   "progress.PARTLY_PAID.label": {
     "text": "일부 지급됨",
@@ -2962,8 +2980,9 @@
     "source": "480d7f933767"
   },
   "task.case.correctPayment.meaning": {
-    "text": "잘못 기록한 지급 항목을 올바른 날짜, 방향, 금액, 참조 및 수취인으로 교체합니다. 확인서에는 두 항목이 표시됩니다.",
-    "source": "a892687bc3b6"
+    "text": "지급 기록에서 선택한 항목을 변경합니다. 생략한 항목은 유지되며, 삭제된 원래 수취인도 유지할 수 있습니다. 참조나 수취인을 지우려면 명시적으로 선택하세요. 영수증에는 두 기록이 모두 표시됩니다.",
+    "source": "cc5e912ffeda",
+    "machineMade": true
   },
   "task.case.correctPayment.done": {
     "text": "지급 기록이 정정되었습니다.",
@@ -4724,6 +4743,186 @@
   "label.sessionRetirementConfirmed": {
     "text": "만료된 세션 종료 결과 제거가 확인되었습니다.",
     "source": "f5bdfec416d5",
+    "machineMade": true
+  },
+  "label.noPaymentDue": {
+    "text": "지급할 금액 없음",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "label.paymentCoverage": {
+    "text": "지급 충족 여부",
+    "source": "6be717107bb3",
+    "machineMade": true
+  },
+  "label.payableCovered": {
+    "text": "지급 예정액 충족",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "label.paymentOverpayment": {
+    "text": "초과 지급",
+    "source": "c401c8b19b9c",
+    "machineMade": true
+  },
+  "label.paymentNegativeBalance": {
+    "text": "음수 잔액",
+    "source": "416ff745db5a",
+    "machineMade": true
+  },
+  "label.settledWithoutCoverage": {
+    "text": "지급 예정액을 충족하지 못한 채 정산됨",
+    "source": "a9326845d984",
+    "machineMade": true
+  },
+  "label.paymentsNeedReview": {
+    "text": "지급 내역 검토 필요",
+    "source": "089412a8dedd",
+    "machineMade": true
+  },
+  "label.keepCurrentSelection": {
+    "text": "현재 선택 유지",
+    "source": "d64220d1c205",
+    "machineMade": true
+  },
+  "label.latestTransferDate": {
+    "text": "최근 이체 날짜",
+    "source": "86ea49748782",
+    "machineMade": true
+  },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "접근 요청",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "첨부 파일 목록",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "청구 건 담당자",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "청구 건 목록",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "청구 건 메모",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "청구 건 관계자",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "청구 건 지급",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "청구 건 요약",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "청구 건 이력 조회",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "후속 조치 요약",
+    "source": "b0c80c0e513f",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "작업 조회",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "작업 미리 보기",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "작업 접수 기록",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "계정 목록",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "계정 권한 부여",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "계정 이력",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "후속 조치 목록",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "후속 조치 조회",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "요청자 정보",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "검토 이후 청구 건 변경 사항",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "세션 종료",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "업무 보기별 건수",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "공개된 청구 건",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "공개된 계정",
+    "source": "5b856c5553bc",
+    "machineMade": true
+  },
+  "label.disclosureRowCount": {
+    "text": "반환된 행",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "모든 행이 전달되기 전에 CSV 내보내기가 종료되었습니다.",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "접수 기록을 사용할 수 없습니다. 원래 작업 ID로 작업을 조회하세요.",
+    "source": "f23e5cdf6158",
     "machineMade": true
   }
 }

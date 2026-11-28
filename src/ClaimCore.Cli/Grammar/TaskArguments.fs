@@ -136,20 +136,13 @@ module internal TaskArguments =
             |> Map.ofList
 
         for input in declarations do
-            match input.Name with
-            | TaskInputId.Target(InputTarget.Field field) ->
-                let field = BusinessField.describe field
-
-                match field.Pairs with
-                | None -> ()
-                | Some paired ->
-                    let peer = target (InputTarget.Field paired)
-
-                    match values.ContainsKey input.Name, values.ContainsKey peer with
-                    | true, false -> problems.Add(UsageError.MissingOption(flag peer))
-                    | false, true -> problems.Add(UsageError.MissingOption(flag input.Name))
-                    | _ -> ()
-            | _ -> ()
+            match input.Declaration.PairedWith with
+            | Some peer ->
+                match values.ContainsKey input.Name, values.ContainsKey peer with
+                | true, false -> problems.Add(UsageError.MissingOption(flag peer))
+                | false, true -> problems.Add(UsageError.MissingOption(flag input.Name))
+                | _ -> ()
+            | None -> ()
 
         remaining |> List.iter (UsageError.ExtraOperand >> problems.Add)
 

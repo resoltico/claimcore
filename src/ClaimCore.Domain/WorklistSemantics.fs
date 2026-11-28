@@ -15,8 +15,8 @@ module CaseProgress =
 
     let token = Vocabulary.token vocabulary
 
-    let ofFinancial (position: FinancialPosition) =
-        match FinancialPosition.totals position with
+    let ofComparison comparison =
+        match comparison with
         | None -> CaseProgress.Undecided
         | Some totals ->
             let payable = DecimalTotal.ofAmount (Money.amount totals.Payable)
@@ -30,11 +30,66 @@ module CaseProgress =
             else
                 CaseProgress.Decided
 
+    let ofFinancial position =
+        FinancialPosition.comparePayable position |> ofComparison
+
     let completesPayment =
         function
         | CaseProgress.Paid
         | CaseProgress.Overpaid -> true
         | _ -> false
+
+type FinancialAssessment =
+    {
+        Comparison: PayableComparison option
+        Progress: CaseProgress
+        Overpayment: (Currency * DecimalTotal) option
+        NegativeBalances: Map<Currency, DecimalTotal>
+        SettledWithoutCoverage: bool
+    }
+
+    member this.NeedsReview =
+        this.Overpayment.IsSome
+        || not this.NegativeBalances.IsEmpty
+        || this.SettledWithoutCoverage
+
+module FinancialAssessment =
+    let ofPosition outcome position =
+        let comparison = FinancialPosition.comparePayable position
+        let progress = CaseProgress.ofComparison comparison
+
+        let overpayment =
+            comparison
+            |> Option.bind (fun value ->
+                let payable = DecimalTotal.ofAmount (Money.amount value.Payable)
+
+                if value.NetPaid > payable then
+                    let excess =
+                        DecimalTotal.sum [ value.NetPaid; DecimalTotal.negate payable ]
+                        |> Result.defaultWith (fun _ ->
+                            invalidOp "A positive excess cannot exceed net paid.")
+
+                    Some(Money.currencyValue value.Payable, excess)
+                else
+                    None)
+
+        {
+            Comparison = comparison
+            Progress = progress
+            Overpayment = overpayment
+            NegativeBalances =
+                FinancialPosition.actualBalances position
+                |> Map.filter (fun _ net -> net < DecimalTotal.zero)
+            SettledWithoutCoverage =
+                outcome = Some ClosureOutcome.Settled
+                && not (
+                    CaseProgress.completesPayment progress
+                    && comparison |> Option.exists (fun value -> Money.value value.Payable > 0M)
+                )
+        }
+
+    let ofCase (fields: CaseFields) =
+        ofPosition (Handling.closure fields.Handling |> Option.map _.Outcome) fields.Finance
 
 /// Core facts needed to classify a case in a worklist. Availability is resolved by the core read.
 type CaseWorkFacts =
@@ -205,7 +260,18 @@ module CaseAttention =
                 |> List.map (WorkPredicate.Progress >> WorkSelection.Fact)
                 |> WorkSelection.Any
 
-        WorkSelection.All [ WorkSelection.activeOpen; attention ]
+        match reason with
+        | CaseAttention.PaymentsNeedReview ->
+            WorkSelection.All
+                [ WorkSelection.Fact(WorkPredicate.Lifecycle Lifecycle.Active); attention ]
+        | CaseAttention.ReadyToClose ->
+            WorkSelection.All
+                [
+                    WorkSelection.activeOpen
+                    attention
+                    WorkSelection.Not(WorkSelection.Fact WorkPredicate.PaymentsNeedReview)
+                ]
+        | _ -> WorkSelection.All [ WorkSelection.activeOpen; attention ]
 
     let subsumedBy =
         function
@@ -324,7 +390,9 @@ type CaseHeadline =
     | Erased
     | Voided
     | Closed
-    | Paid
+    | NoPaymentDue
+    | PayableCovered
+    | Overpaid
     | PartlyPaid
     | Decided
     | Undecided
@@ -337,15 +405,26 @@ module CaseHeadline =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+    let financial finance =
+        let comparison = FinancialPosition.comparePayable finance
+
+        match CaseProgress.ofComparison comparison with
+        | CaseProgress.Paid when comparison |> Option.exists PayableComparison.noPaymentDue ->
+            CaseHeadline.NoPaymentDue
+        | CaseProgress.Paid -> CaseHeadline.PayableCovered
+        | CaseProgress.Overpaid -> CaseHeadline.Overpaid
+        | CaseProgress.PartlyPaid -> CaseHeadline.PartlyPaid
+        | CaseProgress.Decided -> CaseHeadline.Decided
+        | CaseProgress.Undecided -> CaseHeadline.Undecided
+
     let ofState =
         function
         | CaseState.Erased -> CaseHeadline.Erased
         | CaseState.Voided _ -> CaseHeadline.Voided
         | CaseState.Active(CaseStatus.Closed, _) -> CaseHeadline.Closed
-        | CaseState.Active(CaseStatus.Opened, (CaseProgress.Paid | CaseProgress.Overpaid)) ->
-            CaseHeadline.Paid
-        | CaseState.Active(CaseStatus.Opened, CaseProgress.PartlyPaid) -> CaseHeadline.PartlyPaid
-        | CaseState.Active(CaseStatus.Opened, CaseProgress.Decided) -> CaseHeadline.Decided
-        | CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided) -> CaseHeadline.Undecided
+        | CaseState.Active(CaseStatus.Opened, finance) -> financial finance
 
-/// Recommendations rank only the offered business acts on an active, open case.
+    let ofCase state =
+        state
+        |> CaseState.map (fun (fields: CaseFields) -> fields.Status, fields.Finance)
+        |> ofState

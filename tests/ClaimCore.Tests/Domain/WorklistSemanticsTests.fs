@@ -18,31 +18,68 @@ let headline =
     testList
         "core case headline"
         [
-            testCase "precedence is erased, voided, closed, paid, decided, undecided" (fun () ->
+            testCase "handling and current payable coverage yield distinct headlines" (fun () ->
+                let finance payable net =
+                    let decision =
+                        ClaimCore.TestSupport.DomainInputs.decisionFrom
+                            [
+                                BusinessField.PayableAmount, payable
+                                BusinessField.PayableCurrency, "EUR"
+                            ]
+                        |> ClaimCore.TestSupport.CaseFixtures.decision
+
+                    let entries =
+                        net
+                        |> Option.map (fun amount ->
+                            ClaimCore.TestSupport.DomainInputs.paymentWith
+                                [
+                                    BusinessField.PaidAmount, amount
+                                    BusinessField.PaidCurrency, "EUR"
+                                ]
+                                ClaimCore.TestSupport.DomainInputs.payment
+                            |> ClaimCore.TestSupport.CaseFixtures.paymentEntry (
+                                Guid.Parse "10000000-0000-7000-8000-000000000001"
+                            ))
+                        |> Option.toList
+
+                    ClaimCore.TestSupport.CaseFixtures.finance (Some decision) entries
+
+                let due = finance "0" None
+                let paid = finance "10" (Some "10")
+                let extra = finance "10" (Some "12")
+                let waiting = finance "10" None
+                let unopened = FinancialPosition.undecided
+
                 for state, expected in
                     [
                         CaseState.Erased, CaseHeadline.Erased
-                        CaseState.Voided(CaseStatus.Closed, CaseProgress.Paid), CaseHeadline.Voided
-                        CaseState.Voided(CaseStatus.Opened, CaseProgress.Undecided),
-                        CaseHeadline.Voided
-                        CaseState.Active(CaseStatus.Closed, CaseProgress.Paid), CaseHeadline.Closed
-                        CaseState.Active(CaseStatus.Closed, CaseProgress.Undecided),
-                        CaseHeadline.Closed
-                        CaseState.Active(CaseStatus.Opened, CaseProgress.Paid), CaseHeadline.Paid
-                        CaseState.Active(CaseStatus.Opened, CaseProgress.Decided),
-                        CaseHeadline.Decided
-                        CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided),
-                        CaseHeadline.Undecided
+                        CaseState.Voided(CaseStatus.Closed, paid), CaseHeadline.Voided
+                        CaseState.Active(CaseStatus.Closed, extra), CaseHeadline.Closed
+                        CaseState.Active(CaseStatus.Opened, due), CaseHeadline.NoPaymentDue
+                        CaseState.Active(CaseStatus.Opened, paid), CaseHeadline.PayableCovered
+                        CaseState.Active(CaseStatus.Opened, extra), CaseHeadline.Overpaid
+                        CaseState.Active(CaseStatus.Opened, waiting), CaseHeadline.Decided
+                        CaseState.Active(CaseStatus.Opened, unopened), CaseHeadline.Undecided
                     ] do
                     Expect.equal
                         (CaseHeadline.ofState state)
                         expected
-                        "State precedence belongs to the core")
+                        "Core owns headline precedence")
             testCase "headline vocabulary is complete and stable" (fun () ->
                 Expect.equal
                     (CaseHeadline.all |> List.map CaseHeadline.token)
-                    [ "ERASED"; "VOIDED"; "CLOSED"; "PAID"; "PARTLY_PAID"; "DECIDED"; "UNDECIDED" ]
-                    "The closed headline vocabulary has no renderer-specific additions")
+                    [
+                        "ERASED"
+                        "VOIDED"
+                        "CLOSED"
+                        "NO_PAYMENT_DUE"
+                        "PAYABLE_COVERED"
+                        "OVERPAID"
+                        "PARTLY_PAID"
+                        "DECIDED"
+                        "UNDECIDED"
+                    ]
+                    "Published headline tokens")
         ]
 
 let private actor =

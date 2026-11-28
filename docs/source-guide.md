@@ -21,10 +21,25 @@ checkout and choose broader verification.
 3. Run the [worklist tests](../tests/ClaimCore.IntegrationTests/Work/WorklistQueryTests.fs) with
    `FullyQualifiedName~PostgreSQL worklist contracts` for filters, ordering
    and cursor binding. [CaseReferenceTests](../tests/ClaimCore.IntegrationTests/Operations/CaseReferenceTests.fs)
-   checks that a reference change which moves a case across a cursor requires a fresh traversal.
-   Pair the worklist checks with [reporting](../tests/ClaimCore.IntegrationTests/Cases/CaseReportingTests.fs) using
-   `FullyQualifiedName~reporting with the published case selection` and the unit filter
+   checks permanent references through opening, collisions, exact lookup and erasure. Pair the
+   worklist checks with [reporting](../tests/ClaimCore.IntegrationTests/Cases/CaseReportingTests.fs)
+   using `FullyQualifiedName~reporting with the published case selection` and the unit filter
    `FullyQualifiedName~pure query selections` for selection and access boundaries.
+
+## Payment correction and financial exports
+
+1. Start at [CaseCorrectPayment](../src/ClaimCore.Domain/Tasks/Case/CaseCorrectPayment.fs) for
+   update inputs, payee retention and entry replacement. [FinancialPosition](../src/ClaimCore.Domain/FinancialPosition.fs)
+   owns exact balances. [CaseDescription](../src/ClaimCore.Domain/Changes/CaseDescription.fs)
+   supplies case balance differences for review, receipts and Activity.
+2. Follow [PaymentQueries](../src/ClaimCore.Application/Cases/PaymentQueries.fs) for permitted
+   actions on existing entries and [Payments](../src/ClaimCore.Presentation/Screens/Payments.fs)
+   for the HUMAN payment region. [CaseSummaryQuery](../src/ClaimCore.Application/Reads/CaseSummaryQuery.fs)
+   supplies per-case currency contributions shared by the grouped report and [Cases CSV](../src/ClaimCore.Wire/Export/CaseCsv.fs).
+3. Use `FullyQualifiedName~PostgreSQL financial positions` for
+   [integration checks](../tests/ClaimCore.IntegrationTests/Cases/PaymentPositionTests.fs)
+   and the [financial register journey](../web/e2e/financial-register.spec.ts) for browser,
+   CLI and service agreement.
 
 ## Reminder completion
 

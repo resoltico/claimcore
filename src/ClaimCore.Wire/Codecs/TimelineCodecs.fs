@@ -88,12 +88,19 @@ module TimelineCodecs =
             "TimelineChange"
             [
                 variant
-                    "PAYMENTS"
-                    TimelineChange.Payments
+                    "PAYMENT"
+                    TimelineChange.Payment
                     (function
-                    | TimelineChange.Payments value -> Some value
+                    | TimelineChange.Payment value -> Some value
                     | _ -> None)
-                    (record id |> field "change" id PaymentCodecs.changes)
+                    (record id |> field "change" id PaymentCodecs.entryDifference)
+                variant
+                    "BALANCES"
+                    TimelineChange.Balances
+                    (function
+                    | TimelineChange.Balances value -> Some value
+                    | _ -> None)
+                    (record id |> field "changes" id (PaymentCodecs.balances 1))
                 variant
                     "CASE_FIELD"
                     TimelineChange.CaseField
@@ -321,8 +328,12 @@ module TimelineCodecs =
                 yield! reminderEvents
             ]
 
+    // Business fields include the money pairs. Lifecycle, disposition and balance differences
+    // occupy separate items, even if a particular effect cannot change all of them.
+    let private maximumChanges = CaseFields.declarations.Length + 3
+
     let private highlight =
-        let index = integer 0L (int64 CaseFields.declarations.Length) |> map int int64
+        let index = integer 0L (int64 (maximumChanges - 1)) |> map int int64
 
         let facets =
             VocabularyCodec.create TimelineFacet.vocabulary |> named "TimelineFacet"
@@ -356,7 +367,7 @@ module TimelineCodecs =
             })
         : Fields<TimelineOverview, _>)
         |> field "event" _.Event event
-        |> field "highlights" _.Highlights (list (CaseFields.declarations.Length + 1) highlight)
+        |> field "highlights" _.Highlights (list maximumChanges highlight)
         |> build
         |> named "TimelineOverview"
 
@@ -457,7 +468,7 @@ module TimelineCodecs =
                                 Overview = overview
                             })
                          : Fields<TimelineDisclosure, _>)
-                         |> field "items" _.Items (list (CaseFields.declarations.Length + 1) change)
+                         |> field "items" _.Items (list maximumChanges change)
                          |> field "overview" _.Overview overview)
                     unitVariant "WITHHELD" TimelineChanges.Withheld
                     unitVariant "ERASED" TimelineChanges.Erased

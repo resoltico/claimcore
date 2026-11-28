@@ -116,33 +116,42 @@ it("offers no removal when Core withdraws its row controls", () => {
   );
   expect(screen.queryByRole("button", { name: /^Actions for /u })).toBeNull();
 });
-it("represents a completed zero liability with a native range and exact money text", () => {
+it("renders the supplied partial position and exact accessible caption", () => {
   render(
     <MoneyMeter
       timeZone={workBasis.timeZone}
-      label="Paid"
       meter={{
-        current: { amount: "0", currency: "EUR", displayScale: 2 },
-        target: { amount: "0", currency: "EUR", displayScale: 2 },
-        complete: true,
+        position: 999,
+        maximum: 1000,
         description: {
           messageId: "label.paymentProgress",
           arguments: [
             {
               key: "paid",
-              value: { kind: "MONEY", amount: "0", currency: "EUR", displayScale: 2 },
+              value: {
+                kind: "MONEY",
+                amount: "999999999999999999.9998",
+                currency: "EUR",
+                displayScale: 4,
+              },
             },
             {
               key: "payable",
-              value: { kind: "MONEY", amount: "0", currency: "EUR", displayScale: 2 },
+              value: {
+                kind: "MONEY",
+                amount: "999999999999999999.9999",
+                currency: "EUR",
+                displayScale: 4,
+              },
             },
           ],
         },
       }}
     />,
   );
-  const meter = screen.getByRole("meter", { name: "Paid 0.00 EUR of 0.00 EUR" });
-  expect(meter).toHaveAttribute("value", "1");
-  expect(meter).toHaveAttribute("max", "1");
-  expect(document.body).toHaveTextContent("Paid 0.00 EUR of 0.00 EUR");
+  const meter = screen.getByRole("meter", { name: /^Net paid /u });
+  expect(meter).toHaveAttribute("value", "999");
+  expect(meter).toHaveAttribute("max", "1000");
+  expect(document.body).toHaveTextContent("999,999,999,999,999,999.9998");
+  expect(document.body).toHaveTextContent("999,999,999,999,999,999.9999");
 });

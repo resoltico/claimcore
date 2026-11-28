@@ -10,6 +10,7 @@ open ClaimCore.Presentation
 [<RequireQualifiedAccess>]
 type CsvValue =
     | Text of string
+    | Integer of int
     | ExactTotal of DecimalTotal
 
 /// DATA export owns RFC 4180 records and canonical wire scalars.
@@ -24,6 +25,7 @@ module Csv =
         values
         |> List.map (function
             | CsvValue.Text text -> CsvCell.format text
+            | CsvValue.Integer value -> value.ToString(CultureInfo.InvariantCulture)
             | CsvValue.ExactTotal amount -> DecimalTotal.format amount)
         |> line
 

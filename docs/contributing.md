@@ -66,7 +66,7 @@ use Application.Contracts reply kinds; CLI alone maps those kinds to process exi
 
 Change a value in its owning Domain module. [CaseFields](../src/ClaimCore.Domain/CaseFields.fs) declares
 field kinds and money relationships; typed records retain validated structure through execution.
-[CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [QueryFields](../src/ClaimCore.Application.Contracts/QueryFields.fs) owns machine summary selection. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
+[CaseSearch](../src/ClaimCore.Domain/CaseSearch.fs) owns search projection policy; [CaseSummaryQuery](../src/ClaimCore.Application/Reads/CaseSummaryQuery.fs) owns the shared reporting read relation. [FieldPresentation](../src/ClaimCore.Presentation/Catalog/FieldPresentation.fs) owns human
 listing and prominence. Human layout changes do not change Domain or the machine summary selection.
 
 [Identifiers](../src/ClaimCore.Domain/Identifiers.fs) owns UUIDv7 operation IDs and their lifetime.

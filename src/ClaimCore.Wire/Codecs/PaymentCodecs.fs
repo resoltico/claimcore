@@ -12,18 +12,6 @@ module PaymentCodecs =
     let entry = ClaimCore.RecordFormat.FinancialCodecs.entry
     let private difference = ClaimCore.RecordFormat.FinancialCodecs.difference
 
-    let totals =
-        (record (fun payable netPaid ->
-            {
-                PaymentTotals.Payable = payable
-                NetPaid = netPaid
-            })
-        : Fields<PaymentTotals, _>)
-        |> field "payable" _.Payable money
-        |> field "netPaid" _.NetPaid (decimalTotal true)
-        |> build
-        |> named "PaymentTotals"
-
     let payee =
         (record (fun id name removed ->
             {
@@ -53,10 +41,27 @@ module PaymentCodecs =
         |> build
         |> named "PaymentPayee"
 
-    let changes =
-        (record PaymentCollectionDifference.create: Fields<PaymentCollectionDifference, _>)
-        |> field "entries" _.Entries (boundedList 1 1 difference)
-        |> field "before" _.Before (nullable totals)
-        |> field "after" _.After (nullable totals)
+    let entryDifference = difference
+
+    let private balance =
+        (record BalanceDifference.create: Fields<BalanceDifference, _>)
+        |> field "currency" _.Currency currencyCode
+        |> field "net" _.Net (ValueChangeCodecs.change "NetBalanceValueChange" (decimalTotal true))
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
-        |> named "PaymentCollectionDifference"
+        |> named "BalanceDifference"
+
+    let balances minimum =
+        boundedList minimum BalanceDifference.MaximumPerEffect balance
+        |> interpret
+            (fun path items ->
+                if
+                    items |> List.pairwise |> List.forall (fun (a, b) -> a.Currency < b.Currency)
+                then
+                    Ok items
+                else
+                    Error
+                        {
+                            Path = path
+                            Reason = "Balance currencies must be in strict order."
+                        })
+            id

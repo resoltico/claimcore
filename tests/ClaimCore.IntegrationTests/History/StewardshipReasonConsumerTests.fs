@@ -202,17 +202,11 @@ let private scenario database =
                 page.Items
                 |> List.find (fun item -> OperationId.value item.OperationId = id fixture number)
 
-            match item.Changes with
-            | TimelineChanges.Disclosed changes ->
-                let rows =
-                    changes.Items
-                    |> List.collect ClaimCore.Wire.Export.TimelineCsv.scalarDifferences
+            let csv =
+                ClaimCore.Wire.Export.TimelineCsv.csvRows { page with Items = [ item ] }
+                |> System.Text.Encoding.UTF8.GetString
 
-                Expect.contains
-                    rows
-                    ("reason", "", reason)
-                    "CSV keeps the accepted historical reason verbatim"
-            | other -> failtestf "Expected full changes: %A" other
+            Expect.stringContains csv reason "CSV keeps the accepted historical reason verbatim"
 
             let isolated = Outcome.Succeeded { page with Items = [ item ] }
 

@@ -27,7 +27,7 @@ module internal Declarations =
     let caseTarget = required (field BusinessField.CaseReference) |> bound
     let revision = required (target InputTarget.ExpectedRevision)
 
-    let group mode group =
+    let private groupInputs mode group =
         BusinessField.ofGroup group
         |> List.map (fun field ->
             let selected =
@@ -42,6 +42,18 @@ module internal Declarations =
                 Clearable =
                     mode = TaskInputMode.Update && (BusinessField.describe field).AllowsAbsence
             })
+
+    let independentGroup mode group = groupInputs mode group
+
+    let group mode recordGroup =
+        groupInputs mode recordGroup
+        |> List.map (fun input ->
+            match input.Input with
+            | TaskInputId.Target(InputTarget.Field name) ->
+                { input with
+                    PairedWith = (BusinessField.describe name).Pairs |> Option.map field
+                }
+            | _ -> input)
 
     let private createWithReview
         token

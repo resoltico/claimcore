@@ -48,6 +48,8 @@ type TaskInputDeclaration =
         Retention: InputRetention
         DefaultText: string option
         ChoicesFrom: string option
+        PairedWith: TaskInputId option
+        RetainedChoiceLabel: string option
         ChoicesWhen: TaskInputChoicesWhen list
     }
 
@@ -95,6 +97,8 @@ module TaskInputDeclaration =
                 | _ -> InputRetention.Erasable
             DefaultText = None
             ChoicesFrom = Map.tryFind input lookups
+            PairedWith = None
+            RetainedChoiceLabel = None
             ChoicesWhen = []
             Atom =
                 if

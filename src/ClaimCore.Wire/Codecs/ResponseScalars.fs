@@ -104,6 +104,7 @@ module ResponseScalars =
 
     let calendarDate = CalendarDateCodecs.value
     let caseReference = parsed CaseReference.parse CaseReference.format reference
+    let currencyCode = parsed Currency.parse Currency.format currency
     let countryCode = parsed CountryCode.parse CountryCode.format country
 
     let partyName =
@@ -146,7 +147,7 @@ module ResponseScalars =
     let money =
         (record Money.create: Fields<Money, _>)
         |> field "amount" Money.amount (parsed Amount.parse Amount.format amount)
-        |> field "currency" Money.currencyValue (parsed Currency.parse Currency.format currency)
+        |> field "currency" Money.currencyValue currencyCode
         |> build
         |> named "Money"
 

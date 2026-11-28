@@ -48,9 +48,17 @@ test("corrects selected payment atomically with both identities in receipt timel
     .click();
   await page.getByRole("menuitem", { name: "Correct payment entry", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", { name: "Return to editing", exact: true }).click();
+  const editAmount = dialog.getByRole("checkbox", { name: "Change Paid amount", exact: true });
+  const reload = dialog.getByRole("button", { name: "Reload current case", exact: true });
+  await expect(editAmount.or(reload)).toBeVisible();
+  if (await reload.isVisible()) {
+    await reload.click();
+  }
   await expect(dialog.getByRole("textbox", { name: "Payment ID", exact: true })).toHaveCount(0);
-  await fillNamedField(page, "Payment date", "2026-09-05");
+  await editAmount.check();
+  await expect(
+    dialog.getByRole("checkbox", { name: "Change Payment currency", exact: true }),
+  ).not.toBeChecked();
   await fillNamedField(page, "Paid amount", "75");
   const previewed = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.preview",
@@ -66,11 +74,10 @@ test("corrects selected payment atomically with both identities in receipt timel
       paymentId: old.paymentId,
     },
     inputs: {
-      "field:paymentDate": "2026-09-05",
       "field:paidAmount": "75",
-      "field:paidCurrency": "EUR",
     },
   });
+  expect(frozen.inputs).toEqual({ "field:paidAmount": "75" });
   const review = (await preview.json()) as ResponseFor<"operation.preview", "HUMAN">;
   expect(JSON.stringify(review)).toContain(old.paymentId);
   expect(JSON.stringify(review)).toContain(frozen.operationId);

@@ -107,3 +107,17 @@ module DecimalTotal =
             Error violation
         else
             Ok(DecimalTotal units)
+
+    /// Return an integral display position with endpoints reserved for exact equality.
+    let progress maximum (DecimalTotal current) (DecimalTotal target) =
+        if maximum < 2 || target <= 0I || current < 0I || current > target then
+            invalidArg
+                (nameof current)
+                "Progress requires a positive target and a bounded current value."
+
+        if current = 0I then
+            0
+        elif current = target then
+            maximum
+        else
+            max 1 (min (maximum - 1) (int (current * bigint maximum / target)))

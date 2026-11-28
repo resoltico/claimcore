@@ -73,8 +73,6 @@ module PartDescriptionCodecs =
         |> build
         |> named "ChangeReferences"
 
-    let totals = PaymentCodecs.totals
-
     let workValues =
         (record (fun v0 v1 ->
             {
@@ -157,13 +155,14 @@ module PartDescriptionCodecs =
         |> named "PersonPartDescription"
 
     let caseDescription =
-        (record (fun v0 v1 v2 v3 v4 ->
+        (record (fun v0 v1 v2 v3 v4 balances ->
             {
                 CasePartDescription.Values = v0
                 Lifecycle = v1
                 Fields = v2
                 Money = v3
                 Disposition = v4
+                Balances = balances
             })
         : Fields<CasePartDescription, _>)
         |> field "values" _.Values (ValueChangeCodecs.change "CaseValues" ResponseCodecs.caseFields)
@@ -184,18 +183,17 @@ module PartDescriptionCodecs =
             _.Money
             (list CaseFields.declarations.Length TimelineCodecs.moneyDifference)
         |> field "disposition" _.Disposition (nullable CaseStateCodecs.disposition)
+        |> field "balances" _.Balances (PaymentCodecs.balances 0)
         |> build
         |> named "CasePartDescription"
 
     let payment =
-        (record (fun v0 v1 v2 ->
+        (record (fun v1 v2 ->
             {
-                PaymentPartDescription.Totals = v0
-                Entry = v1
+                PaymentPartDescription.Entry = v1
                 Removed = v2
             })
         : Fields<PaymentPartDescription, _>)
-        |> field "totals" _.Totals (ValueChangeCodecs.change "PaymentTotalValues" totals)
         |> field "entry" _.Entry (nullable ClaimCore.RecordFormat.FinancialCodecs.entry)
         |> field
             "removed"

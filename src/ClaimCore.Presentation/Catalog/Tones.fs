@@ -27,7 +27,9 @@ module Tones =
                 | CaseHeadline.Undecided -> Tone.Info
                 | CaseHeadline.Decided
                 | CaseHeadline.PartlyPaid -> Tone.Progress
-                | CaseHeadline.Paid -> Tone.Success
+                | CaseHeadline.NoPaymentDue
+                | CaseHeadline.PayableCovered -> Tone.Success
+                | CaseHeadline.Overpaid -> Tone.Warning
                 | CaseHeadline.Voided -> Tone.Danger
                 | CaseHeadline.Closed
                 | CaseHeadline.Erased -> Tone.Neutral)

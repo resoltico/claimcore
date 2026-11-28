@@ -124,21 +124,21 @@ module internal ViewText =
                             Vocabulary.messageKey CaseStageKind.vocabulary step.Stage "label"
                             |> label
 
-                        let date =
-                            step.Date
-                            |> Option.map PresentedValue.Date
-                            |> Option.map text
-                            |> Option.defaultValue (label "label.notRecorded")
-
-                        let amount =
-                            match step.Meter with
-                            | Some meter -> [ message rendering meter.Description ]
-                            | None -> step.StageValue |> Option.map text |> Option.toList
+                        let details =
+                            [
+                                yield!
+                                    step.Date
+                                    |> Option.map (PresentedValue.Date >> text)
+                                    |> Option.toList
+                                yield! step.StageValue |> Option.map text |> Option.toList
+                            ]
 
                         (if step.Reached then "[x] " else "[ ] ")
                         + title
-                        + ": "
-                        + String.concat " · " (date :: amount))
+                        + (if details.IsEmpty then
+                               ""
+                           else
+                               ": " + String.concat " · " details))
                 | RegionContent.Codes(vocabulary, tokens) ->
                     if tokens.IsEmpty then
                         []

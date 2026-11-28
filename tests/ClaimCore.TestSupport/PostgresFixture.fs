@@ -90,7 +90,10 @@ let internal createWitness () =
         .WithLabel("claimcore.test", "independent-disclosure-witness")
         .Build()
 
-let internal setupWitness (container: PostgreSqlContainer) token =
+let internal witnessSchema () =
+    IO.File.ReadAllText(IO.Path.Combine(RepositoryRoot.find (), "db", "witness.sql"))
+
+let internal setupWitnessFrom schema (container: PostgreSqlContainer) token =
     task {
         do! container.StartAsync token
         let ownerPassword = Guid.NewGuid().ToString("N")
@@ -113,9 +116,6 @@ let internal setupWitness (container: PostgreSqlContainer) token =
                 [||]
                 token
 
-        let schema =
-            IO.File.ReadAllText(IO.Path.Combine(RepositoryRoot.find (), "db", "witness.sql"))
-
         let! _ = DatabaseSession.execute connection schema [||] token
 
         let connectionString role password =
@@ -126,6 +126,9 @@ let internal setupWitness (container: PostgreSqlContainer) token =
             connectionString "claimcore_witness_runtime" runtimePassword,
             connectionString "claimcore_witness_owner" ownerPassword
     }
+
+let internal setupWitness container token =
+    setupWitnessFrom (witnessSchema ()) container token
 
 let private withKeyBytes action =
     let bytes = RandomNumberGenerator.GetBytes MasterKey.Size
@@ -495,6 +498,9 @@ let internal create () = createFor owner
 
 let internal createDurable () =
     createInZone false durable owner "Etc/UTC" None false
+
+let internal createDurableWithOwner () =
+    createInZone false durable owner "Etc/UTC" None true
 
 let internal createWithOwner () =
     createInZone true defaults owner "Etc/UTC" None true

@@ -50,6 +50,7 @@ module OperationRoot =
             [
                 OperationFrames.text "ClaimCore.Operation"
                 OperationFrames.u32 (uint32 InstallationFormat.Current)
+                OperationFrames.text InstallationFormat.Identity
                 OperationFrames.uuid header.InstallationId
                 OperationFrames.i64 (Sequence.value header.Sequence)
                 EntryHash.toBytes header.PreviousHash

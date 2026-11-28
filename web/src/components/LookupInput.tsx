@@ -13,6 +13,7 @@ import type { HumanReadReply, OperationTaskDefinition, PresentedValue } from "@c
 type Props = Omit<TypedFieldProps, "field"> & {
   metadata: { labelId: string; hintId: string | null };
   caseId: string;
+  retainedChoice?: { value: string; labelId: string };
   lookup: NonNullable<OperationTaskDefinition["inputs"][number]["choicesFrom"]>;
 };
 
@@ -109,6 +110,14 @@ const LookupChoices = ({ caseId, lookup, ...props }: Props) => {
       ),
     ),
   }));
+  const retained = props.retainedChoice;
+  if (
+    retained !== undefined &&
+    retained.value !== "" &&
+    !options.some((option) => option.value === retained.value)
+  ) {
+    options.unshift({ value: retained.value, label: renderCatalogKey(p, retained.labelId) });
+  }
   if (optional === true) {
     options.unshift({ value: "", label: p.text("label.notRecorded") });
   }

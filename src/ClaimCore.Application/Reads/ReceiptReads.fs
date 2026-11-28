@@ -265,6 +265,9 @@ module internal ReceiptReads =
                                                                                         record
                                                                                             .Inputs
                                                                                         description
+                                                                                Balances =
+                                                                                    description
+                                                                                        .Balances
                                                                                 Payments =
                                                                                     record.Changes
                                                                                     |> List.choose

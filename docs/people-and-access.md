@@ -40,11 +40,11 @@ claimcore people admit --principal-kind human --issuer https://identity.example/
   --subject PERSON-SUBJECT --confirm PERSON-SUBJECT --name "Alex Example" --role case-handler
 ```
 
-Add another `--role` for each assignment. A role without `@` applies across the installation; for a
-case-specific role use `--role case-handler@CLM-2026-0001`. The part after the first `@` is always a case
-reference, even when it looks like a UUID. Choose each role and case combination only once. Up to 48
-initial assignments fit in one admission. `claimcore help` lists the complete
-options. When configured, the CLI profile supplies an omitted issuer; the sent request still contains it.
+Add another `--role` for each assignment. A role without `@` applies across the installation. To
+grant access to one case, use `--role case-handler@CASE-REFERENCE` with its complete issued reference.
+The part after the first `@` is the reference. Choose each role and case combination once. One
+admission can include up to 48 initial assignments. Use `claimcore help` for the complete options.
+The CLI profile can supply the issuer when you omit it.
 
 Use **Register account** for an account that should initially have no roles. Adding or
 registering someone does not change their sign-in-provider membership.

@@ -43,32 +43,45 @@ module PaymentDifference =
         | PaymentDifference.Recorded entry
         | PaymentDifference.Removed entry -> entry
 
-/// Financial changes retain entry identities and their before/after decision-currency context.
-type PaymentCollectionDifference =
+/// A missing endpoint means that currency had no current transfers.
+type BalanceDifference =
     {
-        Entries: PaymentDifference list
-        Before: PaymentTotals option
-        After: PaymentTotals option
+        Currency: Currency
+        Net: ValueChange<DecimalTotal>
     }
 
-module PaymentCollectionDifference =
-    let create (entries: PaymentDifference list) before after =
-        if entries.IsEmpty then
-            Error "A payment change requires an entry."
+module BalanceDifference =
+    [<Literal>]
+    let MaximumPerEffect = 2
+
+    let create currency (net: ValueChange<DecimalTotal>) =
+        if net.Before = net.After then
+            Error "A balance difference requires unequal endpoints."
         else
-            Ok
+            Ok { Currency = currency; Net = net }
+
+    let between before after =
+        let currencies =
+            Set.union (before |> Map.keys |> Set.ofSeq) (after |> Map.keys |> Set.ofSeq)
+
+        currencies
+        |> Set.toList
+        |> List.choose (fun currency ->
+            create
+                currency
                 {
-                    Entries = entries
-                    Before = before
-                    After = after
+                    Before = Map.tryFind currency before
+                    After = Map.tryFind currency after
                 }
+            |> Result.toOption)
 
 /// Typed review facts retain their authoritative values independently of presentation snapshots.
 type CaseReviewChanges =
     {
         Lifecycle: LifecycleChange option
         Fields: CaseFieldDifference list
-        Payments: PaymentCollectionDifference option
+        Payments: PaymentDifference list
+        Balances: BalanceDifference list
     }
 
 type CaseMoneyDifference =
@@ -86,7 +99,8 @@ type TimelineChange =
     | Responsibility of ValueChange<ActorRef>
     | HandlingSummary of ValueChange<HandlingSummary>
     | Reminder of ReminderDifference
-    | Payments of PaymentCollectionDifference
+    | Payment of PaymentDifference
+    | Balances of BalanceDifference list
     | Note of removed: bool * NoteId * NoteText option
     | Attachment of withdrawn: bool * AttachmentId * AttachmentDisplay option
     | Party of PartyId * ValueChange<PartyContent>

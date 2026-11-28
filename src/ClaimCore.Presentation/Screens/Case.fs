@@ -348,7 +348,7 @@ module CaseScreen =
                         "progress"
                         "input.progress.label"
                         Prominence.Primary
-                        (code CaseProgress.vocabulary (CaseProgress.ofFinancial facts.Finance))
+                        (headline (CaseHeadline.financial facts.Finance) None)
 
                 if reply.Mine then
                     yield
@@ -405,18 +405,20 @@ module CaseScreen =
                                     Actions = []
                                     Reached = step.Completed
                                     Date = step.Date
-                                    Meter =
-                                        if step.Stage = CaseStageKind.Paid then
-                                            CaseState.fields reply.Snapshot.State
-                                            |> Option.bind (fun fields ->
-                                                PaymentsScreen.meter fields.Finance)
-                                        else
-                                            None
                                     StageValue =
                                         step.Outcome
                                         |> Option.map (code ClosureOutcome.vocabulary)
                                         |> Option.orElseWith (fun () ->
-                                            step.NetPaid |> Option.map PaymentsScreen.netPaid)
+                                            if step.NoPaymentDue then
+                                                Some(PresentedValue.Message "label.noPaymentDue")
+                                            elif
+                                                step.Stage = CaseStageKind.Paid && step.Completed
+                                            then
+                                                Some(
+                                                    PresentedValue.Message "label.payableCovered"
+                                                )
+                                            else
+                                                None)
                                         |> Option.orElseWith (fun () ->
                                             step.Amount |> Option.map PresentedValue.money)
                                 })
@@ -575,6 +577,7 @@ module CaseScreen =
                                                             entry
                                             ])
                                         fields.Finance
+                                        (Handling.closure fields.Handling |> Option.map _.Outcome)
                                         reply.PaymentPayees
                                         reply.LatestPayments
                                 ))

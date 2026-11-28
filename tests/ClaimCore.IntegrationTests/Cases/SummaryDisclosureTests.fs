@@ -140,8 +140,6 @@ let private summaries () =
                     current.Headline
                     "The headline is already disclosed by case.get"
 
-                let value field = Map.find field summary.Fields
-
                 for role, name in
                     [ PartyRole.Claimant, "Claimant Example"; PartyRole.Insurer, "Insurer Example" ] do
                     let show = List.map PartyName.format
@@ -162,33 +160,27 @@ let private summaries () =
                         disclosed
                         "Summary and case reads disclose the same current names"
 
-                let claimed = Registration.claimed fields.Registration |> Option.get
+                let measure select =
+                    row.Contributions
+                    |> List.choose (fun contribution ->
+                        select contribution
+                        |> Option.map (fun amount -> contribution.Currency, amount))
+
+                let expected money =
+                    money
+                    |> Option.map (fun value ->
+                        Money.currencyValue value, DecimalTotal.ofAmount (Money.amount value))
+                    |> Option.toList
 
                 Expect.equal
-                    (value BusinessField.ClaimedAmount)
-                    (Some(CaseFieldValue.Business(Admitted.Amount(Money.amount claimed))))
-                    "Claimed amount is already disclosed"
+                    (measure _.Claimed)
+                    (expected (Registration.claimed fields.Registration))
+                    "Claimed money is already disclosed"
 
                 Expect.equal
-                    (value BusinessField.ClaimedCurrency)
-                    (Some(CaseFieldValue.Business(Admitted.Currency(Money.currencyValue claimed))))
-                    "Claimed currency is already disclosed"
-
-                let payable = fields.Decision |> Option.map Decision.payable
-
-                Expect.equal
-                    (value BusinessField.PayableAmount)
-                    (payable
-                     |> Option.map (Money.amount >> Admitted.Amount >> CaseFieldValue.Business))
-                    "Payable amount is already disclosed"
-
-                Expect.equal
-                    (value BusinessField.PayableCurrency)
-                    (payable
-                     |> Option.map (
-                         Money.currencyValue >> Admitted.Currency >> CaseFieldValue.Business
-                     ))
-                    "Payable currency is already disclosed"
+                    (measure _.Payable)
+                    (expected (fields.Decision |> Option.map Decision.payable))
+                    "Payable money is already disclosed"
 
                 let! history =
                     Service.timeline

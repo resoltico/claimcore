@@ -175,14 +175,17 @@ let internal lifecycle fixture =
             |> List.find (fun item -> CaseSelector.Id item.CaseId = caseTarget fixture "PAY-EUR")
 
         Expect.equal
-            (euro.NetPaid |> Option.map (fun totals -> DecimalTotal.format totals.NetPaid))
+            (euro.Contributions
+             |> List.exactlyOne
+             |> _.NetPaid
+             |> Option.map DecimalTotal.format)
             (Some "60.25")
             "List data carries the exact independent paid sum"
 
         Expect.equal euro.PaymentCount 2L "Both entries are counted"
 
         Expect.equal
-            (euro.LastPaymentDate |> Option.map CalendarDate.format)
+            (euro.LatestTransferDate |> Option.map CalendarDate.format)
             (Some "2026-08-21")
             "The latest payment date is retained"
 

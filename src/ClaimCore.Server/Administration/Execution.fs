@@ -11,36 +11,37 @@ open ClaimCore.Application.Administration
 
 module Execution =
     let private perform (administration: Administration) token command =
-        let enroll installation =
-            task {
-                match Inputs.witnessConnection () with
-                | Error fault -> return Error fault
-                | Ok None -> return Ok()
-                | Ok(Some connection) ->
-                    do! administration.EnrollWitness(connection, installation, token)
-                    return Ok()
-            }
-
         task {
             match command with
-            | Initialize(zone, owner, true) ->
-                let! result = administration.InitializeIfMissing(zone, owner, token)
-
-                let installation, reply =
-                    match result with
-                    | InitializationResult.Initialized id -> id, Replies.initialized id
-                    | InitializationResult.ExistingInstallation id ->
-                        id, Replies.initializationSkipped id
-
-                match! enroll installation with
-                | Ok() -> return reply
+            | Initialize(zone, owner, ifMissing) ->
+                match Inputs.witnessConnection () with
                 | Error fault -> return Replies.operatorFault fault
-            | Initialize(zone, owner, false) ->
-                let! installation = administration.Initialize(zone, owner, token)
+                | Ok witness ->
+                    match witness with
+                    | Some connection -> do! administration.CheckWitness(connection, token)
+                    | None -> ()
 
-                match! enroll installation with
-                | Ok() -> return Replies.initialized installation
-                | Error fault -> return Replies.operatorFault fault
+                    let! result =
+                        if ifMissing then
+                            administration.InitializeIfMissing(zone, owner, token)
+                        else
+                            task {
+                                let! installation = administration.Initialize(zone, owner, token)
+                                return InitializationResult.Initialized installation
+                            }
+
+                    let installation, reply =
+                        match result with
+                        | InitializationResult.Initialized value -> value, Replies.initialized value
+                        | InitializationResult.ExistingInstallation value ->
+                            value, Replies.initializationSkipped value
+
+                    match witness with
+                    | Some connection ->
+                        do! administration.EnrollWitness(connection, installation, token)
+                    | None -> ()
+
+                    return reply
             | RecoverOwner input ->
                 let! result = administration.RecoverOwner(input, token)
                 return Replies.ownerRecovery result

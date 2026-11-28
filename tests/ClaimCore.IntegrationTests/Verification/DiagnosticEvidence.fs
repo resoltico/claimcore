@@ -254,7 +254,7 @@ let internal stateScenarios () =
         [ decided ], ("case.amendRegistration", registration)
         [ decided ], correct "UPDATE" "KEEP" registration
         [ closed ], correct "KEEP" "CLEAR" Map.empty
-        [ closed ], payment
+        [ voided ], payment
         [],
         ("case.removePayment",
          Map.ofList

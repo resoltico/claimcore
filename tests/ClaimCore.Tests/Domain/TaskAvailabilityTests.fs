@@ -198,11 +198,25 @@ let tests =
 
                         let closed = state |> setCase Lifecycle.Active CaseStatus.Closed
 
+                        let adjustments =
+                            if List.contains "case.correctPayment" financial then
+                                [ "case.correctPayment"; "case.removePayment" ]
+                            else
+                                []
+
                         Expect.equal
                             (offered environment closed)
-                            (Set.ofList
-                                [ "case.correct"; "case.reopen"; "case.void"; "case.erase" ])
-                            "Closed-case offers"
+                            (Set.ofList (
+                                [
+                                    "case.correct"
+                                    "case.reopen"
+                                    "case.void"
+                                    "case.erase"
+                                    "case.recordPayment"
+                                ]
+                                @ adjustments
+                            ))
+                            "Closed-case payment tasks follow the current entries"
 
                         let voided = state |> setCase Lifecycle.Voided state.Case.Value.Status
 

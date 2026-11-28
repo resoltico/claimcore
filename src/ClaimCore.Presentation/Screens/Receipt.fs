@@ -474,7 +474,7 @@ module ReceiptScreen =
                     | LiveCase.Active fields
                     | LiveCase.Voided fields -> fields
 
-                Some(PaymentsScreen.changes fields.Finance live.Payments)
+                Some(PaymentsScreen.changes fields.Finance live.Balances live.Payments)
             | _ -> None
 
         let facts =
@@ -542,7 +542,7 @@ module ReceiptScreen =
                             "progress"
                             "input.progress.label"
                             Prominence.Primary
-                            (code CaseProgress.vocabulary (CaseProgress.ofFinancial fields.Finance))
+                            (headline (CaseHeadline.financial fields.Finance) None)
                     ]
                 | SnapshotDisclosure.Erased ->
                     [

@@ -103,6 +103,12 @@ let private fixture () =
                                     ReopenReason = None
                                     RecordedFields = BusinessField.ofGroup RecordGroup.Payment
                                     Payments = differences
+                                    Balances =
+                                        BalanceDifference.between
+                                            (FinancialPosition.actualBalances
+                                                before.Case.Value.Content.Value.Finance)
+                                            (FinancialPosition.actualBalances
+                                                after.Case.Value.Content.Value.Finance)
                                 }
                     }
         }
@@ -222,19 +228,29 @@ let tests =
                         (CaseFixtures.netPaid "EUR" (finance before))
                         "25"
                         "Original immutable input remains intact")
-            testCase "closed voided and erased cases require eligible current state" (fun () ->
-                let paid = decided () |> pay 3 "2026-02-02" "25"
+            testCase
+                "active closure permits a correction while voided and erased states refuse"
+                (fun () ->
+                    let paid = decided () |> pay 3 "2026-02-02" "25"
 
-                for lifecycle, status, headline in
-                    [
-                        Lifecycle.Active, CaseStatus.Closed, CaseHeadline.Closed
-                        Lifecycle.Voided, CaseStatus.Opened, CaseHeadline.Voided
-                        Lifecycle.Erased, CaseStatus.Opened, CaseHeadline.Erased
-                    ] do
-                    let state = paid |> setCase lifecycle status
+                    let closed = paid |> setCase Lifecycle.Active CaseStatus.Closed
+                    let changes = correct 5 3 "2026-02-03" "20" "EUR" closed |> accepted
+                    let after = apply closed changes
 
-                    correct 5 3 "2026-02-03" "20" "EUR" state
-                    |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
+                    Expect.equal
+                        after.Case.Value.Handling
+                        closed.Case.Value.Handling
+                        "Closure is preserved"
+
+                    for lifecycle, status, headline in
+                        [
+                            Lifecycle.Voided, CaseStatus.Opened, CaseHeadline.Voided
+                            Lifecycle.Erased, CaseStatus.Opened, CaseHeadline.Erased
+                        ] do
+                        let state = paid |> setCase lifecycle status
+
+                        correct 5 3 "2026-02-03" "20" "EUR" state
+                        |> expectRefusal (Refusal.Case(CaseRefusal.NotOffered headline)))
             testCase
                 "saturated case and selected payment revisions refuse before increment"
                 (fun () ->

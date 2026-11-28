@@ -21,7 +21,7 @@ module CatalogValidation =
                 fields
                 |> List.collect (fun (name, value) ->
                     match name, value with
-                    | ("labelId" | "shortLabelId" | "reviewedLabelId" | "promptId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
+                    | ("labelId" | "shortLabelId" | "reviewedLabelId" | "promptId" | "addLabelId" | "removeLabelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId" | "retainedChoiceLabel"),
                       JsonValue.String key -> [ key ]
                     | _ -> collect value)
             | _ -> []

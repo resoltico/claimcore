@@ -27,6 +27,8 @@ module TaskMetadata =
                 multiple = value.Multiple
                 retention = InputRetention.token value.Retention
                 choicesFrom = value.ChoicesFrom
+                pairedWith = value.PairedWith |> Option.map TaskInputId.token
+                retainedChoiceLabel = value.RetainedChoiceLabel
                 choicesWhen =
                     value.ChoicesWhen
                     |> List.map (fun choices ->

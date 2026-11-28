@@ -16,6 +16,7 @@ type RuntimeOpenFault =
     | UnsupportedDatabase
     | UnsafeRole
     | SchemaMismatch
+    | WitnessMismatch
     | InstallationInvalid
     | DataKeyInvalid
     | HeadMismatch

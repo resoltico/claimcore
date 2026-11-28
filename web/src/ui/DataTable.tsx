@@ -511,14 +511,11 @@ export const DataTable = ({
   renderDetailActions,
   ...interaction
 }: TableProps) => {
-  const p = usePresentation();
   const [detailKey, setDetailKey] = useState<string | null>(null);
   const detailRow = view.rows.find((row) => row.key === detailKey);
   return (
     <>
-      {view.meter === undefined ? null : (
-        <MoneyMeter meter={view.meter} timeZone={timeZone} label={p.text("label.paid")} />
-      )}
+      {view.meter === undefined ? null : <MoneyMeter meter={view.meter} timeZone={timeZone} />}
       {view.rows.length === 0 && emptyId !== undefined ? (
         <EmptyState messageId={emptyId} />
       ) : (

@@ -197,26 +197,6 @@ let completeByteGoldens =
                     TimeZoneId = "Etc/UTC"
                 }
 
-            let policyNumber = "=CSV, α \"quoted\""
-
-            let registration =
-                DomainInputs.registrationFrom
-                    [
-                        BusinessField.PolicyNumber, policyNumber
-                        BusinessField.InsurerClaimReference, "Insurer"
-                        BusinessField.ClaimedAmount, "1.2345"
-                        BusinessField.ClaimedCurrency, "EUR"
-                    ]
-                |> DomainInputs.admittedRegistration
-
-            let fields =
-                {
-                    CaseFields.CaseReference = reference
-                    Handling = Handling.Open
-                    Registration = registration
-                    Finance = FinancialPosition.undecided
-                }
-
             let caseRow: CaseSummary =
                 {
                     CaseId = CaseFixtures.caseId raw
@@ -228,9 +208,6 @@ let completeByteGoldens =
                     State =
                         CaseState.Active
                             {
-                                Fields =
-                                    CaseSummaryFields.values CaseSummaryFields.declarations fields
-                                ClosureOutcome = None
                                 Parties =
                                     Map.ofList
                                         [
@@ -252,9 +229,30 @@ let completeByteGoldens =
                     NextAction = None
                     Responsible = None
                     PendingReminders = 0L
-                    NetPaid = None
+                    Grouping =
+                        {
+                            RegisteredOn = CalendarDate.ofDate basis.BusinessDate
+                            ReceivedOn = None
+                            ClosedOn = None
+                            DaysOpen = 0
+                            Outcome = None
+                        }
+                    Contributions =
+                        [
+                            {
+                                Currency =
+                                    Currency.parse "EUR" |> Result.defaultWith (string >> failtest)
+                                Claimed =
+                                    Some(
+                                        DecimalTotal.parse "1.2345"
+                                        |> Result.defaultWith (string >> failtest)
+                                    )
+                                Payable = None
+                                NetPaid = None
+                            }
+                        ]
                     PaymentCount = 0L
-                    LastPaymentDate = None
+                    LatestTransferDate = None
                 }
 
             let expected header cells =
@@ -265,8 +263,9 @@ let completeByteGoldens =
             Expect.equal
                 caseBytes
                 (expected
-                    "caseReference,revision,workRevision,state.kind,headline,attention,claimants,insurers,state.fields.claimedAmount,state.fields.claimedCurrency,state.fields.payableAmount,state.fields.payableCurrency,netPaid,paymentCount,lastPaymentDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
+                    "caseId,caseReference,revision,workRevision,state.kind,headline,attention,claimants,insurers,registeredOn,receivedOn,closedOn,daysOpen,outcome,currency,claimed,payable,netPaid,paymentCount,latestTransferDate,responsible.actorId,responsible.displayName.value,responsible.displayName.kind,responsible.availability,nextAction.reminderId,nextAction.action,nextAction.due,nextAction.dueState,pendingReminders,changedAt,basis.businessDate,basis.timeZone"
                     [
+                        "019aa6a0-0000-7000-8000-000000000001"
                         "CC-1FN1-TM2B-BW5Y-TH15-14"
                         "7"
                         "3"
@@ -275,9 +274,13 @@ let completeByteGoldens =
                         "NO_NEXT_ACTION;UNASSIGNED"
                         "\"'=CSV, α \"\"quoted\"\"\""
                         "Insurer"
-                        "1.2345"
-                        "EUR"
+                        "2026-11-09"
                         ""
+                        ""
+                        "0"
+                        ""
+                        "EUR"
+                        "1.2345"
                         ""
                         ""
                         "0"
@@ -319,7 +322,7 @@ let completeByteGoldens =
                     Reference = reference
                     Claimants =
                         [
-                            PartyName.parse policyNumber
+                            PartyName.parse "=CSV, α \"quoted\""
                             |> Result.defaultWith (fun _ -> failtest "Claimant")
                         ]
                     Responsible = None
@@ -450,7 +453,7 @@ let completeByteGoldens =
             Expect.equal
                 timelineBytes
                 (expected
-                    "caseReference,operationId,sequence,effectIndex,operationHash,recordedAt,recordedBy.actorId,recordedBy.displayName.value,recordedBy.displayName.kind,act,revision,reminderId,nextReminderId,nextReminderRevision,changes.kind,field,before,after"
+                    "caseReference,operationId,sequence,effectIndex,operationHash,recordedAt,recordedBy.actorId,recordedBy.displayName.value,recordedBy.displayName.kind,act,revision,reminderId,nextReminderId,nextReminderRevision,changes.kind,field,before,after,beforeCurrency,afterCurrency"
                     [
                         "CC-1FN1-TM2B-BW5Y-TH15-14"
                         "019aa6a0-0000-7000-8000-000000000001"
@@ -467,6 +470,8 @@ let completeByteGoldens =
                         ""
                         ""
                         "WITHHELD"
+                        ""
+                        ""
                         ""
                         ""
                         ""

@@ -24,6 +24,7 @@ type CasePaymentPage =
         Revision: Revision
         WorkRevision: Revision
         State: CaseState<FinancialPosition>
+        ClosureOutcome: ClosureOutcome option
         Items: CasePaymentItem list
         Payees: PaymentPayee list
         NextCursor: string option

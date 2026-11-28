@@ -23,6 +23,7 @@
 CREATE EXTENSION pg_trgm WITH SCHEMA public VERSION '1.6';
 
 CREATE SCHEMA claimcore;
+COMMENT ON SCHEMA claimcore IS 'claimcore-format-12-payment-corrections';
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
 
 -- PostgreSQL already guarantees well-formed UTF-8 and excludes U+0000. I-JSON also excludes

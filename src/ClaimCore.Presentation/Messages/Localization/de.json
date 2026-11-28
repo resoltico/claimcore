@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "Aktuelle und aufbewahrte Details, Zahlungen, Bearbeitung, Wiedervorlagen, Notizen und Anhänge dieses Falls dauerhaft entfernen. Referenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten sind nicht betroffen.",
-    "source": "8bf54b53220a"
+    "text": "Private Fallangaben sowie Notizen und Zielangaben in Fallverknüpfungen aus dem laufenden Register löschen. Fall-ID, Fallreferenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten bleiben bestehen.",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "Profil löschen",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "Eröffnen Sie einen Fall mit den bekannten Registrierungsdaten. Lassen Sie die Fallreferenz leer, damit sie automatisch vergeben wird. Wenn Ihr Register es erlaubt, können Sie eine eigene Fallreferenz eingeben.",
-    "source": "debda0b6773d",
+    "text": "Eröffnen Sie einen Fall mit den Registrierungsdaten, die Ihnen vorliegen. ClaimCore vergibt die dauerhafte Fallreferenz.",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "Verwenden Sie eine gültige Fallreferenz. Eine eigene Referenz beginnt mit einem ASCII-Buchstaben und besteht aus bis zu 32 Buchstaben, Ziffern und einzelnen Bindestrichen zwischen Gruppen. Das Präfix CC- ist für automatisch vergebene Referenzen reserviert.",
-    "source": "f856f6f13ef0",
+    "text": "Verwenden Sie die vollständige von ClaimCore vergebene Fallreferenz einschließlich ihrer Prüfziffern.",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -833,9 +834,20 @@
     "text": "Gelöscht",
     "source": "1c9a70fabcb6"
   },
-  "headline.PAID.label": {
-    "text": "Bezahlt",
-    "source": "fb81b961af45"
+  "headline.NO_PAYMENT_DUE.label": {
+    "text": "Keine Zahlung fällig",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "headline.PAYABLE_COVERED.label": {
+    "text": "Zahlbetrag gedeckt",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "headline.OVERPAID.label": {
+    "text": "Überzahlt",
+    "source": "c93dce4211a4",
+    "machineMade": true
   },
   "headline.UNDECIDED.label": {
     "text": "Ohne Entscheidung",
@@ -1086,8 +1098,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "Gelöscht. Nur die Fallreferenz bleibt erhalten.",
-    "source": "e63410fae906"
+    "text": "Fall gelöscht. Fall-ID, Fallreferenz und Änderungsprotokoll bleiben erhalten.",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "Storniert",
@@ -1409,12 +1422,14 @@
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "Anhang heruntergeladen",
-    "source": "ba23685b28f6"
+    "text": "Download des Anhangs autorisiert",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "Anhang in Vorschau angezeigt",
-    "source": "01b3a2e62a0d"
+    "text": "Vorschau des Anhangs autorisiert",
+    "source": "5e82512366e5",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "Export",
@@ -1525,8 +1540,9 @@
     "source": "30ba702eee51"
   },
   "caseStage.PAID.label": {
-    "text": "Bezahlt",
-    "source": "fb81b961af45"
+    "text": "Deckung des Zahlbetrags",
+    "source": "5ad88498af13",
+    "machineMade": true
   },
   "caseStage.CLOSED.label": {
     "text": "Geschlossen",
@@ -1677,13 +1693,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "Verwenden Sie 1 bis {maximumCharacters} ASCII-Zeichen. Eigene Referenzen beginnen mit einem Buchstaben und verwenden Buchstaben, Ziffern und einzelne Bindestriche zwischen Gruppen. Das Präfix CC- ist für automatisch vergebene Referenzen reserviert.",
-    "source": "e7fc63264856",
+    "text": "Verwenden Sie die vollständige vergebene Fallreferenz mit bis zu {maximumCharacters} ASCII-Zeichen und beiden Prüfziffern.",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "Eine benutzerdefinierte Referenz bleibt auch nach einer Korrektur oder Löschung reserviert. Geben Sie darin keine personenbezogenen Informationen an.",
-    "source": "4936b3dc4560",
+    "text": "Geben Sie die Fallreferenz ein, die bei der Eröffnung vergeben wurde.",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1988,8 +2004,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "Prüfen Sie die Fallreferenz und ihre Bindestriche. Beginnen Sie eine eigene Referenz mit einem Buchstaben und verwenden Sie höchstens 32 Buchstaben, Ziffern und Bindestriche. Das Präfix CC- ist reserviert.",
-    "source": "00e1c36eb2e1",
+    "text": "Prüfen Sie die vollständige Fallreferenz einschließlich ihrer Bindestriche und Prüfziffern.",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2053,8 +2069,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "Dies entfernt aktuelle und aufbewahrte Falldetails, Zahlungen, Bearbeitung, Wiedervorlagen und Notizen dauerhaft. Referenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten sind nicht betroffen.",
-    "source": "0e447a932597"
+    "text": "Dadurch werden private Angaben, Anhänge sowie Notizen und Zielangaben in Fallverknüpfungen dauerhaft aus dem laufenden Register gelöscht. Fall-ID, Fallreferenz und Änderungsprotokoll bleiben erhalten. Kopien an anderen Orten bleiben bestehen.",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "Konto registriert.",
@@ -2654,8 +2671,9 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "{paid} von {payable} gezahlt",
-    "source": "6c78ba810cb0"
+    "text": "Netto {paid} von {payable} gezahlt",
+    "source": "56460f70ab2f",
+    "machineMade": true
   },
   "progress.PARTLY_PAID.label": {
     "text": "Teilweise bezahlt",
@@ -2962,8 +2980,9 @@
     "source": "480d7f933767"
   },
   "task.case.correctPayment.meaning": {
-    "text": "Ersetzen Sie einen irrtümlichen Zahlungseintrag durch das richtige Datum, die Richtung, den Betrag, die Referenz und den Empfänger. Der Beleg nennt beide Einträge.",
-    "source": "a892687bc3b6"
+    "text": "Ändern Sie ausgewählte Angaben eines Zahlungseintrags. Lassen Sie Angaben weg, um sie zu behalten, auch den ursprünglichen Empfänger nach seiner Entfernung. Löschen Sie Referenz oder Empfänger ausdrücklich. Der Beleg nennt beide Einträge.",
+    "source": "cc5e912ffeda",
+    "machineMade": true
   },
   "task.case.correctPayment.done": {
     "text": "Zahlungseintrag korrigiert.",
@@ -4724,6 +4743,186 @@
   "label.sessionRetirementConfirmed": {
     "text": "Die Entfernung abgelaufener Ergebnisse der Sitzungsbeendigung wurde bestätigt.",
     "source": "f5bdfec416d5",
+    "machineMade": true
+  },
+  "label.noPaymentDue": {
+    "text": "Keine Zahlung fällig",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "label.paymentCoverage": {
+    "text": "Zahlungsdeckung",
+    "source": "6be717107bb3",
+    "machineMade": true
+  },
+  "label.payableCovered": {
+    "text": "Zahlbetrag gedeckt",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "label.paymentOverpayment": {
+    "text": "Überzahlung",
+    "source": "c401c8b19b9c",
+    "machineMade": true
+  },
+  "label.paymentNegativeBalance": {
+    "text": "Negativer Saldo",
+    "source": "416ff745db5a",
+    "machineMade": true
+  },
+  "label.settledWithoutCoverage": {
+    "text": "Erledigt ohne gedeckten Zahlbetrag",
+    "source": "a9326845d984",
+    "machineMade": true
+  },
+  "label.paymentsNeedReview": {
+    "text": "Zahlungen prüfen",
+    "source": "089412a8dedd",
+    "machineMade": true
+  },
+  "label.keepCurrentSelection": {
+    "text": "Aktuelle Auswahl beibehalten",
+    "source": "d64220d1c205",
+    "machineMade": true
+  },
+  "label.latestTransferDate": {
+    "text": "Datum der letzten Zahlung oder Rückzahlung",
+    "source": "86ea49748782",
+    "machineMade": true
+  },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "Zugriffsanfragen",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "Anhangsliste",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "Auswahl für die Fallzuständigkeit",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "Fallliste",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "Fallnotizen",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "Fallparteien",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "Fallzahlungen",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "Fallübersicht",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "Fallaktivität gelesen",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "Wiedervorlagenübersicht",
+    "source": "b0c80c0e513f",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "Vorgangssuche",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "Vorschau des Vorgangs",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "Vorgangsbeleg",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "Personenverzeichnis",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "Rollenzuweisungen für Konten",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "Zugriffsverlauf",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "Liste der Wiedervorlagen",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "Wiedervorlage gelesen",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "Kontext der anfragenden Identität",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "Falländerungen seit Prüfung",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "Sitzungsbeendigung",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "Anzahlen für Arbeitsansichten",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "Offengelegte Fälle",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "Offengelegte Konten",
+    "source": "5b856c5553bc",
+    "machineMade": true
+  },
+  "label.disclosureRowCount": {
+    "text": "Zurückgegebene Zeilen",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "Der CSV-Export wurde beendet, bevor alle Zeilen übertragen wurden.",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "Der Beleg ist nicht verfügbar. Suchen Sie den Vorgang anhand seiner ursprünglichen Vorgangs-ID.",
+    "source": "f23e5cdf6158",
     "machineMade": true
   }
 }

@@ -147,6 +147,7 @@ module WebStartupDiagnostics =
                  | RuntimeOpenFault.UnsupportedDatabase -> "RUNTIME_UNSUPPORTED_DATABASE"
                  | RuntimeOpenFault.UnsafeRole -> "RUNTIME_UNSAFE_ROLE"
                  | RuntimeOpenFault.SchemaMismatch -> "RUNTIME_SCHEMA_MISMATCH"
+                 | RuntimeOpenFault.WitnessMismatch -> "RUNTIME_WITNESS_MISMATCH"
                  | RuntimeOpenFault.InstallationInvalid -> "RUNTIME_INSTALLATION_INVALID"
                  | RuntimeOpenFault.DataKeyInvalid -> "RUNTIME_DATA_KEY_INVALID"
                  | RuntimeOpenFault.HeadMismatch -> "RUNTIME_HEAD_MISMATCH"

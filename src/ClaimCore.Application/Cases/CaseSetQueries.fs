@@ -69,7 +69,8 @@ module internal CaseSetQueries =
         paused
         (work: CaseWorkView)
         next
-        lastPayment
+        latestTransfer
+        contributions
         parties
         record
         =
@@ -82,7 +83,7 @@ module internal CaseSetQueries =
                 WorkRevision = work.Revision
                 CanAssign = CaseWorkReads.canAssign principal actor paused record.Snapshot
                 ChangedAt = record.Index.ChangedAt
-                Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
+                Headline = CaseHeadline.ofCase record.Snapshot.State
                 Stages = CaseStages.outline record.Snapshot.State
                 Attention =
                     CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)
@@ -97,23 +98,28 @@ module internal CaseSetQueries =
                         })
                 Responsible = work.Responsible
                 PendingReminders = work.PendingReminders
-                NetPaid =
-                    CaseState.fields record.Snapshot.State
-                    |> Option.bind (fun fields -> FinancialPosition.totals fields.Finance)
+                Contributions = contributions
+                Grouping =
+                    {
+                        RegisteredOn = record.ReportDates.Registered
+                        ReceivedOn = record.Index.ReceivedOn
+                        ClosedOn = record.ReportDates.Closed
+                        DaysOpen =
+                            DaysOpenBand.daysOpen
+                                (CalendarDate.ofDate work.Basis.BusinessDate)
+                                record.ReportDates
+                        Outcome = record.Index.Outcome
+                    }
                 PaymentCount =
                     CaseState.fields record.Snapshot.State
                     |> Option.map (fun fields -> fields.Finance.PaymentCount)
                     |> Option.defaultValue 0L
-                LastPaymentDate = lastPayment
+                LatestTransferDate = latestTransfer
                 State =
                     CaseState.map
-                        (fun (fields: CaseFields) ->
+                        (fun _ ->
                             {
-                                CaseSummaryFacts.Fields =
-                                    CaseSummaryFields.values CaseSummaryFields.declarations fields
-                                ClosureOutcome =
-                                    Handling.closure fields.Handling |> Option.map _.Outcome
-                                Parties =
+                                CaseSummaryFacts.Parties =
                                     Vocabulary.all PartyRole.vocabulary
                                     |> List.map (fun role ->
                                         role, PartyContent.names role parties)
@@ -149,8 +155,14 @@ module internal CaseSetQueries =
             let! actor =
                 AccessReads.accessCases tx (services.Principal, records |> List.map _.CaseId)
 
-            let! paidDates =
-                PaymentStorage.latestPaidDates
+            let! transferDates =
+                PaymentStorage.latestTransferDates
+                    tx.Connection
+                    (records |> List.map _.CaseId)
+                    tx.CancellationToken
+
+            let! contributions =
+                CaseSummaryQuery.listContributions
                     tx.Connection
                     (records |> List.map _.CaseId)
                     tx.CancellationToken
@@ -170,7 +182,9 @@ module internal CaseSetQueries =
                                     paused
                                     (Map.find record.CaseId work)
                                     (supplied |> Map.tryFind record.CaseId |> Option.bind _.Next)
-                                    (Map.tryFind record.CaseId paidDates)
+                                    (Map.tryFind record.CaseId transferDates)
+                                    (Map.tryFind record.CaseId contributions
+                                     |> Option.defaultValue [])
                                     (Map.tryFind record.CaseId parties |> Option.defaultValue [])
                                     record
                                 |> Result.map (fun value -> value :: values)))

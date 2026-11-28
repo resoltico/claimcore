@@ -212,8 +212,11 @@ it("selects the exact payment row, confirms frozen correction bytes and renders 
     inputs: {
       "field:paymentDate": "2026-09-05",
       "field:paidAmount": "40",
-      "field:paidCurrency": "EUR",
     },
+  });
+  expect(calls[0]?.command.inputs).toEqual({
+    "field:paymentDate": "2026-09-05",
+    "field:paidAmount": "40",
   });
   await userEvent.click(reviewConfirm());
   await waitFor(() => {

@@ -62,10 +62,10 @@ let tests =
             testCase "payment changes decode without a decision" (fun () ->
                 let raw =
                     bytes
-                        """{"entries":[{"kind":"RECORDED","entry":{"paymentId":"019fc6e8-1813-7000-8000-000000000001","direction":"RETURNED","money":{"amount":"1","currency":"EUR"},"paymentDate":"2026-11-08","reference":null,"payee":null}}],"before":null,"after":null}"""
+                        """{"kind":"RECORDED","entry":{"paymentId":"019fc6e8-1813-7000-8000-000000000001","direction":"RETURNED","money":{"amount":"1","currency":"EUR"},"paymentDate":"2026-11-08","reference":null,"payee":null}}"""
 
                 Expect.isOk
-                    (Codec.decode Limits.MaximumResponseBytes PaymentCodecs.changes raw)
+                    (Codec.decode Limits.MaximumResponseBytes PaymentCodecs.entryDifference raw)
                     "Decision context is optional")
             testCase
                 "the structural byte boundary retains Unicode duplicate-key and integer safeguards"
@@ -158,7 +158,7 @@ let tests =
                 for arguments, expected in [ argument, true; argument + "," + argument, false ] do
                     let raw =
                         sprintf
-                            """{"regions":[{"role":"RESULTS","content":{"kind":"TABLE","columns":[],"rows":[],"meter":{"current":{"amount":"1","currency":"EUR","displayScale":2},"target":{"amount":"100","currency":"EUR","displayScale":2},"complete":false,"description":{"messageId":"label.details","arguments":[%s]}}}}]}"""
+                            """{"regions":[{"role":"RESULTS","content":{"kind":"TABLE","columns":[],"rows":[],"meter":{"position":10,"maximum":1000,"description":{"messageId":"label.details","arguments":[%s]}}}}]}"""
                             arguments
 
                     Expect.equal

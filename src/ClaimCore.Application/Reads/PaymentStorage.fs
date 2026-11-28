@@ -94,16 +94,13 @@ module internal PaymentStorage =
                         })
         }
 
-    let latestPaidDates connection cases token =
+    let latestTransferDates connection cases token =
         task {
             let! rows =
                 DatabaseSession.namedRows
                     connection
-                    "SELECT case_id,max(payment_date) AS payment_date FROM claimcore.case_payments WHERE case_id=ANY($1::uuid[]) AND NOT removed AND direction=$2 GROUP BY case_id"
-                    [|
-                        box (cases |> List.map CaseId.value |> List.toArray)
-                        box (PaymentDirection.token PaymentDirection.Paid)
-                    |]
+                    "SELECT case_id,max(payment_date) AS payment_date FROM claimcore.case_payments WHERE case_id=ANY($1::uuid[]) AND NOT removed AND payment_date IS NOT NULL GROUP BY case_id"
+                    [| box (cases |> List.map CaseId.value |> List.toArray) |]
                     token
 
             return

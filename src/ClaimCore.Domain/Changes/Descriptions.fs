@@ -9,12 +9,12 @@ type CasePartDescription =
         Lifecycle: ValueChange<Lifecycle> option
         Fields: CaseFieldDifference list
         Money: CaseMoneyDifference list
+        Balances: BalanceDifference list
         Disposition: CaseDisposition option
     }
 
 type PaymentPartDescription =
     {
-        Totals: ValueChange<PaymentTotals>
         Entry: PaymentEntry option
         Removed: ValueChange<bool> option
     }

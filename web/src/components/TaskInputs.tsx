@@ -177,6 +177,14 @@ const InputControl = ({ input, errorKey = input.id, sharedErrorId, ...props }: C
         metadata={metadata}
         caseId={props.current.subject.caseId}
         lookup={input.choicesFrom}
+        {...(input.retainedChoiceLabel === null
+          ? {}
+          : {
+              retainedChoice: {
+                value: seed(props.affordance, input.id),
+                labelId: input.retainedChoiceLabel,
+              },
+            })}
       />
     );
   }
@@ -454,17 +462,6 @@ const GrantTargetInput = ({
 const isGrantInput = (input: Input) =>
   ["input:scope", "input:caseId", "field:caseReference"].includes(input.id);
 
-const isPairedCurrency = (
-  field: (typeof productMetadata.catalog.fields)[number] | undefined,
-  inputs: ReadonlyArray<Input>,
-) =>
-  field?.scalar.kind === "CURRENCY" &&
-  inputs.some((input) =>
-    productMetadata.catalog.fields.some(
-      (owner) => owner.name === taskInput(input.id).key && owner.pairs === field.name,
-    ),
-  );
-
 const Fields = ({
   inputs,
   showSections = false,
@@ -472,11 +469,10 @@ const Fields = ({
 }: InputProps & { inputs: ReadonlyArray<Input>; showSections?: boolean }) => {
   const p = usePresentation();
   const render = (input: Input) => {
-    const field = catalogField(input);
-    if (isPairedCurrency(field, inputs)) {
+    if (inputs.some((owner) => owner.pairedWith === input.id)) {
       return null;
     }
-    const peer = inputs.find((candidate) => taskInput(candidate.id).key === field?.pairs);
+    const peer = inputs.find((candidate) => candidate.id === input.pairedWith);
     if (selectsField(input, props.task)) {
       return (
         <div key={input.id} className="task-field-wide">

@@ -25,13 +25,12 @@
     <Compile Include="Catalog/Metadata.fs" />
     <Compile Include="Codecs/ResponseScalars.fs" />
     <Compile Include="Codecs/CaseFieldCodecs.fs" />
+    <Compile Include="Codecs/ValueChangeCodecs.fs" />
     <Compile Include="Codecs/PaymentCodecs.fs" />
     <Compile Include="Codecs/CaseStageCodecs.fs" />
-    <Compile Include="Codecs/ListedCaseFieldCodecs.fs" />
     <Compile Include="Codecs/ActorCodecs.fs" />
     <Compile Include="Codecs/LedgerCodecs.fs" />
     <Compile Include="Codecs/AttachmentCodecs.fs" />
-    <Compile Include="Codecs/ValueChangeCodecs.fs" />
     <Compile Include="Codecs/CaseStateCodecs.fs" />
     <Compile Include="Codecs/TimelineCodecs.fs" />
     <Compile Include="Codecs/PresentationStructure.fs" />

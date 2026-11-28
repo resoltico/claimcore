@@ -32,9 +32,8 @@ test("records instalments and removes the selected entry through one reviewed co
   await expect(
     page.locator(".case-title-line").getByText("Partly paid", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.locator('.case-detail .case-stage-list li[data-complete="false"] meter'),
-  ).toHaveAttribute("value", "40");
+  await expect(page.locator(".case-detail meter")).toHaveCount(1);
+  await expect(payments.locator("meter")).toHaveAttribute("value", "400");
   await completeAct(page, "case.recordPayment", {
     "Payment date": "2026-09-05",
     "Paid amount": "20",

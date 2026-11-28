@@ -32,12 +32,7 @@ module internal FamilyRules =
             match state.Case.Value.Content with
             | None -> unavailable
             | Some content ->
-                CaseHeadline.ofState (
-                    CaseState.Active(
-                        state.Case.Value.Status,
-                        CaseProgress.ofFinancial content.Finance
-                    )
-                )
+                CaseHeadline.ofState (CaseState.Active(state.Case.Value.Status, content.Finance))
                 |> CaseRefusal.NotOffered
                 |> Refusal.Case
 

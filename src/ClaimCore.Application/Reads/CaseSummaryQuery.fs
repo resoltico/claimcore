@@ -34,6 +34,62 @@ module internal CaseSummaryQuery =
                 }
         | _ -> raise (RecordCorruptException "Incomplete aggregate amount and currency.")
 
+    // Applied after case selection in the report and after case pagination in the list.
+    // Each selected case supplies at most one contribution per currency.
+    let private contributions =
+        """
+    SELECT currency,sum(claimed) AS claimed,sum(payable) AS payable,sum(net) AS net
+    FROM (
+        SELECT c.claimed_currency AS currency,c.claimed_amount AS claimed,NULL::numeric AS payable,NULL::numeric AS net
+        WHERE c.claimed_currency IS NOT NULL
+        UNION ALL
+        SELECT c.payable_currency,NULL,c.payable_amount,NULL WHERE c.payable_currency IS NOT NULL
+        UNION ALL
+        SELECT p.currency,NULL,NULL,p.paid-p.returned
+        FROM claimcore.case_payment_totals p WHERE p.case_id=c.case_id
+    ) measures
+    GROUP BY currency
+"""
+
+    let listContributions connection caseIds token =
+        task {
+            let sql =
+                $"""
+SELECT c.case_id,m.currency,m.claimed::text,m.payable::text,m.net::text
+FROM claimcore.cases c CROSS JOIN LATERAL ({contributions}) m
+WHERE c.case_id=ANY($1::uuid[]) ORDER BY c.case_id,m.currency COLLATE "C"
+"""
+
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    sql
+                    [| box (caseIds |> List.map CaseId.value |> List.toArray) |]
+                    token
+
+            return
+                rows
+                |> List.groupBy (
+                    DatabaseSession.value<Guid> 0 >> DatabaseSession.admitted CaseId.create
+                )
+                |> List.map (fun (id, rows) ->
+                    let amount parse column row =
+                        DatabaseSession.optional<string> column row
+                        |> Option.map (parse >> admitted)
+
+                    id,
+                    rows
+                    |> List.map (fun row ->
+                        {
+                            CaseCurrencyContribution.Currency =
+                                DatabaseSession.value<string> 1 row |> Currency.parse |> admitted
+                            Claimed = amount DecimalTotal.parse 2 row
+                            Payable = amount DecimalTotal.parse 3 row
+                            NetPaid = amount DecimalTotal.parseSigned 4 row
+                        }))
+                |> Map.ofList
+        }
+
     let private group row =
         let lifecycle =
             (Vocabulary.tryParse Lifecycle.vocabulary) (DatabaseSession.value<string> 0 row)
@@ -171,10 +227,9 @@ module internal CaseSummaryQuery =
         let sql =
             $"""
 SELECT jsonb_build_array(c.case_id,({expression}),({CaseSelectionSql.responsibility}),
-       ({CaseSelectionSql.due}),c.state,c.status,c.progress,c.claimed_currency,c.claimed_amount,
-       c.payable_currency,c.payable_amount,({responsibleLabel}),
-       (SELECT jsonb_agg(jsonb_build_array(p.currency,p.paid-p.returned) ORDER BY p.currency COLLATE "C")
-        FROM claimcore.case_payment_totals p WHERE p.case_id=c.case_id))::text
+       ({CaseSelectionSql.due}),c.state,c.status,c.progress,({responsibleLabel}),
+       (SELECT jsonb_agg(jsonb_build_array(m.currency,m.claimed,m.payable,m.net) ORDER BY m.currency COLLATE "C")
+        FROM LATERAL ({contributions}) m))::text
 FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} ORDER BY c.case_id
 """
 
@@ -230,19 +285,11 @@ WITH selected AS MATERIALIZED (
 ), facets AS (
     SELECT state,status,progress,count(*) AS cases,responsibility,due
     FROM selected GROUP BY state,status,progress,responsibility,due
-), contributions AS (
-    SELECT group_key,claimed_currency AS currency,claimed_amount AS claimed,NULL::numeric AS payable,NULL::numeric AS net
-    FROM selected WHERE claimed_currency IS NOT NULL
-    UNION ALL
-    SELECT group_key,payable_currency,NULL,payable_amount,NULL FROM selected WHERE payable_currency IS NOT NULL
-    UNION ALL
-    SELECT s.group_key,p.currency,NULL,NULL,p.paid-p.returned
-    FROM selected s JOIN claimcore.case_payment_totals p ON p.case_id=s.case_id
 ), amounts AS (
-    SELECT group_key,currency,sum(claimed)::text AS claimed,count(claimed) AS claimed_cases,
-           sum(payable)::text AS payable,count(payable) AS payable_cases,
-           sum(net)::text AS net,count(net) AS net_cases
-    FROM contributions GROUP BY group_key,currency
+    SELECT c.group_key,m.currency,sum(m.claimed)::text AS claimed,count(m.claimed) AS claimed_cases,
+           sum(m.payable)::text AS payable,count(m.payable) AS payable_cases,
+           sum(m.net)::text AS net,count(m.net) AS net_cases
+    FROM selected c CROSS JOIN LATERAL ({contributions}) m GROUP BY c.group_key,m.currency
 ), group_counts AS (
     SELECT group_key,count(*) AS cases FROM selected GROUP BY group_key
     UNION ALL

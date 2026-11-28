@@ -531,7 +531,7 @@ let summaryCsv (fixture: PublishedFixture.Fixture) =
 
     for arguments, columnPrefix in
         [
-            [ "case"; "list"; "--text"; issued ], "caseReference,revision,workRevision,"
+            [ "case"; "list"; "--text"; issued ], "caseId,caseReference,revision,workRevision,"
             [ "case"; "timeline"; issued ], "caseReference,operationId,sequence,effectIndex,"
             [ "reminder"; "list"; "--case-reference"; issued ],
             "caseId,caseReference,reminderId,revision,"

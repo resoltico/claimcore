@@ -182,6 +182,8 @@ module internal PaymentQueries =
                                                                                 _.Finance
                                                                                 parent.Snapshot
                                                                                     .State
+                                                                        ClosureOutcome =
+                                                                            parent.Index.Outcome
                                                                         Items =
                                                                             rows.Items
                                                                             |> List.map

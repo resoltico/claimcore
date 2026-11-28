@@ -2,27 +2,32 @@
 
 ## [Unreleased]
 
-- Start a [fresh format-12 installation](docs/operating.md#install-a-fresh-register). Settle old attempts or retain their IDs, database, keys, browser profile and matching build.
-- ClaimCore issues permanent case references. Remove custom-reference and reference-change inputs. Record external identifiers in erasable business fields.
-- Provision an independent PostgreSQL recovery witness with separate owner and runtime credentials. Configure both connections before initializing the register.
-- Fence the witness and isolate old hosts and SMTP before restore. Retain WAL and timeline history, or record an explicit disclosure gap before admission seals the decision.
-- If a prepared restore target is permanently lost, the witness owner can [supersede its pending attempt](docs/operating.md#backups-and-restore) without reopening traffic.
+## [0.24.0] - 2026-11-28
+
+- Start a [fresh format-12 installation](docs/operating.md#install-a-fresh-register). Settle pending attempts or keep their IDs, database, witness, keys, client state and matching build.
+- Provision an independent PostgreSQL recovery witness before initializing the register. Use separate owner and runtime credentials. Earlier development format-12 stores are incompatible.
+- Configure the approved OIDC client profiles and synchronized clocks. Deploy matching server, Web and CLI artifacts and regenerate API clients.
+- Remove custom and changeable case references from integrations. ClaimCore issues permanent references. Record external identifiers in erasable business fields.
+- Use the new Cases CSV layout with one row per case and currency. Count distinct case IDs to reconcile case and contribution counts with reports.
+- Bind session termination, settlement and retirement to the intended installation. Keep the installation ID when preparing or recovering CLI requests.
+- Fence the recovery witness and isolate old hosts and SMTP before restore. Preserve WAL and timeline history or record an explicit disclosure gap before admission seals the decision.
+- Keep older wrapping keys for retained same-format backups. Restart cursor traversals after encryption generation rotation.
+- Correct payments by sending changed facts, including amount or currency alone. Omit facts to keep them, including a removed payee. Send null to clear a reference or payee.
+- Record, correct or remove transfers on active closed cases. Financial exceptions appear in Needs attention and suppress close recommendations.
+- Read exact payment progress and see No payment due, Payable covered and Overpaid separately. Latest transfer date includes current returns.
+- Reconcile currency balance changes once on each Activity case effect. Receipts retain those changes and the ordered transfer entry differences.
+- Recover a settled operation with its original ID when the private receipt is unavailable. CLI recovery listings report unreadable records and keep healthy attempts accessible.
 - Preserve the last admitted ledger prefix and operation-expiry cutoff across restores, including restores with a disclosure gap.
-- Restored installations suppress digests through the later of reopening and the last authorized dispatch date. Existing same-day claims remain durable.
-- Configure the approved OIDC client profiles and synchronized clocks. Use matching Web, CLI and regenerated API clients.
-- Request access explicitly. Replaced identities stay reserved to their original account and cannot enter the access inbox.
+- Supersede a permanently lost pending restore target at the witness without reopening traffic. Restored registers suppress reminder digests through the reopening and dispatch cutoff.
+- Request access explicitly. Earlier sign-in identities stay reserved to their initial account and cannot open requests.
 - Sign in again after admission, re-enablement, identity replacement or restore. A different signed-in Owner must perform a routine Owner identity change.
-- End browser sessions across an account’s reserved identities. Resume an unconfirmed Web termination after signing in to recover its saved count and keep newer sessions open.
-- Bind session termination, settlement and retirement to the intended installation. Keep the original installation ID when preparing or recovering CLI requests.
-- Ship matching server and Web artifacts. Startup and publish check compiled handshake identity, HTML references, dependency closure, viewer resources and asset bytes.
-- Recover healthy operations even when another local record is damaged. CLI JSON listings report the count of unreadable records.
-- Restart cursor traversals after encryption generation rotation. Keep older wrapping keys for retained same-format backups.
-- Scoped continuations reuse unchanged authorized evidence and bounded reports. An operation lookup releases read capacity before queued confirmation.
-- Use the original operation ID to recover when the action settles but its private receipt is unavailable.
-- Audit protected read surfaces and redact refused selectors. Filter timeline reads separately from case detail. The trail fixes its starting upper bound when you page through it.
-- Use bounded server CSV in Web and CLI. Add `--all` to stream audited CLI pages and check the exit status before using the resulting file.
-- Erasing either case closes related-case links and clears their protected notes and targets. Source handlers can detach an active link when the target is inaccessible.
-- Private endpoint views in Web start masked when hidden or offline. Activation and foreground expiry require a fresh authorized result.
+- End browser sessions across an account’s reserved identities. Resume an unconfirmed Web termination to retrieve its saved count and keep newer sessions open.
+- Startup and publish verify the compiled server and Web handshake, public asset bytes, HTML references, dependency closure and viewer resources.
+- Scoped continuations reuse unchanged authorized evidence and bounded reports. Operation lookup releases read capacity before queued confirmation.
+- Audit protected reads and exports with refused selectors redacted. Read case detail and timeline separately. The audit trail pages against a fixed upper bound.
+- Use audited server CSV from Web or CLI. For CLI streaming with --all, check the exit status before using the resulting file.
+- Erasing either case closes related-case links and clears protected notes and targets. Source handlers can detach an active link whose target is inaccessible.
+- Private Web views start masked when hidden or offline. Activation and foreground expiry require a fresh authorized result.
 
 ## [0.23.0] - 2026-11-26
 

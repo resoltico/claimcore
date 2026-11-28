@@ -64,11 +64,13 @@ Policy numbers and insurer claim references are erasable business facts.
 
 A payment decision records its date, payable amount, currency and optional basis. A payment entry
 records a Paid or Returned direction, date, positive amount and currency, with optional evidence
-and payee. Its ID is the UUID of the accepting operation. Progress uses the net payment totals
-in the decision currency and can be Undecided, Decided, Partly paid, Paid or Overpaid.
+and payee. Its ID is the UUID of the accepting operation. Net paid subtracts current returns
+from current payments in each currency. Decision progress compares payable with the exact net in
+its currency. The case headline distinguishes No payment due, Payable covered and Overpaid.
 
-A correction updates selected registration or decision facts. Amount and currency are asserted
-together. Decision changes preserve payment entries.
+A case-fact correction updates selected registration or decision facts. Those money assertions pair
+amount and currency. A payment-entry correction replaces the selected transfer in one operation and
+keeps omitted facts. Decision changes preserve payment entries.
 
 ## Lifecycle and status
 

@@ -92,6 +92,7 @@ let receipt id (reference: string) : OperationReceipt =
                                 ReopenReason = None
                                 RecordedFields = BusinessField.ofGroup RecordGroup.Registration
                                 Payments = []
+                                Balances = []
                             }
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)

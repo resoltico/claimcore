@@ -86,75 +86,58 @@ module TimelineScreen =
 
     /// Differences are supplied by the authorized core snapshot, never reconstructed by a renderer.
 
-    let private paymentSections compact (changes: PaymentCollectionDifference) =
+    let balanceSections (balances: BalanceDifference list) =
+        balances
+        |> List.map (fun balance ->
+            difference
+                ("netPaid." + Currency.format balance.Currency)
+                "label.netPaid"
+                (PresentedValue.moneyTotal balance.Currency)
+                balance.Net)
+
+    let private paymentSections compact change =
+        let entry = PaymentDifference.entry change
+        let prefix = "payment." + OperationId.format (PaymentEntry.id entry)
+
         [
-            for change in changes.Entries do
-                let entry = PaymentDifference.entry change
+            section
+                "label.payments"
+                [
+                    value
+                        (prefix + ".date")
+                        "field.paymentDate.label"
+                        Prominence.Primary
+                        (PresentedValue.Date(PaymentEntry.date entry))
+                    value
+                        (prefix + ".amount")
+                        "field.paidAmount.label"
+                        Prominence.Primary
+                        (PresentedValue.money (PaymentEntry.money entry))
+                    value
+                        (prefix + ".direction")
+                        "field.direction.label"
+                        Prominence.Secondary
+                        (code PaymentDirection.vocabulary (PaymentEntry.direction entry))
+                    value
+                        (prefix + ".reference")
+                        "field.reference.label"
+                        Prominence.Detail
+                        (PaymentEntry.reference entry
+                         |> optional (Identifier.format >> PresentedValue.Identifier))
+                    if not compact then
+                        value
+                            (prefix + ".payee")
+                            "field.payee.label"
+                            Prominence.Detail
+                            (PaymentEntry.payee entry
+                             |> optional (PartyId.format >> PresentedValue.Identifier))
 
-                let prefix = "payment." + OperationId.format (PaymentEntry.id entry)
-
-                yield
-                    section
-                        "label.payments"
-                        [
-                            value
-                                (prefix + ".date")
-                                "field.paymentDate.label"
-                                Prominence.Primary
-                                (PresentedValue.Date(PaymentEntry.date entry))
-                            value
-                                (prefix + ".amount")
-                                "field.paidAmount.label"
-                                Prominence.Primary
-                                (PresentedValue.money (PaymentEntry.money entry))
-                            value
-                                (prefix + ".direction")
-                                "field.direction.label"
-                                Prominence.Secondary
-                                (code PaymentDirection.vocabulary (PaymentEntry.direction entry))
-                            value
-                                (prefix + ".reference")
-                                "field.reference.label"
-                                Prominence.Detail
-                                (PaymentEntry.reference entry
-                                 |> optional (Identifier.format >> PresentedValue.Identifier))
-                            if not compact then
-                                value
-                                    (prefix + ".id")
-                                    "field.paymentId.label"
-                                    Prominence.Detail
-                                    (PresentedValue.Identifier(
-                                        OperationId.format (PaymentEntry.id entry)
-                                    ))
-                        ]
-            match changes.After with
-            | Some totals when compact ->
-                yield
-                    section
-                        "label.paymentTotals"
-                        [
-                            value
-                                "netPaid"
-                                "label.netPaid"
-                                Prominence.Primary
-                                (PaymentsScreen.netPaid totals)
-                            value
-                                "payable"
-                                "field.payableAmount.label"
-                                Prominence.Primary
-                                (PresentedValue.money totals.Payable)
-                        ]
-            | _ -> ()
-            if not compact then
-                yield
-                    difference
-                        "netPaid"
-                        "label.netPaid"
-                        PaymentsScreen.netPaid
-                        {
-                            Before = changes.Before
-                            After = changes.After
-                        }
+                        value
+                            (prefix + ".id")
+                            "field.paymentId.label"
+                            Prominence.Detail
+                            (PresentedValue.Identifier(OperationId.format (PaymentEntry.id entry)))
+                ]
         ]
 
     let timelineChange =
@@ -267,7 +250,8 @@ module TimelineScreen =
                             (text |> optional (NoteText.format >> PresentedValue.Narrative))
                     ]
             ]
-        | TimelineChange.Payments change -> paymentSections false change
+        | TimelineChange.Payment change -> paymentSections false change
+        | TimelineChange.Balances balances -> balanceSections balances
 
     let timelineEntry (entry: CaseTimelineEntry) =
         let act = PresentedValue.Message("task." + TaskId.token entry.Task + ".label")
@@ -400,7 +384,7 @@ module TimelineScreen =
                     TimelineDisclosure.resolve disclosure
                     |> Result.defaultWith invalidOp
                     |> List.collect (function
-                        | TimelineChange.Payments change -> paymentSections true change
+                        | TimelineChange.Payment change -> paymentSections true change
                         | change -> timelineChange change)
 
                 Some(

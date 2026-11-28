@@ -112,8 +112,9 @@
     "source": "29b338cac964"
   },
   "task.case.erase.meaning": {
-    "text": "永久刪除此案件目前及保留的詳情、付款、工作、提醒、備註和附件。案件編號和變更記錄將保留。其他位置的副本不受影響。",
-    "source": "8bf54b53220a"
+    "text": "從線上登記冊永久刪除案件的私密詳細資料及相關案件連結的備註與目標。案件 ID、編號和變更記錄仍保留。存放在其他位置的副本不受影響。",
+    "source": "dcda559d78d8",
+    "machineMade": true
   },
   "task.people.eraseProfile.label": {
     "text": "永久刪除帳戶資料",
@@ -136,8 +137,8 @@
     "source": "100d2c104336"
   },
   "task.case.open.meaning": {
-    "text": "使用已知的登記資料開立案件。將案件編號留空，系統便會自動分配編號。如果登記冊允許，可以輸入自訂案件編號。",
-    "source": "debda0b6773d",
+    "text": "使用已知的登記資料建立案件。ClaimCore 會指派永久案件編號。",
+    "source": "829a5b910617",
     "machineMade": true
   },
   "task.people.provisionOwner.label": {
@@ -501,8 +502,8 @@
     "source": "01b2620de3a4"
   },
   "diagnostic.REFERENCE_FORMAT": {
-    "text": "請輸入有效的案件識別碼。自訂識別碼以 ASCII 字母開頭，最多 32 個字元，可使用字母、數字及組間單一連字號。CC- 前綴保留給系統分配的識別碼。",
-    "source": "f856f6f13ef0",
+    "text": "請使用 ClaimCore 指派的完整案件編號，包括檢查碼。",
+    "source": "8a8de2d42eb7",
     "machineMade": true
   },
   "diagnostic.REGISTER_MAINTENANCE": {
@@ -833,9 +834,20 @@
     "text": "已永久刪除",
     "source": "1c9a70fabcb6"
   },
-  "headline.PAID.label": {
-    "text": "已付款",
-    "source": "fb81b961af45"
+  "headline.NO_PAYMENT_DUE.label": {
+    "text": "無須付款",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "headline.PAYABLE_COVERED.label": {
+    "text": "應付金額已涵蓋",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "headline.OVERPAID.label": {
+    "text": "超額付款",
+    "source": "c93dce4211a4",
+    "machineMade": true
   },
   "headline.UNDECIDED.label": {
     "text": "待決定",
@@ -1086,8 +1098,9 @@
     "source": "1c9a70fabcb6"
   },
   "lifecycle.ERASED.meaning": {
-    "text": "已永久刪除。僅保留案件編號。",
-    "source": "e63410fae906"
+    "text": "案件已永久刪除。案件 ID、編號和變更記錄仍保留。",
+    "source": "d2e2e959534f",
+    "machineMade": true
   },
   "lifecycle.VOIDED.label": {
     "text": "已作廢",
@@ -1409,12 +1422,14 @@
     "source": "2d7778153461"
   },
   "disclosureKind.ATTACHMENT_DOWNLOAD.label": {
-    "text": "附件下載",
-    "source": "ba23685b28f6"
+    "text": "已授權下載附件",
+    "source": "04e0f6179d20",
+    "machineMade": true
   },
   "disclosureKind.ATTACHMENT_PREVIEW.label": {
-    "text": "附件預覽",
-    "source": "01b3a2e62a0d"
+    "text": "已授權預覽附件",
+    "source": "5e82512366e5",
+    "machineMade": true
   },
   "disclosureKind.EXPORT.label": {
     "text": "匯出",
@@ -1525,8 +1540,9 @@
     "source": "30ba702eee51"
   },
   "caseStage.PAID.label": {
-    "text": "已付款",
-    "source": "fb81b961af45"
+    "text": "應付金額涵蓋情況",
+    "source": "5ad88498af13",
+    "machineMade": true
   },
   "caseStage.CLOSED.label": {
     "text": "已結案",
@@ -1677,13 +1693,13 @@
     "source": "a9c7400c8361"
   },
   "field.caseReference.rule": {
-    "text": "使用 1 至 {maximumCharacters} 個 ASCII 字元。自訂識別碼以字母開頭，使用字母、數字及組間單一連字號。CC- 前綴保留給系統分配的識別碼。",
-    "source": "e7fc63264856",
+    "text": "請使用已指派的完整案件編號，最多 {maximumCharacters} 個 ASCII 字元，並包含兩位檢查碼。",
+    "source": "56f5f95bc680",
     "machineMade": true
   },
   "field.caseReference.hint": {
-    "text": "自訂編號在更正或清除後仍會保留。請勿在編號中包含個人資訊。",
-    "source": "4936b3dc4560",
+    "text": "請輸入案件建立時指派的編號。",
+    "source": "9a782faae879",
     "machineMade": true
   },
   "field.paymentDecisionDate.hint": {
@@ -1988,8 +2004,8 @@
     "source": "02df940bf32a"
   },
   "diagnostic.REFERENCE_FORMAT.gui": {
-    "text": "請檢查案件識別碼與連字號。自訂識別碼以字母開頭，最多使用 32 個字母、數字與連字號。CC- 是保留前綴。",
-    "source": "00e1c36eb2e1",
+    "text": "請檢查完整的案件編號，包括連字號和檢查碼。",
+    "source": "ceed13883bd3",
     "machineMade": true
   },
   "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
@@ -2053,8 +2069,9 @@
     "source": "c808ff2c3abd"
   },
   "task.case.erase.consequence": {
-    "text": "這將永久刪除目前及保留的案件詳情、付款、工作、提醒和備註。案件編號和變更記錄將保留。其他位置的副本不受影響。",
-    "source": "0e447a932597"
+    "text": "此操作將從線上登記冊永久清除私密詳細資料、附件及相關案件連結的備註與目標。案件 ID、編號和變更記錄仍保留。存放在其他位置的副本不受影響。",
+    "source": "6a61e703c96d",
+    "machineMade": true
   },
   "task.people.register.done": {
     "text": "已註冊帳戶。",
@@ -2654,8 +2671,9 @@
     "source": "3824e22f4f0f"
   },
   "label.paymentProgress": {
-    "text": "已付 {paid}，應付 {payable}",
-    "source": "6c78ba810cb0"
+    "text": "淨支付 {paid}，應付 {payable}",
+    "source": "56460f70ab2f",
+    "machineMade": true
   },
   "progress.PARTLY_PAID.label": {
     "text": "部分已付",
@@ -2962,8 +2980,9 @@
     "source": "480d7f933767"
   },
   "task.case.correctPayment.meaning": {
-    "text": "使用正確的日期、方向、金額、參考編號和收款人取代誤錄的付款項目。回執會標明兩個項目。",
-    "source": "a892687bc3b6"
+    "text": "更改付款記錄中的所選資訊。省略的項目將保留，包括已移除的原收款人。請明確清除參考資訊或收款人。收據會標明兩筆記錄。",
+    "source": "cc5e912ffeda",
+    "machineMade": true
   },
   "task.case.correctPayment.done": {
     "text": "付款紀錄已更正。",
@@ -4724,6 +4743,186 @@
   "label.sessionRetirementConfirmed": {
     "text": "已確認清理過期的工作階段結束結果。",
     "source": "f5bdfec416d5",
+    "machineMade": true
+  },
+  "label.noPaymentDue": {
+    "text": "無須付款",
+    "source": "0caa7591b0dc",
+    "machineMade": true
+  },
+  "label.paymentCoverage": {
+    "text": "付款涵蓋情況",
+    "source": "6be717107bb3",
+    "machineMade": true
+  },
+  "label.payableCovered": {
+    "text": "應付金額已涵蓋",
+    "source": "78b970f674e0",
+    "machineMade": true
+  },
+  "label.paymentOverpayment": {
+    "text": "超額支付",
+    "source": "c401c8b19b9c",
+    "machineMade": true
+  },
+  "label.paymentNegativeBalance": {
+    "text": "負餘額",
+    "source": "416ff745db5a",
+    "machineMade": true
+  },
+  "label.settledWithoutCoverage": {
+    "text": "已結算但應付金額未獲涵蓋",
+    "source": "a9326845d984",
+    "machineMade": true
+  },
+  "label.paymentsNeedReview": {
+    "text": "付款需要覆核",
+    "source": "089412a8dedd",
+    "machineMade": true
+  },
+  "label.keepCurrentSelection": {
+    "text": "保留目前選項",
+    "source": "d64220d1c205",
+    "machineMade": true
+  },
+  "label.latestTransferDate": {
+    "text": "最近一次轉帳日期",
+    "source": "86ea49748782",
+    "machineMade": true
+  },
+  "disclosureKind.ACCESS_REQUESTS.label": {
+    "text": "存取申請",
+    "source": "34185554f83d",
+    "machineMade": true
+  },
+  "disclosureKind.ATTACHMENT_LIST.label": {
+    "text": "附件清單",
+    "source": "422ce0f0e16a",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_ASSIGNEES.label": {
+    "text": "案件負責人",
+    "source": "91f6cd2b8968",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_LIST.label": {
+    "text": "案件清單",
+    "source": "6e5d67948527",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_NOTES.label": {
+    "text": "案件備註",
+    "source": "54c2a0df2066",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PARTIES.label": {
+    "text": "案件相關方",
+    "source": "8eb8f1a7c97c",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_PAYMENTS.label": {
+    "text": "案件付款",
+    "source": "335c4b827ec6",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_SUMMARY.label": {
+    "text": "案件摘要",
+    "source": "8c0199f1bc6e",
+    "machineMade": true
+  },
+  "disclosureKind.CASE_TIMELINE.label": {
+    "text": "讀取案件時間軸",
+    "source": "5f8675c4adb3",
+    "machineMade": true
+  },
+  "disclosureKind.DIGEST.label": {
+    "text": "提醒摘要",
+    "source": "b0c80c0e513f",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_LOOKUP.label": {
+    "text": "操作查詢",
+    "source": "2bc69d814487",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_PREVIEW.label": {
+    "text": "操作預覽",
+    "source": "beed811efa80",
+    "machineMade": true
+  },
+  "disclosureKind.OPERATION_RECEIPT.label": {
+    "text": "操作收據",
+    "source": "c625af47a567",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_DIRECTORY.label": {
+    "text": "帳戶目錄",
+    "source": "b8577c4e7e24",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_GRANTS.label": {
+    "text": "帳戶授權",
+    "source": "d6f0fba9e75d",
+    "machineMade": true
+  },
+  "disclosureKind.PEOPLE_HISTORY.label": {
+    "text": "帳戶歷程",
+    "source": "1f5aed75c05c",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_LIST.label": {
+    "text": "提醒清單",
+    "source": "3ea8b43e40b0",
+    "machineMade": true
+  },
+  "disclosureKind.REMINDER_READ.label": {
+    "text": "讀取提醒",
+    "source": "0cb40c947b2c",
+    "machineMade": true
+  },
+  "disclosureKind.REQUESTER_CONTEXT.label": {
+    "text": "要求者內容",
+    "source": "5611b1b66c86",
+    "machineMade": true
+  },
+  "disclosureKind.REVISION_CONFLICT.label": {
+    "text": "審查後的案件變更",
+    "source": "e8267c9cd91a",
+    "machineMade": true
+  },
+  "disclosureKind.SESSION_TERMINATION.label": {
+    "text": "工作階段終止",
+    "source": "1e5344765c6d",
+    "machineMade": true
+  },
+  "disclosureKind.WORK_VIEWS.label": {
+    "text": "工作檢視計數",
+    "source": "11bb51897a4f",
+    "machineMade": true
+  },
+  "label.disclosedCases": {
+    "text": "已揭露案件",
+    "source": "34ed8ace3cb4",
+    "machineMade": true
+  },
+  "label.disclosedPeople": {
+    "text": "已揭露帳戶",
+    "source": "5b856c5553bc",
+    "machineMade": true
+  },
+  "label.disclosureRowCount": {
+    "text": "傳回的列數",
+    "source": "0d86103584eb",
+    "machineMade": true
+  },
+  "notice.incompleteExport": {
+    "text": "CSV 匯出在所有列傳送完畢前結束。",
+    "source": "cb89d1c5f460",
+    "machineMade": true
+  },
+  "notice.receiptUnavailable": {
+    "text": "無法取得收據。請使用原始操作 ID 查詢該操作。",
+    "source": "f23e5cdf6158",
     "machineMade": true
   }
 }
